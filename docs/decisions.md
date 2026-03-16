@@ -86,6 +86,23 @@ Canonical record of decisions made and their rationale. Covers technology choice
 
 ---
 
+## AI Generation
+
+### Service layer for provider calls (lessonStructureService.js)
+
+**Decision:** Screen 1 generation goes through a dedicated service module (`src/services/lessonStructureService.js`) rather than replacing the function body directly in `mockGeneration.js` or putting the API call inline in `App.jsx`.
+
+**Rationale:** The service separates three concerns that must stay independent:
+- **Provider call** (`callProvider`) — the only function that changes when swapping providers. Isolated so it can be replaced without touching App state logic.
+- **Normalization** (`normalizeStructure`) — validates the provider response and assigns `id` and `stepNumber` locally. Runs regardless of which provider is used. Prevents malformed or partial API responses from corrupting App state.
+- **App orchestration** (`handleSubmit` in App.jsx) — owns `isGenerating`, `generationError`, confirmation guards, and state updates. Does not change when the provider changes.
+
+**Consequence:** `mockGeneration.js` is kept intact as the current backing implementation, called from `callProvider()`. When a real API is wired, only `callProvider()` is replaced. The mock remains available as a fallback or for offline development.
+
+**Pattern for Screen 2:** When `generateLessonContent` is promoted to a real API call, extract `lessonContentService.js` following the same three-layer pattern.
+
+---
+
 ## Draft Persistence
 
 ### localStorage, not sessionStorage or IndexedDB

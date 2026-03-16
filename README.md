@@ -40,8 +40,10 @@ SPLcontentGenerator/
 │   ├── main.jsx                         React entry point
 │   ├── App.jsx                          Central state container
 │   ├── App.css                          All styles (CSS variables + component classes)
+│   ├── services/
+│   │   └── lessonStructureService.js    Screen 1 generation service — replace callProvider() with real API
 │   ├── utils/
-│   │   └── mockGeneration.js            Mock AI generation — replace with real API calls
+│   │   └── mockGeneration.js            Mock generation — used as fallback by services and Screen 2
 │   └── components/
 │       ├── Header.jsx                   Top bar: breadcrumb, Save Draft, Back button
 │       ├── SaveStatus.jsx               Saved / Unsaved changes / Saving… indicator
@@ -63,14 +65,23 @@ SPLcontentGenerator/
 
 ## Where to Connect Real AI
 
-Both generation hooks live in `src/utils/mockGeneration.js` and are called from `src/App.jsx` with `// [AI HOOK]` comments:
+### Screen 1 — Lesson Structure Generation (service layer in place)
 
-```
-generateLessonStructure(courseName, moduleName, subtopicsText)  →  called on Screen 1 submit
-generateLessonContent(lessonStructure)                           →  called on "Generate Lesson Content"
-```
+Integration point: `src/services/lessonStructureService.js` — `callProvider()`
 
-Replace the function bodies with API calls. `isGenerating` state is already wired in `App.jsx` — both handlers are `async` with `try/finally` guards, so adding `await` to the call is all that's needed.
+The service layer is scaffolded. To wire in a real provider:
+
+1. Replace the body of `callProvider()` in `lessonStructureService.js` with a `fetch()` / SDK call.
+2. Return `Array<{ title, goal, coveredSubtopics }>` — no ids or step numbers (assigned by `normalizeStructure()`).
+3. Add `VITE_ANTHROPIC_API_KEY=sk-ant-...` to `.env.local` (already gitignored via `*.local`).
+
+`isGenerating`, `generationError`, `try/finally`, and `await` are all wired in `App.jsx` — no changes needed there.
+
+### Screen 2 — Lesson Content Generation (still mocked)
+
+Integration point: `src/utils/mockGeneration.js` — `generateLessonContent()` — marked `// [AI HOOK]` in `App.jsx`.
+
+When ready: extract a `lessonContentService.js` following the same pattern as `lessonStructureService.js`, then update the import in `App.jsx`.
 
 ## Where to Connect a Backend
 

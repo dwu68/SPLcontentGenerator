@@ -755,3 +755,134 @@ All infrastructure is already in place: both handlers are `async`, `isGenerating
 ---
 
 *End of Session 4.*
+
+---
+---
+
+# Session 5 Handoff
+
+**ID:** 5
+**Date:** 2026-03-16
+**Session scope:** Phase 2 — Screen 1 AI integration scaffold (service layer)
+**Git state at close:** See Git Commands below
+
+> **Cross-references:** [product_overview.md](product_overview.md) · [user_flow.md](user_flow.md) · [data_model.md](data_model.md) · [decisions.md](decisions.md) · [todo.md](todo.md)
+
+---
+
+## Commits This Session
+
+```
+feat: scaffold Screen 1 AI integration — lessonStructureService with callProvider stub
+docs: update README, decisions, todo, and session handoff for service layer
+```
+
+---
+
+## What Was Completed
+
+### 1. Screen 1 generation service layer (`src/services/lessonStructureService.js`)
+
+New file. Owns the full Screen 1 generation pipeline:
+
+| Layer | Function | Responsibility |
+|---|---|---|
+| Provider call | `callProvider()` | Only function to change when wiring a real AI. Currently delegates to the mock. |
+| Normalization | `normalizeStructure()` | Validates provider response shape; assigns `id` and `stepNumber` locally. |
+| Public API | `generateLessonStructure()` | Async entry point called from `App.jsx`. Composes the two layers above. |
+
+The `callProvider()` body contains a full commented-out example of the real Anthropic fetch call, with headers, model, and response parsing noted.
+
+### 2. `App.jsx` — import updated, `await` added
+
+- Import changed from `mockGeneration` to `lessonStructureService` for `generateLessonStructure`.
+- `generateLessonContent` import left pointing at `mockGeneration` (Screen 2 not yet touched).
+- `await` added at the `handleSubmit` call site.
+- JSDoc updated to name both integration points explicitly.
+- All existing UI guards (confirmation, `isGenerating`, `generationError`, `try/finally`) are unchanged.
+
+### 3. Docs updated
+
+- `README.md`: "Where to Connect Real AI" section rewritten; project layout updated with `services/`.
+- `docs/decisions.md`: New "AI Generation — Service layer" decision with rationale and consequences.
+- `docs/todo.md`: Phase 2 structure item updated to point to `callProvider()`.
+
+---
+
+## Important Decisions Made
+
+| Decision | Rationale |
+|---|---|
+| Dedicated service module, not inline replacement | Separates provider call, normalization, and App orchestration so only `callProvider()` changes when the provider is swapped. See `decisions.md` for full rationale. |
+| IDs assigned in `normalizeStructure()`, not by provider | Provider returns `{title, goal, coveredSubtopics}` only. IDs are always assigned locally — prevents AI hallucinating them and keeps them consistent with the manual-add pattern in App.jsx. |
+| Mock stripped to raw shape before passing to `normalizeStructure()` | `callProvider()` strips `id` from the mock result so `normalizeStructure()` is always the single source of IDs, even during mock use. |
+| `mockGeneration.js` left completely unchanged | It remains the backing implementation inside `callProvider()` and the Screen 2 mock. No churn to existing code. |
+
+---
+
+## Files Created, Changed, or Deleted
+
+**Created:**
+```
+src/services/lessonStructureService.js   — new service module
+```
+
+**Modified:**
+```
+src/App.jsx                  — import split; await added; JSDoc updated
+README.md                    — "Where to Connect Real AI" rewritten; layout updated
+docs/decisions.md            — AI generation / service layer decision added
+docs/todo.md                 — Phase 2 structure item updated to point to callProvider()
+docs/session_handoff.md      — this entry
+```
+
+**Unchanged:**
+```
+src/utils/mockGeneration.js  — not touched; still used as fallback via callProvider()
+```
+
+---
+
+## What Is Currently Working
+
+All previous functionality unchanged. New in this session:
+
+- **`generateLessonStructure` is now async end-to-end** — `callProvider()` is `async`; `App.jsx` awaits it. The mock path is still synchronous inside, but the async wrapper is correct for the real call.
+- **`normalizeStructure()` runs on every generation** — validates the response and assigns IDs, even during mock use, so the real provider path is exercised structurally.
+- **The mock is still the backing implementation** — existing local workflow is fully intact.
+
+---
+
+## What Is NOT Implemented Yet
+
+- **Real AI provider call** — `callProvider()` delegates to the mock. Replace its body with a `fetch()` / Anthropic SDK call.
+- **`VITE_ANTHROPIC_API_KEY`** — needs to be added to `.env.local` before a real call can be made.
+- **Screen 2 AI generation** — `generateLessonContent` is still the mock in `mockGeneration.js`, called directly (no service layer yet).
+- **Backend persistence, JSON export, rich editor** — Phases 3–6.
+
+---
+
+## Next Recommended Step
+
+**Wire a real provider into `callProvider()`.**
+
+1. Add `VITE_ANTHROPIC_API_KEY=sk-ant-...` to `.env.local` (already covered by `*.local` in `.gitignore`).
+2. Replace the body of `callProvider()` in `lessonStructureService.js` with a `fetch()` call. A full stub is included in the JSDoc comment inside that function.
+3. Write a `buildPrompt(courseName, moduleName, subtopicsText)` helper in the same file that constructs the prompt instructing Claude to return `Array<{ title, goal, coveredSubtopics }>` as JSON.
+4. Write a `parseProviderResponse(data)` helper that extracts the JSON array from the API response text block.
+5. Update the `catch` block in `handleSubmit` (`App.jsx`) to inspect `err.message` for specific failures (rate limit, network, invalid JSON).
+
+---
+
+## Known Issues
+
+| Item | Severity | Notes |
+|---|---|---|
+| `callProvider()` is still the mock | Expected | This is the scaffold session — the stub is intentionally in place |
+| Generation error messages are fixed strings | Low | Update `catch` in `handleSubmit` once real API errors are available |
+| `isGenerating` invisible during mock use | Info | Resolves once real async call is wired |
+| S1 title edits don't back-propagate to S2 | Low | Resolves on next confirmed re-generation |
+
+---
+
+*End of Session 5.*

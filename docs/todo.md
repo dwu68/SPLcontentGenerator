@@ -27,9 +27,11 @@ Tighten up the current implementation before adding new capabilities.
 
 **Prerequisite:** API access to Anthropic (or similar).
 
-- 🔲 Replace `generateLessonStructure()` in `src/utils/mockGeneration.js` with a real API call — hook in `App.jsx` is marked `// [AI HOOK]`
+- 🔲 Wire a real provider into `callProvider()` in `src/services/lessonStructureService.js`
+  - Service layer is scaffolded — `callProvider()` currently delegates to the mock
   - Input: `courseName`, `moduleName`, `subtopicsText`
-  - Output: `LessonStructure[]`
+  - Output: `Array<{ title, goal, coveredSubtopics }>` — ids/stepNumbers assigned by `normalizeStructure()`
+  - Add `VITE_ANTHROPIC_API_KEY` to `.env.local`; see service file for the exact fetch call stub
 - 🔲 Replace `generateLessonContent()` in `src/utils/mockGeneration.js` with a real API call — hook in `App.jsx` is marked `// [AI HOOK]`
   - Input: `LessonStructure[]`
   - Output: `LessonContent[]` (including `expectedAction` and `validationNote`)
