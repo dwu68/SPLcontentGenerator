@@ -16,7 +16,7 @@ Backlog in priority order. Items marked ✅ are complete. Items marked 🔲 are 
 Tighten up the current implementation before adding new capabilities.
 
 - ✅ **Add `expectedAction` and `validationNote` to `LessonContent`** — fields added to `generateLessonContent()` in `mockGeneration.js` and exposed as editable textareas in `InstructionPanelEditor`
-- 🔲 **Add empty-title validation on Screen 1** — warn (or block) if any step has a blank title before "Generate Lesson Content →" is clicked
+- ✅ **Add empty-title validation on Screen 1** — warn (or block) if any step has a blank title before "Generate Lesson Content →" is clicked
 - ✅ **Add re-generation confirmation on Screen 1** — clicking "Generate Structure Preview" when a structure already exists silently replaces all edits; show a confirmation prompt
 - ✅ **Add re-generation confirmation on Screen 2** — navigating back to Screen 1 and clicking "Generate Lesson Content →" silently discards all Screen 2 edits; show a confirmation prompt
 - 🔲 **Fix `coveredSubtopics` local state drift** — `StepBuilderCard.topicsStr` resets only on `step.id` change; make it also respond to `coveredSubtopics` content changes so future bulk-edit or undo won't break it

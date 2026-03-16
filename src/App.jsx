@@ -20,8 +20,9 @@ const STORAGE_KEY = 'spl_lesson_draft'
  *   selectedStepId    string | null
  *   dirtyStepIds      Set<string>  (steps edited since last save)
  *   saveStatus        'saved' | 'unsaved' | 'saving'
- *   isGenerating      boolean  (true while either generation call is in flight)
- *   generationError   string | null  (message from the most recent failed generation)
+ *   isGenerating        boolean  (true while either generation call is in flight)
+ *   generationError     string | null  (message from the most recent failed generation)
+ *   titleValidationError string | null  (set when generate is blocked by empty step titles)
  *
  * Future integration points are marked with  // [AI HOOK]  comments.
  * Future persistence points are marked with  // [PERSIST HOOK]  comments.
@@ -49,6 +50,7 @@ function App() {
   // ── Generation loading / error state ────────────────────────────────────
   const [isGenerating, setIsGenerating] = useState(false)
   const [generationError, setGenerationError] = useState(null)
+  const [titleValidationError, setTitleValidationError] = useState(null)
 
   // ── Restore draft from localStorage on mount ────────────────────────────
   useEffect(() => {
@@ -69,6 +71,13 @@ function App() {
       // ignore parse errors
     }
   }, [])
+
+  // ── Clear title validation error once all titles are filled in ──────────
+  useEffect(() => {
+    if (titleValidationError && lessonStructure.every((s) => s.title.trim())) {
+      setTitleValidationError(null)
+    }
+  }, [lessonStructure, titleValidationError])
 
   // ── Screen 1: submit form → generate structure ───────────────────────────
   const handleSubmit = async () => {
@@ -136,6 +145,14 @@ function App() {
 
   // ── Screen 1 → Screen 2: generate content from structure ────────────────
   const handleGenerate = async () => {
+    const emptyStep = lessonStructure.find((s) => !s.title.trim())
+    if (emptyStep) {
+      setTitleValidationError(
+        `Step ${emptyStep.stepNumber} has no title. All steps must have a title before generating content.`
+      )
+      return
+    }
+    setTitleValidationError(null)
     if (lessonContent.length > 0) {
       const ok = window.confirm(
         'Generate new lesson content?\n\nAll edits in the Lesson Authoring view will be replaced. This cannot be undone.'
@@ -244,6 +261,7 @@ function App() {
               onGenerate={handleGenerate}
               isGenerating={isGenerating}
               generationError={generationError}
+              titleValidationError={titleValidationError}
             />
           </div>
         </div>

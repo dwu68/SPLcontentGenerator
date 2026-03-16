@@ -14,8 +14,9 @@ import React, { useState, useEffect } from 'react'
  *   onDeleteStep  fn(id)
  *   onMoveStep    fn(id, 'up' | 'down')
  *   onGenerate    fn()
- *   isGenerating    boolean — true while generation is in flight
- *   generationError string | null — error message from the last failed generation
+ *   isGenerating         boolean — true while generation is in flight
+ *   generationError      string | null — error message from the last failed generation
+ *   titleValidationError string | null — set when generation is blocked by empty step titles
  */
 function LessonStructurePreview({
   structure,
@@ -26,6 +27,7 @@ function LessonStructurePreview({
   onGenerate,
   isGenerating,
   generationError,
+  titleValidationError,
 }) {
   const isEmpty = structure.length === 0
 
@@ -77,6 +79,9 @@ function LessonStructurePreview({
             >
               {isGenerating ? '⏳ Generating…' : '✨ Generate Lesson Content →'}
             </button>
+            {titleValidationError && (
+              <p className="generation-error">{titleValidationError}</p>
+            )}
             {generationError && (
               <p className="generation-error">{generationError}</p>
             )}
