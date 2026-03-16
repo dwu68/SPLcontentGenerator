@@ -145,7 +145,7 @@ The state shape is already export-ready. No data model changes needed — see [d
 | Item | Severity | Notes |
 |---|---|---|
 | `LessonStructureEditor.jsx` is dead code | Low | No longer imported. Either delete the file or repurpose it as a future "bulk edit / paste JSON" panel |
-| `dist/` committed to git | Low | Not committed yet, but will be accidentally included if `.gitignore` is not created before the first commit |
+| ~~`dist/` committed to git~~ | ~~Low~~ | Resolved in Session 2 — `.gitignore` added, `dist/` excluded |
 | No loading state for generation | Medium | The mock is synchronous so it doesn't matter now, but once real AI is wired in, clicking "Generate" should disable the button and show feedback |
 | `StepBuilderCard` local `topicsStr` can drift | Low | If `coveredSubtopics` is modified outside the card (e.g., future bulk-edit or undo), the local string won't update. The `useEffect` only resets on `step.id` change, not on `step.coveredSubtopics` content change |
 | `lessonContent` in Screen 2 is a complete copy | Low | When the user goes back to Screen 1 and re-generates, `lessonContent` is fully replaced. There is no "merge" — manual edits made in Screen 2 are lost on re-generation. This is probably intentional now but worth flagging |
@@ -154,41 +154,12 @@ The state shape is already export-ready. No data model changes needed — see [d
 
 ---
 
-## Suggested Git Commit Message
+## Git Commands
 
-```
-feat: initial SPL Content Generator UI skeleton
-
-Builds the full two-screen authoring tool with local state only.
-No backend or real AI generation — all content is mocked.
-
-Screen 1 — Lesson Structure Builder:
-- Course/module/subtopic form with keyboard shortcut (Cmd+Enter)
-- Always-editable step cards: inline title, goal, topics
-- Add, delete, and reorder (↑↓) steps with auto-renumbering
-- Focus-within highlight on active card
-
-Screen 2 — Lesson Authoring View:
-- Step sidebar with unsaved-change indicators
-- Split instruction panel + dark code editor panel
-- Per-field editing persisted to App state on keystroke
-- Tab key inserts 4 spaces in code panel
-
-Shared:
-- Draft auto-restore from localStorage on mount
-- Save Draft → localStorage with Saved/Unsaved/Saving status
-- Clear AI hook points in mockGeneration.js and App.jsx
-- Clear persist hook point in handleSaveDraft
-```
-
----
-
-## Git Commands — Copy-Paste Ready
-
-Run these from the project root (`SPLcontentGenerator/`):
+> **Note:** This commit was completed between Session 1 and Session 2 as `5afe17a Add .gitignore and clean tracked build artifacts`. The commands below are preserved as a historical reference.
 
 ```bash
-# 1. Create .gitignore before staging anything
+# 1. Create .gitignore
 cat > .gitignore << 'EOF'
 node_modules/
 dist/
@@ -196,37 +167,245 @@ dist/
 *.local
 EOF
 
-# 2. Stage all source files (explicit — avoids accidentally including dist or node_modules)
+# 2. Stage source files explicitly
 git add .gitignore
 git add index.html vite.config.js package.json package-lock.json
 git add src/
 git add docs/
 
 # 3. Commit
-git commit -m "feat: initial SPL Content Generator UI skeleton
+git commit -m "$(cat <<'EOF'
+feat: initial SPL Content Generator UI skeleton
 
 Builds the full two-screen authoring tool with local state only.
 No backend or real AI generation — all content is mocked.
 
-Screen 1 — Lesson Structure Builder:
-- Course/module/subtopic form with keyboard shortcut (Cmd+Enter)
-- Always-editable step cards: inline title, goal, topics
-- Add, delete, and reorder steps with auto-renumbering
-- Focus-within highlight on active card
-
-Screen 2 — Lesson Authoring View:
-- Step sidebar with unsaved-change indicators
-- Split instruction panel + dark code editor panel
-- Per-field editing persisted to App state on keystroke
-- Tab key inserts 4 spaces in code panel
-
-Shared:
-- Draft auto-restore from localStorage on mount
-- Save Draft with Saved/Unsaved/Saving status indicator
-- AI hook points marked in mockGeneration.js and App.jsx
-- Persist hook point marked in handleSaveDraft"
+Screen 1: form input, always-editable step cards, add/delete/reorder
+Screen 2: instruction panel + dark code editor, per-step dirty tracking
+Shared: localStorage draft persistence, AI and persist hook points marked
+EOF
+)"
 ```
 
 ---
 
-*End of session handoff.*
+*End of Session 1.*
+
+---
+---
+
+# Session 2 Handoff
+
+**ID:** 2
+**Date:** 2026-03-16
+**Session scope:** Screen 1 structural rewrite + full project documentation set
+**Git state at close:** Working tree clean — all changes committed in `5afe17a`
+
+> **Cross-references:** [product_overview.md](product_overview.md) · [user_flow.md](user_flow.md) · [data_model.md](data_model.md) · [decisions.md](decisions.md) · [todo.md](todo.md)
+
+---
+
+## What Was Completed
+
+### 1. Screen 1 — Always-editable step cards (structural rewrite)
+
+The original Screen 1 had a separate edit-mode toggle: users clicked "Edit Structure" to enter an edit form, then "Update" to commit. This was replaced with an always-editable inline builder.
+
+Changes:
+- `LessonStructurePreview.jsx` was fully rewritten. The `ViewMode` + `LessonStructureEditor` pattern was replaced with a single `StepBuilderCard` component per step, always visible and always editable.
+- `App.jsx` had `isStructureEdit` state removed and four new granular handlers added: `handleUpdateStep`, `handleAddStep`, `handleDeleteStep`, `handleMoveStep`. All four automatically renumber steps.
+- `LessonStructureEditor.jsx` was retained on disk but is no longer imported (dead code).
+- `App.css` gained a new `step-builder-card` block including `:focus-within` glow, `step-icon-btn` controls, and `step-field-row` layout.
+
+### 2. Documentation set — created from scratch
+
+Six new documents, all based on the implemented codebase (not speculative future state):
+
+| File | Contents |
+|---|---|
+| `README.md` | Entry point: purpose, quick start, project layout, AI/persist hook locations, doc index |
+| `docs/product_overview.md` | Product purpose, target user, two-screen summary, what is mocked, design principles |
+| `docs/user_flow.md` | Step-by-step UX for both screens; state lifecycle summary |
+| `docs/data_model.md` | Exact state shapes with types, Screen 1→2 transformation, localStorage format, future export/backend payloads |
+| `docs/decisions.md` | Canonical architectural and design decisions with full rationale — canonical reference for future sessions |
+| `docs/todo.md` | Backlog in six phases: hygiene → AI → export/persist → Screen 1 → Screen 2 → multi-lesson/polish |
+
+### 3. Minor code cleanup
+
+- Fixed stale JSDoc in `src/App.jsx`: removed `isStructureEdit` from the state shape comment block (the field was removed in the Screen 1 rewrite).
+
+### 4. Repository hygiene
+
+- Created `.gitignore` (`node_modules/`, `dist/`, `.DS_Store`, `*.local`).
+- All changes — code, docs, and `.gitignore` — were committed in a single commit: `5afe17a Add .gitignore and clean tracked build artifacts`.
+
+---
+
+## Important Decisions Made
+
+| Decision | Rationale |
+|---|---|
+| Always-editable cards, no edit-mode toggle | Authoring tools should feel like editors, not forms. A toggle implies the structure is for reading first, editing second. The inline card model removes the two-step commit flow. See [decisions.md](decisions.md) for full rationale. |
+| Immediate structure mutations (no draft buffer on Screen 1) | Step-level edits (add/delete/reorder/field change) go directly to App state. No pending buffer, no "Update" button. Consistent with how a spreadsheet feels. |
+| `StepBuilderCard` local `topicsStr` state | The comma-separated topics input uses local string state to prevent cursor reset during typing. Resets on `step.id` change. Documented as a known limitation in [decisions.md](decisions.md). |
+| Docs describe current implementation only | All six docs were written against the already-implemented codebase. No speculative future features are presented as if implemented. |
+
+---
+
+## Files Created, Changed, or Deleted
+
+**Created:**
+```
+README.md
+.gitignore
+docs/product_overview.md
+docs/user_flow.md
+docs/data_model.md
+docs/decisions.md
+docs/todo.md
+```
+
+**Modified:**
+```
+src/App.jsx                           — removed isStructureEdit state + JSDoc; added 4 step handlers
+src/App.css                           — added step-builder-card block (~130 lines)
+src/components/LessonStructurePreview.jsx  — full rewrite (213 lines, replaces 125)
+docs/session_handoff.md               — added Session 2 entry (this section); cross-references; resolved dist/ issue row
+```
+
+**Deleted:** None. `LessonStructureEditor.jsx` is dead code but retained on disk.
+
+**Not committed / should not be committed:**
+```
+dist/          — excluded by .gitignore
+node_modules/  — excluded by .gitignore
+```
+
+---
+
+## What Is Currently Working
+
+All Session 1 functionality remains working. New in this session:
+
+**Screen 1 — step cards now always editable (no mode toggle)**
+- Title input in card header; Goal and Topics fields in card body
+- ↑/↓ reorder with boundary-disable and auto-renumber; × delete with red hover
+- Focus-within: blue border + glow ring on the active card
+- "Add Step" appends a blank step at the end
+- All four mutations operate directly on `lessonStructure` in App state — no pending buffer
+
+**Documentation set added**
+- `README.md`, `docs/product_overview.md`, `docs/user_flow.md`, `docs/data_model.md`, `docs/decisions.md`, `docs/todo.md`
+
+→ See [user_flow.md](user_flow.md) for the full current interaction detail.
+→ See [todo.md](todo.md) for the complete not-yet-implemented backlog.
+
+---
+
+## Next 3 Recommended Steps
+
+### 1. Delete `LessonStructureEditor.jsx`
+
+It is dead code — not imported anywhere. Deleting it eliminates confusion for the next developer.
+
+```bash
+git rm src/components/LessonStructureEditor.jsx
+git commit -m "chore: remove unused LessonStructureEditor component"
+```
+
+### 2. Wire in real AI generation
+
+Both integration points are isolated in `src/utils/mockGeneration.js` and annotated with `// [AI HOOK]` in `App.jsx`. The swap requires:
+- Replace function bodies in `mockGeneration.js` with `fetch()` / SDK calls
+- Add `isGenerating` boolean to App state
+- Disable generate buttons and show loading feedback during generation
+
+### 3. Add JSON export
+
+No data model changes needed. Add a download button in the Screen 2 header that calls a one-shot blob export. The payload shape is documented in [data_model.md](data_model.md).
+
+---
+
+## Known Issues, Rough Edges, and Cleanup Items
+
+See [todo.md](todo.md) — Known Issues table — for the full list with severity ratings.
+
+Top items from this session:
+- `LessonStructureEditor.jsx` is dead code (safe to delete — Phase 0 in todo.md)
+- No loading state for generation — will freeze UI once real async AI calls land (Phase 2)
+- Single commit `5afe17a` contains entire project history with a generic message; future sessions should commit incrementally
+
+---
+
+## Commit Messages
+
+**Recommended (for future reference — this session's work is already committed in `5afe17a`):**
+
+```
+feat: rebuild Screen 1 as always-editable structure builder + add project docs
+
+Screen 1 rewrite:
+- Replace edit-mode toggle with always-editable inline step cards
+- Add step-level handlers: updateStep, addStep, deleteStep, moveStep
+- Auto-renumber steps after every mutation
+- Focus-within highlight on active card
+- LessonStructureEditor.jsx now unused (dead code)
+
+Docs added:
+- README.md: quick start, project layout, AI/persist hook locations
+- docs/product_overview.md: purpose, users, screens, design principles
+- docs/user_flow.md: step-by-step UX for both screens
+- docs/data_model.md: state shapes, Screen 1→2 transform, localStorage format
+- docs/decisions.md: canonical architectural and design decisions
+- docs/todo.md: phased backlog
+
+Cleanup:
+- .gitignore: exclude dist/, node_modules/, .DS_Store
+- App.jsx: remove stale isStructureEdit JSDoc reference
+```
+
+**Alternative A** (concise):
+```
+feat: always-editable step cards on Screen 1, add full project docs
+```
+
+**Alternative B** (split intent — would have been two commits):
+```
+feat: rebuild Screen 1 structure editor with inline always-editable step cards
+docs: add README, product overview, user flow, data model, decisions, todo
+```
+
+---
+
+## Git Commands
+
+The working tree was already clean at close — all changes were committed in `5afe17a`.
+
+```bash
+# Verify state
+git status
+git log --oneline
+git show --stat HEAD
+
+# Optional: rename the commit message (only safe before pushing to a remote)
+git commit --amend -m "$(cat <<'EOF'
+feat: rebuild Screen 1 as always-editable structure builder; add project docs
+
+- Replace edit-mode toggle with always-editable inline step cards
+- Add step handlers: updateStep, addStep, deleteStep, moveStep (auto-renumber)
+- LessonStructureEditor.jsx now unused (dead code — delete in next session)
+- Add README, product_overview, user_flow, data_model, decisions, todo docs
+- Add .gitignore; fix stale isStructureEdit JSDoc in App.jsx
+EOF
+)"
+```
+
+**Files excluded by `.gitignore` — must never be committed:**
+```
+dist/         — Vite production build output
+node_modules/ — installed packages
+```
+
+---
+
+*End of Session 2.*

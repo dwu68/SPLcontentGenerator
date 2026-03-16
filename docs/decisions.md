@@ -44,13 +44,13 @@ Canonical record of decisions made and their rationale. Covers technology choice
 
 **Decision:** Add, delete, reorder, and field edits on Screen 1 update `lessonStructure` in App state directly. There is no "pending changes" draft that must be committed with an Update button.
 
-**Rationale:** The lesson structure in Screen 1 is the working document. Making every edit immediate (and undoable via re-generation) is simpler and faster than a two-step edit-then-commit flow. Contrast: Screen 2 has a Save Draft because changes need explicit persistence to localStorage.
+**Rationale:** The lesson structure is the working document. Immediate edits are simpler and faster than a two-step edit-then-commit flow. Contrast: Screen 2 uses an explicit Save Draft because that state needs to survive to localStorage (and eventually a backend).
 
 ### Re-generation replaces the structure (no merge)
 
-**Decision:** Clicking "Generate Structure Preview" with a new sub-topics list replaces the entire `lessonStructure` array. There is no merge with the user's prior edits.
+**Decision:** Clicking "Generate Structure Preview" with a new sub-topics list replaces the entire `lessonStructure` array with no merge.
 
-**Rationale:** Merging sub-topic changes into an existing structure requires a diff algorithm and decisions about which edited steps to keep. At this stage, the simplest correct behavior is full replacement. The user is warned implicitly by the fact that they are submitting the form again.
+**Rationale:** Merging requires a diff algorithm and decisions about which edited steps to keep. Full replacement is the simplest correct behavior. A confirmation prompt is planned (see [todo.md](todo.md) Phase 1).
 
 ---
 
@@ -70,9 +70,9 @@ Canonical record of decisions made and their rationale. Covers technology choice
 
 ### Re-generation replaces lessonContent (no merge)
 
-**Decision:** Navigating back to Screen 1 and clicking "Generate Lesson Content →" again produces a fresh `lessonContent` array, discarding any manual edits made in Screen 2.
+**Decision:** Clicking "Generate Lesson Content →" again produces a fresh `lessonContent` array, discarding any Screen 2 edits.
 
-**Rationale:** Merging AI-generated content with user edits is a complex problem. At this stage, authors are expected to use Screen 2 as the final editing pass, not to iterate between screens repeatedly. This can be revisited when real AI generation is added.
+**Rationale:** Merging AI-generated content with user edits is a complex problem best deferred until real AI generation is in place. A confirmation prompt is planned (see [todo.md](todo.md) Phase 1).
 
 ---
 

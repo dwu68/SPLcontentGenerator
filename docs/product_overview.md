@@ -18,36 +18,13 @@ This is the **UI skeleton phase**. The full two-screen interface is built and fu
 
 ### Screen 1 — Lesson Structure Builder
 
-The author defines the skeleton of a lesson before writing any content.
-
-**Inputs:**
-- Course Name
-- Module Name
-- Sub-topics (one per line in a textarea)
-
-**Output:**
-A list of lesson steps derived from the sub-topics. Each step has:
-- Step number (auto-managed)
-- Title
-- Learning goal
-- Covered sub-topics
-
-After the structure is generated, it is **immediately editable** — there is no separate "edit mode". The author can add steps, delete steps, reorder them (↑/↓), and edit all fields inline.
-
-When the structure is ready, clicking **"Generate Lesson Content →"** runs the generation (currently mocked) and moves to Screen 2.
+The author enters a course name, module name, and list of sub-topics. The app generates one editable step card per sub-topic. Cards are always editable inline — no separate edit mode. The author can add, delete, and reorder steps before clicking **"Generate Lesson Content →"** to proceed.
 
 ### Screen 2 — Lesson Authoring View
 
-The author edits the full content for each lesson step.
+For each step, the author edits the full lesson content: concept explanation, task instructions, hint, and starter code. A step sidebar tracks unsaved changes. **Save Draft** persists everything to `localStorage`.
 
-**Layout:**
-- Left sidebar: step list with unsaved-change indicators
-- Center panel (Instruction): Title, Concept, Task Instructions, Hint
-- Right panel (Starter Code): dark-themed code editor (plain textarea)
-
-Edits to any field update app state immediately. Clicking **Save Draft** persists everything to `localStorage`.
-
-The author can navigate back to Screen 1 at any time; the structure state is preserved.
+→ See [user_flow.md](user_flow.md) for the complete step-by-step interaction detail.
 
 ---
 
@@ -63,14 +40,7 @@ The author can navigate back to Screen 1 at any time; the structure state is pre
 
 ## What Is Not Built Yet
 
-- Real AI generation (Anthropic API or similar)
-- Backend / database persistence
-- JSON export
-- Multi-lesson management (list, name, switch between drafts)
-- Authentication
-- Rich code editor (syntax highlighting, language selection)
-
-See [todo.md](todo.md) for the full prioritized backlog.
+See [todo.md](todo.md) for the full prioritized backlog. Top items: delete dead code, stabilize the data model (add `expectedAction` / `validationNote` fields), then wire in real AI generation.
 
 ---
 

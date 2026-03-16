@@ -68,8 +68,23 @@ Produced by `generateLessonContent(lessonStructure)`. Represents the authored co
   title        : string   // step title (editable independently in Screen 2)
   concept      : string   // conceptual explanation shown to the learner
   instructions : string   // task the learner must complete
-  hint         : string   // optional nudge
-  starterCode  : string   // initial code shown in the editor
+  hint         : string   // optional nudge shown when the learner is stuck
+  starterCode  : string   // initial code shown in the code editor
+
+  // ── Reserved — not yet implemented ───────────────────────────────────────
+  // These fields are not present in the current app state or generated output.
+  // They are reserved here so that future AI generation and validation work
+  // can adopt a stable shape without a breaking data migration.
+  //
+  // expectedAction  : string | null
+  //   The action the learner must take to complete the step (e.g. "Add a
+  //   comment starting with # that identifies the keywords"). Used by future
+  //   validation logic to check learner output.
+  //
+  // validationNote  : string | null
+  //   Plain-text guidance for the validator (human or automated) describing
+  //   what a correct solution looks like and common mistakes to flag. Not
+  //   shown to the learner.
 }
 ```
 
@@ -99,12 +114,14 @@ The two arrays share the same `id` values. `LessonContent` is a **full replaceme
 In `StepBuilderCard` (inside `LessonStructurePreview.jsx`), the `coveredSubtopics` array is edited via a local `topicsStr` state variable (a comma-separated string). This prevents the array→string→array round-trip from resetting the cursor while the user types.
 
 ```
-LessonStructure.coveredSubtopics: string[]   ← canonical (in App state)
-StepBuilderCard.topicsStr: string            ← local, comma-separated
+LessonStructure.coveredSubtopics : string[]   ← canonical (in App state)
+StepBuilderCard.topicsStr        : string     ← local, comma-separated
   - initialized from coveredSubtopics.join(', ')
   - resets via useEffect when step.id changes
   - on change: parses to array → calls onUpdate → updates App state
 ```
+
+**Known limitation:** `topicsStr` resets only when `step.id` changes, not when `coveredSubtopics` content changes from outside the card. Currently safe — no external mutation of this field exists. Will become a bug if undo or bulk-edit is added. See [todo.md](todo.md) — Phase 1.
 
 ---
 
@@ -120,13 +137,13 @@ StepBuilderCard.topicsStr: string            ← local, comma-separated
 
 ```json
 {
-  "screen": "builder" | "authoring",
+  "screen": "builder | authoring",
   "courseName": "...",
   "moduleName": "...",
   "subtopics": "...",
-  "lessonStructure": [ ...LessonStructure[] ],
-  "lessonContent":   [ ...LessonContent[]  ],
-  "selectedStepId": "step-..."
+  "lessonStructure": [ "...LessonStructure[]" ],
+  "lessonContent":   [ "...LessonContent[]"  ],
+  "selectedStepId":  "step-..."
 }
 ```
 
@@ -134,25 +151,23 @@ StepBuilderCard.topicsStr: string            ← local, comma-separated
 
 ---
 
-## Future: Backend Persistence Shape
+## Future: Backend Persistence
 
-The same JSON object written to localStorage is the natural payload for a backend API call. The intended swap in `handleSaveDraft()`:
+The localStorage payload is the natural body for a backend API call. The swap in `handleSaveDraft()` is one line:
 
 ```js
 // current
 localStorage.setItem(STORAGE_KEY, JSON.stringify(data))
 
-// future
+// future — marked [PERSIST HOOK] in App.jsx
 await fetch('/api/lessons', { method: 'POST', body: JSON.stringify(data) })
 ```
 
-No state shape changes are required.
+No state shape changes are required. When `expectedAction` and `validationNote` are implemented, they will be included automatically because `handleUpdateContent` does a partial field merge.
 
 ---
 
-## Future: Export Shape
-
-For JSON export, the natural payload is:
+## Future: JSON Export Shape
 
 ```json
 {
@@ -160,9 +175,9 @@ For JSON export, the natural payload is:
     "courseName": "...",
     "moduleName": "..."
   },
-  "lessonStructure": [ ...LessonStructure[] ],
-  "lessonContent":   [ ...LessonContent[]  ]
+  "lessonStructure": [ "...LessonStructure[]" ],
+  "lessonContent":   [ "...LessonContent[]"  ]
 }
 ```
 
-The data is already in this shape in App state at all times.
+The data is already in this shape in App state at all times. No structural changes are needed to add an export button.
