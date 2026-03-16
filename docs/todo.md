@@ -19,7 +19,7 @@ Tighten up the current implementation before adding new capabilities.
 - ✅ **Add empty-title validation on Screen 1** — warn (or block) if any step has a blank title before "Generate Lesson Content →" is clicked
 - ✅ **Add re-generation confirmation on Screen 1** — clicking "Generate Structure Preview" when a structure already exists silently replaces all edits; show a confirmation prompt
 - ✅ **Add re-generation confirmation on Screen 2** — navigating back to Screen 1 and clicking "Generate Lesson Content →" silently discards all Screen 2 edits; show a confirmation prompt
-- 🔲 **Fix `coveredSubtopics` local state drift** — `StepBuilderCard.topicsStr` resets only on `step.id` change; make it also respond to `coveredSubtopics` content changes so future bulk-edit or undo won't break it
+- ✅ **Fix `coveredSubtopics` local state drift** — `StepBuilderCard.topicsStr` resets only on `step.id` change; make it also respond to `coveredSubtopics` content changes so future bulk-edit or undo won't break it
 
 ---
 
@@ -80,7 +80,7 @@ Tighten up the current implementation before adding new capabilities.
 
 | Item | Severity | Detail |
 |---|---|---|
-| `coveredSubtopics` local state can drift | Low | Safe currently; will break if undo or bulk-edit is added — Phase 1 |
+| ~~`coveredSubtopics` local state can drift~~ | ~~Low~~ | Fixed — `lastSentCanonicalRef` prevents user-typed round-trips from resetting the input while still syncing external changes |
 | All state in one `App.jsx` | Low | Fine for two screens; a third screen would warrant extracting contexts |
 | Generation errors use fixed messages | Low | `catch` blocks use static strings; when real API calls land, inspect `err` to surface specific failures (rate limit, network, invalid response) |
 | `isGenerating` loading state invisible during mock use | Info | Mock generation is synchronous — "Generating…" label flashes for one render tick; becomes visible once real async AI calls are wired in |

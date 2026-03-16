@@ -638,3 +638,120 @@ node_modules/ — installed packages
 ---
 
 *End of Session 3.*
+
+---
+---
+
+# Session 4 Handoff
+
+**ID:** 4
+**Date:** 2026-03-16
+**Session scope:** Phase 1 completion — empty-title validation + coveredSubtopics drift fix
+**Git state at close:** Two uncommitted changes (see Git Commands below)
+
+> **Cross-references:** [product_overview.md](product_overview.md) · [user_flow.md](user_flow.md) · [data_model.md](data_model.md) · [decisions.md](decisions.md) · [todo.md](todo.md)
+
+---
+
+## Commits This Session
+
+```
+e44e2d5 feat: block generation on empty step titles with inline validation message
++ this handoff commit (docs + coveredSubtopics fix)
+```
+
+---
+
+## What Was Completed
+
+### 1. Phase 1 — Empty-title validation on Screen 1
+
+- `handleGenerate` in `App.jsx` now checks for blank step titles before anything else. If any step has an empty or whitespace-only title, it sets `titleValidationError` state and returns immediately — the confirm dialog and generation are never reached.
+- `titleValidationError` (`string | null`) added to App state (JSDoc updated).
+- A `useEffect` in `App.jsx` auto-clears the error once all step titles are non-empty (reactive on `lessonStructure`).
+- `LessonStructurePreview` accepts the new `titleValidationError` prop and renders it as a `<p className="generation-error">` below the Generate button, above any `generationError`. The two errors are mutually exclusive — validation blocks entry to the code path that sets `generationError`.
+- No `alert()`. No new CSS class (reuses `.generation-error`). No change to any other generation behavior.
+
+### 2. Phase 1 — coveredSubtopics local state drift fix
+
+- `StepBuilderCard` in `LessonStructurePreview.jsx` previously reset `topicsStr` only when `step.id` changed. Adding `step.coveredSubtopics` directly to the dep array would cause cursor-jump on every keystroke (each user keystroke round-trips through `onUpdate` → parent state → new array reference → effect fires → canonical overwrites the mid-entry string).
+- Fixed with a `lastSentCanonicalRef` (`useRef`). `handleTopicsChange` writes the canonical of whatever it sends up (`parsed.join(', ')`) into the ref. The effect computes the incoming canonical and only calls `setTopicsStr` if it differs from the ref — meaning the change came from outside the card, not from the user typing.
+- `useEffect` deps changed from `[step.id]` (with `eslint-disable` suppression) to `[step.id, step.coveredSubtopics]` (no suppression needed).
+- `useRef` added to the React import.
+- JSDoc on `StepBuilderCard` updated to describe the new sync contract.
+
+### Phase 1 — Status
+
+All five Phase 1 items are now ✅. Phase 1 is complete.
+
+---
+
+## Important Decisions Made
+
+| Decision | Rationale |
+|---|---|
+| `lastSentCanonicalRef` instead of just adding `step.coveredSubtopics` to deps | Naive dep addition causes cursor-jump: every keystroke creates a new array ref in parent state, triggering the effect, which normalizes and overwrites the local input mid-type. The ref lets the effect skip changes that originated locally. |
+| `titleValidationError` cleared by `useEffect`, not on blur or on-change | Clears the moment the issue is resolved (any keystroke that makes all titles non-empty), without requiring the user to attempt generation again. |
+| Validation fires before the `window.confirm` guard | Prevents a confirm dialog from appearing when the underlying data is still invalid. |
+
+---
+
+## Files Created, Changed, or Deleted
+
+**Modified:**
+```
+src/App.jsx                                — titleValidationError state + useEffect + handleGenerate guard; new prop to LessonStructurePreview
+src/components/LessonStructurePreview.jsx  — titleValidationError prop + render; lastSentCanonicalRef; useRef import; useEffect deps fixed
+docs/todo.md                               — Phase 1 items marked ✅; Known Issues coveredSubtopics row struck through
+docs/session_handoff.md                    — this entry
+```
+
+---
+
+## What Is Currently Working
+
+All previous functionality unchanged. New in this session:
+
+- **Empty-title block:** clicking "Generate Lesson Content →" with any blank step title shows an inline red message near the button and blocks generation. The message auto-clears once all titles are filled in.
+- **coveredSubtopics sync:** the topics input now reliably reflects external changes (future undo, bulk-edit) without causing cursor-jump during normal typing.
+
+---
+
+## What Is NOT Implemented Yet
+
+- **Real AI generation** — both `generateLessonStructure()` and `generateLessonContent()` return mocked content. Hooks in `App.jsx` marked `// [AI HOOK]`.
+- **Backend persistence** — `handleSaveDraft()` writes only to `localStorage`. Marked `// [PERSIST HOOK]`.
+- **JSON export** — no file download button.
+- **Step title back-sync S1 → S2** — editing a title in Screen 1 after visiting Screen 2 does not update `lessonContent.title`. Resolves on next confirmed re-generation. Still a low-risk known issue.
+- **Rich code editor, drag-and-drop, undo/redo, multi-lesson management** — Phase 4–6.
+
+---
+
+## Next Recommended Step
+
+**Phase 2 — Wire in real AI generation.**
+
+All infrastructure is already in place: both handlers are `async`, `isGenerating` and `generationError` are wired, loading states and error display are live. The integration work is:
+
+1. Replace function bodies in `src/utils/mockGeneration.js` with `fetch()` / Anthropic SDK calls.
+2. Add `await` at the two `// [AI HOOK]` callsites in `App.jsx`.
+3. Update the `catch` blocks to inspect `err` and surface specific failure messages (rate limit, network timeout, malformed response).
+
+**Prerequisite:** API access to Anthropic (or whichever provider is chosen).
+
+**Alternative quick win (no API needed):** JSON export button in the Screen 2 header. No data model changes required — the state is already in the correct export shape. See [data_model.md → Future: JSON Export Shape](data_model.md).
+
+---
+
+## Known Issues
+
+| Item | Severity | Notes |
+|---|---|---|
+| Generation error messages are fixed strings | Low | When real API calls land, catch blocks should inspect `err` for specific failures |
+| `isGenerating` invisible during mock use | Info | Synchronous mock — "Generating…" flashes one tick; resolves once real async calls land |
+| S1 title edits don't back-propagate to S2 | Low | Resolves on next confirmed re-generation; low risk at current scale |
+| All state in one `App.jsx` | Low | Fine for two screens; a third screen would warrant extracting contexts |
+
+---
+
+*End of Session 4.*

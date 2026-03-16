@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 
 /**
  * LessonStructurePreview — right pane on Screen 1.
@@ -116,26 +116,36 @@ function EmptyState() {
  * (e.g. mid-comma) without the array conversion disrupting the cursor.
  * Syncs back to parent on every change.
  *
- * Local state resets when `step.id` changes (i.e. a fresh structure was generated).
+ * Local state resets when step.id changes (new generation) or when coveredSubtopics
+ * is changed externally (e.g. future undo / bulk-edit). Changes that originate from
+ * the user typing in this card do not reset the input, preserving cursor position.
  */
 function StepBuilderCard({ step, isFirst, isLast, onUpdate, onDelete, onMoveUp, onMoveDown }) {
   const [topicsStr, setTopicsStr] = useState(
     () => step.coveredSubtopics?.join(', ') ?? ''
   )
 
-  // Reset local topics string when the step is replaced (new generation)
+  // Tracks the canonical form of the last value we sent up via onUpdate.
+  // Lets the effect distinguish user-typed changes (which round-trip through props
+  // but should not reset the input) from external changes (which should).
+  const lastSentCanonicalRef = useRef(step.coveredSubtopics?.join(', ') ?? '')
+
   useEffect(() => {
-    setTopicsStr(step.coveredSubtopics?.join(', ') ?? '')
-  }, [step.id]) // eslint-disable-line react-hooks/exhaustive-deps
+    const canonical = step.coveredSubtopics?.join(', ') ?? ''
+    if (canonical !== lastSentCanonicalRef.current) {
+      setTopicsStr(canonical)
+      lastSentCanonicalRef.current = canonical
+    }
+  }, [step.id, step.coveredSubtopics])
 
   const handleTopicsChange = (value) => {
     setTopicsStr(value)
-    onUpdate({
-      coveredSubtopics: value
-        .split(',')
-        .map((t) => t.trim())
-        .filter(Boolean),
-    })
+    const parsed = value
+      .split(',')
+      .map((t) => t.trim())
+      .filter(Boolean)
+    lastSentCanonicalRef.current = parsed.join(', ')
+    onUpdate({ coveredSubtopics: parsed })
   }
 
   return (
