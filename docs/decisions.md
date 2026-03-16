@@ -50,7 +50,7 @@ Canonical record of decisions made and their rationale. Covers technology choice
 
 **Decision:** Clicking "Generate Structure Preview" with a new sub-topics list replaces the entire `lessonStructure` array with no merge.
 
-**Rationale:** Merging requires a diff algorithm and decisions about which edited steps to keep. Full replacement is the simplest correct behavior. A confirmation prompt is planned (see [todo.md](todo.md) Phase 1).
+**Rationale:** Merging requires a diff algorithm and decisions about which edited steps to keep. Full replacement is the simplest correct behavior. A `window.confirm()` guard is shown when a structure already exists.
 
 ---
 
@@ -72,7 +72,7 @@ Canonical record of decisions made and their rationale. Covers technology choice
 
 **Decision:** Clicking "Generate Lesson Content →" again produces a fresh `lessonContent` array, discarding any Screen 2 edits.
 
-**Rationale:** Merging AI-generated content with user edits is a complex problem best deferred until real AI generation is in place. A confirmation prompt is planned (see [todo.md](todo.md) Phase 1).
+**Rationale:** Merging AI-generated content with user edits is a complex problem best deferred until real AI generation is in place. A `window.confirm()` guard is shown when lesson content already exists.
 
 ---
 

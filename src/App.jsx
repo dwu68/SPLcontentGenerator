@@ -67,6 +67,12 @@ function App() {
   // ── Screen 1: submit form → generate structure ───────────────────────────
   const handleSubmit = () => {
     if (!courseName.trim() || !moduleName.trim() || !subtopics.trim()) return
+    if (lessonStructure.length > 0) {
+      const ok = window.confirm(
+        'Regenerate lesson structure?\n\nThis will replace all existing steps, including any edits you have made. This cannot be undone.'
+      )
+      if (!ok) return
+    }
     // [AI HOOK] replace generateLessonStructure with API call
     const structure = generateLessonStructure(courseName, moduleName, subtopics)
     setLessonStructure(structure)
@@ -116,6 +122,12 @@ function App() {
 
   // ── Screen 1 → Screen 2: generate content from structure ────────────────
   const handleGenerate = () => {
+    if (lessonContent.length > 0) {
+      const ok = window.confirm(
+        'Generate new lesson content?\n\nAll edits in the Lesson Authoring view will be replaced. This cannot be undone.'
+      )
+      if (!ok) return
+    }
     // [AI HOOK] replace generateLessonContent with API call
     const content = generateLessonContent(lessonStructure)
     setLessonContent(content)
