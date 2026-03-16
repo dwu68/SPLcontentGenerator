@@ -1,0 +1,1110 @@
+/* =============================================================================
+   SPL Content Generator — Global Styles
+   ============================================================================= */
+
+/* ── Design Tokens ──────────────────────────────────────────────────────────── */
+:root {
+  --color-bg:              #f8fafc;
+  --color-surface:         #ffffff;
+  --color-surface-raised:  #f1f5f9;
+  --color-border:          #e2e8f0;
+  --color-border-strong:   #cbd5e1;
+  --color-border-focus:    #2563eb;
+
+  --color-primary:         #2563eb;
+  --color-primary-hover:   #1d4ed8;
+  --color-primary-subtle:  #eff6ff;
+  --color-primary-fg:      #ffffff;
+
+  --color-secondary-fg:    #334155;
+  --color-secondary-hover: #e2e8f0;
+
+  --color-success:         #16a34a;
+  --color-success-hover:   #15803d;
+  --color-warning:         #d97706;
+  --color-danger:          #dc2626;
+  --color-danger-hover:    #b91c1c;
+
+  --color-text:            #0f172a;
+  --color-text-secondary:  #475569;
+  --color-text-muted:      #94a3b8;
+
+  --color-code-bg:         #1e1e2e;
+  --color-code-surface:    #181825;
+  --color-code-text:       #cdd6f4;
+  --color-code-muted:      #6c7086;
+  --color-code-border:     #313244;
+
+  --font-sans:  -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+  --font-mono:  'SF Mono', 'Fira Code', 'Cascadia Code', Consolas, monospace;
+
+  --radius-xs: 3px;
+  --radius-sm: 5px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+
+  --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+  --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.07), 0 2px 4px -2px rgb(0 0 0 / 0.07);
+
+  --header-height: 56px;
+}
+
+/* ── Reset & Base ───────────────────────────────────────────────────────────── */
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html, body, #root {
+  height: 100%;
+}
+
+body {
+  font-family: var(--font-sans);
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--color-text);
+  background: var(--color-bg);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* ── App Shell ──────────────────────────────────────────────────────────────── */
+.app {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+}
+
+/* =============================================================================
+   Header
+   ============================================================================= */
+.header {
+  height: var(--header-height);
+  flex-shrink: 0;
+  background: var(--color-surface);
+  border-bottom: 1px solid var(--color-border);
+  display: flex;
+  align-items: center;
+  padding: 0 20px;
+  gap: 12px;
+  box-shadow: var(--shadow-sm);
+  z-index: 20;
+}
+
+.header-brand {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  font-weight: 600;
+  font-size: 14px;
+  color: var(--color-text);
+  flex-shrink: 0;
+  user-select: none;
+}
+
+.header-logo {
+  width: 30px;
+  height: 30px;
+  background: var(--color-primary);
+  border-radius: 7px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: -0.5px;
+  flex-shrink: 0;
+}
+
+.header-divider {
+  width: 1px;
+  height: 18px;
+  background: var(--color-border);
+  flex-shrink: 0;
+}
+
+.header-breadcrumb {
+  font-size: 13px;
+  color: var(--color-text-secondary);
+  flex: 1;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-left: auto;
+  flex-shrink: 0;
+}
+
+/* =============================================================================
+   Buttons
+   ============================================================================= */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 7px 14px;
+  font-family: var(--font-sans);
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1;
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: background 0.12s, border-color 0.12s, color 0.12s, box-shadow 0.12s;
+  white-space: nowrap;
+  text-decoration: none;
+  outline: none;
+}
+
+.btn:focus-visible {
+  box-shadow: 0 0 0 3px rgb(37 99 235 / 0.25);
+}
+
+.btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+.btn-primary {
+  background: var(--color-primary);
+  color: var(--color-primary-fg);
+  border-color: var(--color-primary);
+}
+.btn-primary:hover:not(:disabled) {
+  background: var(--color-primary-hover);
+  border-color: var(--color-primary-hover);
+}
+
+.btn-secondary {
+  background: var(--color-surface);
+  color: var(--color-secondary-fg);
+  border-color: var(--color-border);
+}
+.btn-secondary:hover:not(:disabled) {
+  background: var(--color-surface-raised);
+  border-color: var(--color-border-strong);
+}
+
+.btn-success {
+  background: var(--color-success);
+  color: white;
+  border-color: var(--color-success);
+}
+.btn-success:hover:not(:disabled) {
+  background: var(--color-success-hover);
+  border-color: var(--color-success-hover);
+}
+
+.btn-ghost {
+  background: transparent;
+  color: var(--color-text-secondary);
+  border-color: transparent;
+}
+.btn-ghost:hover:not(:disabled) {
+  background: var(--color-surface-raised);
+  color: var(--color-text);
+  border-color: var(--color-border);
+}
+
+.btn-danger-ghost {
+  background: transparent;
+  color: var(--color-danger);
+  border-color: var(--color-border);
+}
+.btn-danger-ghost:hover:not(:disabled) {
+  background: #fef2f2;
+  border-color: var(--color-danger);
+}
+
+.btn-sm {
+  padding: 5px 10px;
+  font-size: 12px;
+}
+
+.btn-lg {
+  padding: 10px 20px;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.btn-full {
+  width: 100%;
+}
+
+/* Back button — styled as a ghost nav link */
+.back-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 10px;
+  font-family: var(--font-sans);
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--color-text-secondary);
+  background: transparent;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: all 0.12s;
+}
+.back-btn:hover {
+  background: var(--color-surface-raised);
+  color: var(--color-text);
+  border-color: var(--color-border-strong);
+}
+
+/* =============================================================================
+   Form inputs (shared)
+   ============================================================================= */
+.form-input,
+.form-textarea {
+  width: 100%;
+  padding: 8px 11px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  font-family: var(--font-sans);
+  font-size: 14px;
+  color: var(--color-text);
+  background: var(--color-surface);
+  outline: none;
+  transition: border-color 0.12s, box-shadow 0.12s;
+  resize: none;
+}
+.form-input:focus,
+.form-textarea:focus {
+  border-color: var(--color-border-focus);
+  box-shadow: 0 0 0 3px rgb(37 99 235 / 0.1);
+}
+.form-input::placeholder,
+.form-textarea::placeholder {
+  color: var(--color-text-muted);
+}
+.form-textarea {
+  line-height: 1.65;
+}
+
+/* =============================================================================
+   Screen 1 — Builder Layout
+   ============================================================================= */
+.builder-layout {
+  flex: 1;
+  display: flex;
+  overflow: hidden;
+}
+
+.builder-left {
+  width: 360px;
+  flex-shrink: 0;
+  border-right: 1px solid var(--color-border);
+  background: var(--color-surface);
+  overflow-y: auto;
+}
+
+.builder-right {
+  flex: 1;
+  overflow-y: auto;
+  padding: 32px 36px;
+  background: var(--color-bg);
+}
+
+/* ── Input Form Panel ───────────────────────────────────────────────────────── */
+.form-panel {
+  padding: 28px 24px 32px;
+}
+
+.form-panel-title {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--color-text);
+  margin-bottom: 4px;
+}
+
+.form-panel-subtitle {
+  font-size: 13px;
+  color: var(--color-text-secondary);
+  line-height: 1.55;
+  margin-bottom: 28px;
+}
+
+.form-group {
+  margin-bottom: 18px;
+}
+
+.form-label {
+  display: block;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--color-text-secondary);
+  margin-bottom: 5px;
+}
+
+.form-hint {
+  font-size: 12px;
+  color: var(--color-text-muted);
+  margin-bottom: 5px;
+  line-height: 1.4;
+}
+
+.form-divider {
+  height: 1px;
+  background: var(--color-border);
+  margin: 24px 0;
+}
+
+/* =============================================================================
+   Lesson Structure Preview (Screen 1 right pane)
+   ============================================================================= */
+.structure-preview {
+  /* full height of the scrollable right pane */
+}
+
+.structure-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 20px;
+}
+
+.structure-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--color-text);
+}
+
+.structure-count-badge {
+  padding: 2px 9px;
+  background: var(--color-surface-raised);
+  border: 1px solid var(--color-border);
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--color-text-muted);
+}
+
+/* Empty state */
+.structure-empty {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: 64px 40px;
+  text-align: center;
+  color: var(--color-text-muted);
+}
+
+.structure-empty-icon {
+  font-size: 40px;
+  margin-bottom: 14px;
+  opacity: 0.6;
+  display: block;
+}
+
+.structure-empty-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--color-text-secondary);
+  margin-bottom: 6px;
+}
+
+.structure-empty-body {
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--color-text-muted);
+}
+
+/* Step cards (view mode) */
+.step-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 20px;
+}
+
+.step-card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: 14px 16px;
+  box-shadow: var(--shadow-sm);
+  transition: border-color 0.12s, box-shadow 0.12s;
+}
+.step-card:hover {
+  border-color: var(--color-primary);
+  box-shadow: var(--shadow-md);
+}
+
+.step-card-inner {
+  display: flex;
+  align-items: flex-start;
+  gap: 11px;
+}
+
+.step-number-badge {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: var(--color-primary);
+  color: white;
+  font-size: 11px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+.step-card-body {
+  flex: 1;
+  min-width: 0;
+}
+
+.step-card-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--color-text);
+  margin-bottom: 4px;
+  line-height: 1.3;
+}
+
+.step-card-goal {
+  font-size: 12px;
+  color: var(--color-text-secondary);
+  line-height: 1.5;
+}
+
+.step-card-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 8px;
+}
+
+.step-tag {
+  padding: 2px 8px;
+  background: var(--color-primary-subtle);
+  color: #1d4ed8;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 500;
+}
+
+.structure-footer {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding-top: 16px;
+  border-top: 1px solid var(--color-border);
+}
+
+/* =============================================================================
+   Lesson Structure Editor (edit mode — inside Preview)
+   ============================================================================= */
+.structure-editor {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+
+.step-edit-card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: 16px;
+  box-shadow: var(--shadow-sm);
+}
+
+.step-edit-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.step-edit-label-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.step-edit-number {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--color-primary);
+  background: var(--color-primary-subtle);
+  padding: 2px 8px;
+  border-radius: 999px;
+}
+
+.step-edit-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.step-edit-field-label {
+  display: block;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--color-text-muted);
+  margin-bottom: 4px;
+}
+
+.add-step-btn {
+  width: 100%;
+  padding: 11px;
+  border: 2px dashed var(--color-border);
+  border-radius: var(--radius-md);
+  background: transparent;
+  color: var(--color-text-muted);
+  font-family: var(--font-sans);
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.15s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+.add-step-btn:hover {
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+  background: var(--color-primary-subtle);
+}
+
+.editor-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid var(--color-border);
+}
+
+/* =============================================================================
+   Step Builder Cards (always-editable, Screen 1 right pane)
+   ============================================================================= */
+.step-builder-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.step-builder-card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-sm);
+  overflow: hidden;
+  transition: border-color 0.12s, box-shadow 0.12s;
+}
+
+/* Blue left accent + focus glow when any field inside has focus */
+.step-builder-card:focus-within {
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px rgb(37 99 235 / 0.08), var(--shadow-sm);
+}
+
+/* ── Card header: number + title input + action buttons ─────────────────────── */
+.step-builder-card-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 10px 9px 12px;
+  background: var(--color-surface-raised);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.step-builder-title-input {
+  flex: 1;
+  min-width: 0;
+  border: none;
+  background: transparent;
+  font-family: var(--font-sans);
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--color-text);
+  outline: none;
+  padding: 2px 0;
+  /* Underline on focus — subtle edit affordance */
+  border-bottom: 1px solid transparent;
+  transition: border-color 0.12s;
+}
+.step-builder-title-input:focus {
+  border-bottom-color: var(--color-border-focus);
+}
+.step-builder-title-input::placeholder {
+  color: var(--color-text-muted);
+  font-weight: 400;
+}
+
+/* ── Reorder / delete icon buttons ──────────────────────────────────────────── */
+.step-builder-actions {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  flex-shrink: 0;
+}
+
+.step-icon-btn {
+  width: 26px;
+  height: 26px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: 1px solid transparent;
+  border-radius: var(--radius-xs);
+  background: transparent;
+  font-size: 13px;
+  line-height: 1;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  font-family: var(--font-sans);
+  transition: background 0.1s, color 0.1s, border-color 0.1s;
+}
+.step-icon-btn:hover:not(:disabled) {
+  background: var(--color-secondary-hover);
+  border-color: var(--color-border);
+  color: var(--color-text);
+}
+.step-icon-btn:disabled {
+  opacity: 0.2;
+  cursor: not-allowed;
+}
+.step-icon-btn-delete:hover:not(:disabled) {
+  background: #fef2f2;
+  border-color: #fca5a5;
+  color: var(--color-danger);
+}
+
+/* Thin separator between move and delete */
+.step-builder-actions-sep {
+  width: 1px;
+  height: 16px;
+  background: var(--color-border);
+  margin: 0 2px;
+}
+
+/* ── Card body: goal + topics fields ────────────────────────────────────────── */
+.step-builder-card-body {
+  padding: 11px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.step-field-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.step-field-label {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--color-text-muted);
+  width: 52px;
+  flex-shrink: 0;
+  /* Visually align with the input text */
+  padding-top: 1px;
+  user-select: none;
+}
+
+.step-field-input {
+  flex: 1;
+  min-width: 0;
+  padding: 5px 9px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-xs);
+  font-family: var(--font-sans);
+  font-size: 13px;
+  color: var(--color-text);
+  background: var(--color-bg);
+  outline: none;
+  transition: border-color 0.12s, box-shadow 0.12s;
+}
+.step-field-input:focus {
+  border-color: var(--color-border-focus);
+  box-shadow: 0 0 0 2px rgb(37 99 235 / 0.1);
+  background: var(--color-surface);
+}
+.step-field-input::placeholder {
+  color: var(--color-text-muted);
+}
+
+/* Spacing between add-step-btn and the step list */
+.add-step-btn {
+  margin-top: 8px;
+  margin-bottom: 16px;
+}
+
+/* =============================================================================
+   Screen 2 — Authoring Layout
+   ============================================================================= */
+.authoring-layout {
+  flex: 1;
+  display: flex;
+  overflow: hidden;
+}
+
+/* ── Step Sidebar ────────────────────────────────────────────────────────────── */
+.step-sidebar {
+  width: 224px;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  border-right: 1px solid var(--color-border);
+  background: var(--color-surface);
+  overflow: hidden;
+}
+
+.step-sidebar-header {
+  padding: 13px 16px 11px;
+  border-bottom: 1px solid var(--color-border);
+  font-size: 10.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.09em;
+  color: var(--color-text-muted);
+  flex-shrink: 0;
+}
+
+.step-sidebar-list {
+  flex: 1;
+  overflow-y: auto;
+  padding: 6px;
+}
+
+.step-nav-btn {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  width: 100%;
+  padding: 9px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+  text-align: left;
+  background: none;
+  border: none;
+  font-family: var(--font-sans);
+  color: var(--color-text);
+  transition: background 0.1s;
+  line-height: 1.4;
+}
+.step-nav-btn:hover {
+  background: var(--color-surface-raised);
+}
+.step-nav-btn.active {
+  background: var(--color-primary-subtle);
+  color: var(--color-primary);
+}
+
+.step-nav-num {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: var(--color-surface-raised);
+  border: 1px solid var(--color-border);
+  font-size: 10px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  margin-top: 1px;
+  color: var(--color-text-secondary);
+  transition: all 0.1s;
+}
+.step-nav-btn.active .step-nav-num {
+  background: var(--color-primary);
+  border-color: var(--color-primary);
+  color: white;
+}
+
+.step-nav-title {
+  font-size: 12.5px;
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+
+.step-nav-dirty {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--color-warning);
+  flex-shrink: 0;
+  margin-top: 7px;
+}
+
+/* ── Authoring Main Area ─────────────────────────────────────────────────────── */
+.authoring-main {
+  flex: 1;
+  display: flex;
+  overflow: hidden;
+}
+
+/* ── Panels ──────────────────────────────────────────────────────────────────── */
+.panel {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  min-width: 0;
+}
+
+.panel-instruction {
+  background: var(--color-surface);
+  border-right: 1px solid var(--color-border);
+}
+
+.panel-code {
+  background: var(--color-code-bg);
+}
+
+.panel-header {
+  padding: 10px 18px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-shrink: 0;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.panel-header-code {
+  border-bottom-color: var(--color-code-border);
+}
+
+.panel-title {
+  font-size: 10.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.09em;
+  color: var(--color-text-muted);
+}
+
+.panel-title-code {
+  color: var(--color-code-muted);
+}
+
+.panel-step-tag {
+  font-size: 11px;
+  color: var(--color-text-muted);
+  background: var(--color-surface-raised);
+  padding: 2px 8px;
+  border-radius: 999px;
+  border: 1px solid var(--color-border);
+}
+
+.panel-step-tag-code {
+  color: var(--color-code-muted);
+  background: transparent;
+  border-color: var(--color-code-border);
+}
+
+.panel-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 22px 20px;
+}
+
+.panel-body-code {
+  flex: 1;
+  overflow-y: auto;
+  padding: 20px;
+  background: var(--color-code-bg);
+}
+
+/* ── Field groups (instruction panel) ───────────────────────────────────────── */
+.field-group {
+  margin-bottom: 22px;
+}
+.field-group:last-child {
+  margin-bottom: 0;
+}
+
+.field-label {
+  display: block;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--color-text-muted);
+  margin-bottom: 6px;
+}
+
+.field-input {
+  width: 100%;
+  padding: 8px 11px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  font-family: var(--font-sans);
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--color-text);
+  background: var(--color-surface);
+  outline: none;
+  transition: border-color 0.12s, box-shadow 0.12s;
+}
+.field-input:focus {
+  border-color: var(--color-border-focus);
+  box-shadow: 0 0 0 3px rgb(37 99 235 / 0.1);
+}
+
+.field-textarea {
+  width: 100%;
+  padding: 10px 11px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  font-family: var(--font-sans);
+  font-size: 13.5px;
+  color: var(--color-text);
+  background: var(--color-surface);
+  outline: none;
+  resize: vertical;
+  line-height: 1.65;
+  transition: border-color 0.12s, box-shadow 0.12s;
+}
+.field-textarea:focus {
+  border-color: var(--color-border-focus);
+  box-shadow: 0 0 0 3px rgb(37 99 235 / 0.1);
+}
+
+/* ── Code panel field ────────────────────────────────────────────────────────── */
+.code-field-label {
+  display: block;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--color-code-muted);
+  margin-bottom: 8px;
+  font-family: var(--font-sans);
+}
+
+.code-editor-wrapper {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.code-textarea {
+  flex: 1;
+  width: 100%;
+  min-height: 300px;
+  background: var(--color-code-surface);
+  border: 1px solid var(--color-code-border);
+  border-radius: var(--radius-sm);
+  color: var(--color-code-text);
+  font-family: var(--font-mono);
+  font-size: 13px;
+  line-height: 1.75;
+  padding: 14px 16px;
+  outline: none;
+  resize: vertical;
+  transition: border-color 0.12s;
+  tab-size: 4;
+}
+.code-textarea:focus {
+  border-color: #585b70;
+  box-shadow: 0 0 0 3px rgb(37 99 235 / 0.08);
+}
+.code-textarea::selection {
+  background: #45475a;
+}
+
+/* =============================================================================
+   Save Status
+   ============================================================================= */
+.save-status {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+.save-status-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  transition: background 0.2s;
+}
+.save-status-dot.saved   { background: var(--color-success); }
+.save-status-dot.unsaved { background: var(--color-warning); }
+.save-status-dot.saving  { background: var(--color-primary); animation: blink 0.9s infinite; }
+
+.save-status-text {
+  font-weight: 500;
+  transition: color 0.2s;
+}
+.save-status-text.saved   { color: var(--color-success); }
+.save-status-text.unsaved { color: var(--color-warning); }
+.save-status-text.saving  { color: var(--color-primary); }
+
+@keyframes blink {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.25; }
+}
+
+/* =============================================================================
+   Empty / No-selection state in authoring view
+   ============================================================================= */
+.authoring-empty {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-text-muted);
+  padding: 40px;
+  text-align: center;
+  background: var(--color-bg);
+}
+
+/* =============================================================================
+   Utility
+   ============================================================================= */
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0,0,0,0);
+  white-space: nowrap;
+}
+
+/* Custom scrollbars */
+::-webkit-scrollbar        { width: 5px; height: 5px; }
+::-webkit-scrollbar-track  { background: transparent; }
+::-webkit-scrollbar-thumb  { background: var(--color-border); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: var(--color-border-strong); }
