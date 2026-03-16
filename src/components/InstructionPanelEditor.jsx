@@ -8,6 +8,8 @@ import React from 'react'
  *   - concept
  *   - task instructions
  *   - hint
+ *   - expected action
+ *   - validation note
  *
  * Each keystroke calls onUpdate with only the changed field, which
  * flows up to App and back down as new props — fully controlled.
@@ -76,6 +78,36 @@ function InstructionPanelEditor({ step, onUpdate }) {
           rows={3}
           onChange={(e) => onUpdate({ hint: e.target.value })}
           placeholder="A nudge for learners who are stuck…"
+        />
+      </div>
+
+      {/* Expected Action */}
+      <div className="field-group">
+        <label className="field-label" htmlFor={`expected-action-${step.id}`}>
+          Expected Action
+        </label>
+        <textarea
+          id={`expected-action-${step.id}`}
+          className="field-textarea"
+          value={step.expectedAction}
+          rows={3}
+          onChange={(e) => onUpdate({ expectedAction: e.target.value })}
+          placeholder="What must the learner do to complete this step? (used by future validation)"
+        />
+      </div>
+
+      {/* Validation Note */}
+      <div className="field-group">
+        <label className="field-label" htmlFor={`validation-note-${step.id}`}>
+          Validation Note
+        </label>
+        <textarea
+          id={`validation-note-${step.id}`}
+          className="field-textarea"
+          value={step.validationNote}
+          rows={4}
+          onChange={(e) => onUpdate({ validationNote: e.target.value })}
+          placeholder="Guidance for the validator: what does a correct solution look like? What are common mistakes?"
         />
       </div>
     </div>

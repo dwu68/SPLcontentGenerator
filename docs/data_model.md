@@ -68,23 +68,10 @@ Produced by `generateLessonContent(lessonStructure)`. Represents the authored co
   title        : string   // step title (editable independently in Screen 2)
   concept      : string   // conceptual explanation shown to the learner
   instructions : string   // task the learner must complete
-  hint         : string   // optional nudge shown when the learner is stuck
-  starterCode  : string   // initial code shown in the code editor
-
-  // ── Reserved — not yet implemented ───────────────────────────────────────
-  // These fields are not present in the current app state or generated output.
-  // They are reserved here so that future AI generation and validation work
-  // can adopt a stable shape without a breaking data migration.
-  //
-  // expectedAction  : string | null
-  //   The action the learner must take to complete the step (e.g. "Add a
-  //   comment starting with # that identifies the keywords"). Used by future
-  //   validation logic to check learner output.
-  //
-  // validationNote  : string | null
-  //   Plain-text guidance for the validator (human or automated) describing
-  //   what a correct solution looks like and common mistakes to flag. Not
-  //   shown to the learner.
+  hint             : string   // optional nudge shown when the learner is stuck
+  starterCode      : string   // initial code shown in the code editor
+  expectedAction   : string   // what the learner must do to complete the step; used by future validation
+  validationNote   : string   // guidance for the validator (not shown to the learner)
 }
 ```
 
@@ -163,7 +150,7 @@ localStorage.setItem(STORAGE_KEY, JSON.stringify(data))
 await fetch('/api/lessons', { method: 'POST', body: JSON.stringify(data) })
 ```
 
-No state shape changes are required. When `expectedAction` and `validationNote` are implemented, they will be included automatically because `handleUpdateContent` does a partial field merge.
+No state shape changes are required. `expectedAction` and `validationNote` are now live fields in `LessonContent` and are included in the payload automatically.
 
 ---
 

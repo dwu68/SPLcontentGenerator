@@ -7,7 +7,7 @@ Backlog in priority order. Items marked ✅ are complete. Items marked 🔲 are 
 ## Phase 0 — Repo Hygiene & Cleanup
 
 - ✅ Create `.gitignore` — exclude `node_modules/`, `dist/`, `.DS_Store`, `*.local`
-- 🔲 **Delete `src/components/LessonStructureEditor.jsx`** — dead code, not imported anywhere; superseded when the edit-mode toggle was removed in Session 2
+- ✅ **Delete `src/components/LessonStructureEditor.jsx`** — dead code, not imported anywhere; superseded when the edit-mode toggle was removed in Session 2
 
 ---
 
@@ -15,10 +15,10 @@ Backlog in priority order. Items marked ✅ are complete. Items marked 🔲 are 
 
 Tighten up the current implementation before adding new capabilities.
 
-- 🔲 **Add `expectedAction` and `validationNote` to `LessonContent`** — fields are reserved in [data_model.md](data_model.md); add them to the state shape in `App.jsx`, populate them (as empty strings or null) in `generateLessonContent()` in `mockGeneration.js`, and expose them as editable fields in `InstructionPanelEditor`
+- ✅ **Add `expectedAction` and `validationNote` to `LessonContent`** — fields added to `generateLessonContent()` in `mockGeneration.js` and exposed as editable textareas in `InstructionPanelEditor`
 - 🔲 **Add empty-title validation on Screen 1** — warn (or block) if any step has a blank title before "Generate Lesson Content →" is clicked
-- 🔲 **Add re-generation confirmation on Screen 1** — clicking "Generate Structure Preview" when a structure already exists silently replaces all edits; show a confirmation prompt
-- 🔲 **Add re-generation confirmation on Screen 2** — navigating back to Screen 1 and clicking "Generate Lesson Content →" silently discards all Screen 2 edits; show a confirmation prompt
+- ✅ **Add re-generation confirmation on Screen 1** — clicking "Generate Structure Preview" when a structure already exists silently replaces all edits; show a confirmation prompt
+- ✅ **Add re-generation confirmation on Screen 2** — navigating back to Screen 1 and clicking "Generate Lesson Content →" silently discards all Screen 2 edits; show a confirmation prompt
 - 🔲 **Fix `coveredSubtopics` local state drift** — `StepBuilderCard.topicsStr` resets only on `step.id` change; make it also respond to `coveredSubtopics` content changes so future bulk-edit or undo won't break it
 
 ---
@@ -32,7 +32,7 @@ Tighten up the current implementation before adding new capabilities.
   - Output: `LessonStructure[]`
 - 🔲 Replace `generateLessonContent()` in `src/utils/mockGeneration.js` with a real API call — hook in `App.jsx` is marked `// [AI HOOK]`
   - Input: `LessonStructure[]`
-  - Output: `LessonContent[]` (including `expectedAction`, `validationNote` once Phase 1 is done)
+  - Output: `LessonContent[]` (including `expectedAction` and `validationNote`)
 - 🔲 Add `isGenerating` boolean to `App.jsx` state
 - 🔲 Disable "Generate" buttons and show a loading indicator while generation is in progress
 - 🔲 Add error state: surface AI generation failures with a clear message
@@ -80,7 +80,6 @@ Tighten up the current implementation before adding new capabilities.
 
 | Item | Severity | Detail |
 |---|---|---|
-| `LessonStructureEditor.jsx` is dead code | Low | Safe to delete — Phase 0 |
 | No loading state for generation | Medium | Mock is synchronous so invisible now; will cause a frozen UI when real async AI calls land |
 | `coveredSubtopics` local state can drift | Low | Safe currently; will break if undo or bulk-edit is added — Phase 1 |
 | Re-generation silently discards edits | Low–Medium | No confirmation prompt on Screen 1 or Screen 2 — Phase 1 |

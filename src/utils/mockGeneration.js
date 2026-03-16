@@ -41,6 +41,8 @@ export function generateLessonContent(lessonStructure) {
     instructions: mockInstructions(step),
     hint: mockHint(step),
     starterCode: mockStarterCode(step),
+    expectedAction: mockExpectedAction(step),
+    validationNote: mockValidationNote(step),
   }))
 }
 
@@ -58,6 +60,14 @@ function mockInstructions(step) {
 
 function mockHint(step) {
   return `Think carefully about what "${step.title}" means in this programming context. Look for clues in the existing comments in the starter code.`
+}
+
+function mockExpectedAction(step) {
+  return `Add a comment or line of code that demonstrates understanding of "${step.title}". The learner should modify the starter code, not just read it.`
+}
+
+function mockValidationNote(step) {
+  return `A correct solution will show the learner has applied "${step.title}" — not just copied the example. Watch for: copy-paste without modification, missing required output, or comments that do not reflect the concept. Common mistakes: skipping the TODO line entirely, or writing a comment that describes the code rather than the concept.`
 }
 
 function mockStarterCode(step) {
