@@ -80,7 +80,7 @@ Tighten up the current implementation before adding new capabilities.
 
 | Item | Severity | Detail |
 |---|---|---|
-| No loading state for generation | Medium | Mock is synchronous so invisible now; will cause a frozen UI when real async AI calls land |
 | `coveredSubtopics` local state can drift | Low | Safe currently; will break if undo or bulk-edit is added — Phase 1 |
-| Re-generation silently discards edits | Low–Medium | No confirmation prompt on Screen 1 or Screen 2 — Phase 1 |
 | All state in one `App.jsx` | Low | Fine for two screens; a third screen would warrant extracting contexts |
+| Generation errors use fixed messages | Low | `catch` blocks use static strings; when real API calls land, inspect `err` to surface specific failures (rate limit, network, invalid response) |
+| `isGenerating` loading state invisible during mock use | Info | Mock generation is synchronous — "Generating…" label flashes for one render tick; becomes visible once real async AI calls are wired in |

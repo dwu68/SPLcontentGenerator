@@ -409,3 +409,232 @@ node_modules/ — installed packages
 ---
 
 *End of Session 2.*
+
+---
+---
+
+# Session 3 Handoff
+
+**ID:** 3
+**Date:** 2026-03-16
+**Session scope:** Phase 0 cleanup + Phase 1 data model & UI stabilization + Phase 2 generation infrastructure
+**Git state at close:** Working tree clean — all changes committed across 5 commits (see log below)
+
+> **Cross-references:** [product_overview.md](product_overview.md) · [user_flow.md](user_flow.md) · [data_model.md](data_model.md) · [decisions.md](decisions.md) · [todo.md](todo.md)
+
+---
+
+## Commits This Session
+
+```
+019bdc0 feat: add generation error state for both generation actions
+42865ec feat: add isGenerating loading state for both generation actions
+b2dd870 fix: keep step title in sync between lessonStructure and lessonContent
+b145f1b feat: add confirmation guards before destructive regeneration
+43ef9a1 feat: add expectedAction and validationNote to lesson content
+```
+
+(Plus one chore commit for dead code removal made at the start of this session, already folded in before the above.)
+
+---
+
+## What Was Completed
+
+### 1. Phase 0 — Dead code removal
+
+- Deleted `src/components/LessonStructureEditor.jsx` — confirmed not imported anywhere; superseded in Session 2 when the edit-mode toggle was removed.
+- Removed the file from the `README.md` project layout tree.
+- Marked Phase 0 ✅ in `todo.md`.
+
+### 2. Phase 1 — `expectedAction` and `validationNote` fields
+
+- Added both fields to the `LessonContent` shape produced by `generateLessonContent()` in `mockGeneration.js`. Mock helpers generate realistic authoring-flavored placeholder text per step.
+- Added two editable textarea fields to `InstructionPanelEditor` (below Hint): **Expected Action** and **Validation Note**.
+- State, dirty-tracking, and localStorage draft persistence all pick up the new fields automatically via the existing `handleUpdateContent` partial merge.
+- `data_model.md` updated: fields promoted from the "Reserved" comment block to live type definition.
+
+### 3. Phase 1 — Re-generation confirmation guards
+
+- `handleSubmit` (`App.jsx`): if `lessonStructure.length > 0`, shows `window.confirm()` before replacing the structure.
+- `handleGenerate` (`App.jsx`): if `lessonContent.length > 0`, shows `window.confirm()` before replacing all lesson content.
+- First-time generation is unguarded. "Back to Builder" navigation itself is not guarded — the prompt fires on the next explicit Generate action.
+- `decisions.md` updated to reflect confirmed behavior; `todo.md` Phase 1 items marked ✅.
+
+### 4. Phase 1 — Step title sync (Screen 1 ↔ Screen 2)
+
+- `handleUpdateContent` in `App.jsx` now mirrors a `title` change in Screen 2 back to the corresponding `lessonStructure` entry.
+- Prevents silent divergence when an author renames a step in the authoring view and then returns to Screen 1.
+- One-directional (S2 → S1). Editing a title in Screen 1 after visiting Screen 2 does not back-propagate to `lessonContent` — however, any confirmed re-generation of lesson content will re-sync from the current structure titles.
+- `data_model.md` comment for `LessonContent.title` corrected (removed "editable independently").
+
+### 5. Phase 2 — `isGenerating` loading state
+
+- `isGenerating` boolean state added to `App.jsx`.
+- Both `handleSubmit` and `handleGenerate` are now `async` with `setIsGenerating(true)` before the call and `setIsGenerating(false)` in a `finally` block.
+- `LessonInputForm`: button disabled and label changes to "Generating…" when `isGenerating`. Keyboard shortcut (⌘+Enter) also guarded.
+- `LessonStructurePreview`: "Generate Lesson Content →" button disabled and label changes to "⏳ Generating…" when `isGenerating`.
+- State is invisible during mock use (synchronous) but structurally correct — adding `await` to the AI call is all that's needed.
+
+### 6. Phase 2 — Generation error state
+
+- `generationError` (`string | null`) state added to `App.jsx`.
+- Each handler clears the error at the start of a new attempt, then sets a fixed user-friendly message in a `catch` block.
+- `LessonInputForm` renders a `<p className="generation-error">` below the submit button when the error is non-null.
+- `LessonStructurePreview` renders the same element inside the footer below the generate button.
+- `.generation-error` CSS class added to `App.css` using the existing `--color-danger` token.
+- `.structure-footer` changed from `flex` row to `flex-direction: column` to accommodate the error stacking below the button.
+
+---
+
+## Important Decisions Made
+
+| Decision | Rationale |
+|---|---|
+| `window.confirm()` for re-generation guards | Simplest correct behavior; no custom modal needed at this stage. Docs reference this explicitly so it's easy to replace later. |
+| Title sync is S2 → S1 only | The destructive direction is Screen 2 (where authors spend time naming steps). S1 → S2 sync is implicit on any confirmed re-generation. |
+| One shared `generationError` state | Both generators are on Screen 1 and can't run concurrently. A single error state is sufficient and simpler than two. |
+| Fixed error messages, not `err.message` | API errors (network timeouts, rate limits) are too technical for an authoring UI. The catch blocks are the right place to add message discrimination when real API calls land. |
+| `isGenerating` invisible during mock | No artificial delay added to the mock. The `try/finally` pattern is correct — visibility follows naturally once real async calls are wired in. |
+
+---
+
+## Files Created, Changed, or Deleted
+
+**Deleted:**
+```
+src/components/LessonStructureEditor.jsx   — dead code removed (Phase 0)
+```
+
+**Modified:**
+```
+src/App.jsx                                — isGenerating, generationError, async handlers,
+                                             title sync in handleUpdateContent, new props to children
+src/App.css                                — .generation-error class; .structure-footer column layout
+src/utils/mockGeneration.js                — expectedAction + validationNote fields + mock helpers
+src/components/InstructionPanelEditor.jsx  — Expected Action + Validation Note textarea fields
+src/components/LessonInputForm.jsx         — isGenerating + generationError props; button state + label
+src/components/LessonStructurePreview.jsx  — isGenerating + generationError props; button state + label
+README.md                                  — updated "Where to Connect Real AI" note
+docs/data_model.md                         — LessonContent type updated; title comment corrected
+docs/decisions.md                          — re-generation decision notes updated
+docs/todo.md                               — Phase 0/1/2 items marked ✅; Known Issues table updated
+```
+
+---
+
+## What Is Currently Working
+
+All Session 1 + 2 functionality remains working. New in this session:
+
+- **`expectedAction` and `validationNote`** fully wired into the authoring flow: generated, editable in Screen 2, persisted to localStorage with the rest of the draft.
+- **Re-generation confirmation prompts** on both Screen 1 (structure replace) and the Screen 1 → 2 transition (content replace).
+- **Step title synchronization**: editing a step title in Screen 2 immediately updates the same step in Screen 1's structure.
+- **`isGenerating` state** correctly disables and relabels both generate buttons during a generation call.
+- **Generation error display**: red inline banner appears near the triggering button on failure; clears on the next attempt.
+
+---
+
+## What Is NOT Implemented Yet
+
+- **Real AI generation** — both `generateLessonStructure()` and `generateLessonContent()` in `mockGeneration.js` return hardcoded/templated content. Hooks in `App.jsx` are marked `// [AI HOOK]`.
+- **Backend persistence** — `handleSaveDraft()` writes only to `localStorage`. Marked `// [PERSIST HOOK]`.
+- **JSON export** — no file download button.
+- **Empty-title validation on Screen 1** — no warning before "Generate Lesson Content →" if any step title is blank (Phase 1, still open).
+- **`coveredSubtopics` local state drift fix** — `StepBuilderCard.topicsStr` only resets on `step.id` change (Phase 1, still open).
+- **Step title back-sync S1 → S2** — editing a title in Screen 1 after visiting S2 does not update `lessonContent.title`.
+- **Rich code editor** (Monaco/CodeMirror), drag-and-drop reorder, undo/redo, export, multi-lesson management — all Phase 3–6.
+
+---
+
+## Next 3 Recommended Steps
+
+### 1. Complete remaining Phase 1 stabilization items
+
+Two items remain open before Phase 2 AI integration:
+
+**a. Empty-title validation on Screen 1**
+Block or warn before "Generate Lesson Content →" if any step has a blank title. Simple guard in `handleGenerate` in `App.jsx`:
+
+```js
+const hasEmptyTitle = lessonStructure.some((s) => !s.title.trim())
+if (hasEmptyTitle) { /* warn */ return }
+```
+
+**b. Fix `coveredSubtopics` local state drift**
+In `StepBuilderCard` (`LessonStructurePreview.jsx`), the `useEffect` that resets `topicsStr` depends only on `step.id`. Change the dependency to `[step.id, step.coveredSubtopics]` to also reset when content changes externally. See [data_model.md](data_model.md) — coveredSubtopics section for full context.
+
+### 2. Wire in real AI generation (Phase 2)
+
+All infrastructure is in place:
+- Both handlers are `async` with `isGenerating` and `generationError` already wired
+- Replace the synchronous calls in `mockGeneration.js` with `fetch()` / SDK calls
+- Add `await` at the two `// [AI HOOK]` callsites in `App.jsx`
+- Update the `catch` blocks to inspect `err` and surface more specific messages
+
+### 3. Add JSON export (Phase 3, quick win)
+
+No data model changes needed. The full state is already in the correct export shape. Add a download button in the Screen 2 header — see [data_model.md → Future: JSON Export Shape](data_model.md) for the exact payload.
+
+---
+
+## Known Issues, Rough Edges, and Refactoring Suggestions
+
+| Item | Severity | Notes |
+|---|---|---|
+| `coveredSubtopics` local state can drift | Low | `StepBuilderCard.topicsStr` only resets on `step.id` change. Safe currently; Phase 1 cleanup item. |
+| Generation error messages are fixed strings | Low | When real API calls land, the catch blocks should inspect `err` for specific failures (rate limit, network, invalid JSON). |
+| `isGenerating` invisible during mock | Info | Synchronous mock means "Generating…" flashes one render tick. No action needed — becomes visible once real AI is wired in. |
+| S1 title edits don't back-propagate to S2 | Low | If a user goes Back to Builder and renames a step title without re-generating, `lessonContent.title` diverges. Resolves on next confirmed re-generate. Low risk at current scale. |
+| All state in one `App.jsx` | Low | Fine for two screens. A third screen or cross-cutting state would warrant extracting `BuilderContext` / `AuthoringContext`. |
+
+---
+
+## Commit Messages
+
+**Recommended:**
+```
+chore: update session handoff and clean up stale Known Issues table
+
+Adds Session 3 entry to session_handoff.md covering: dead code removal,
+expectedAction/validationNote fields, re-generation confirmation guards,
+step title sync, isGenerating loading state, and generation error state.
+Removes resolved items from todo.md Known Issues table.
+```
+
+**Alternative A** (shorter):
+```
+docs: add Session 3 handoff; update todo Known Issues table
+```
+
+**Alternative B** (split intent):
+```
+docs: add Session 3 handoff to session_handoff.md
+chore: remove resolved items from todo.md Known Issues table
+```
+
+---
+
+## Git Commands
+
+```bash
+git add docs/session_handoff.md docs/todo.md
+git commit -m "$(cat <<'EOF'
+chore: update session handoff and clean up stale Known Issues table
+
+Adds Session 3 entry to session_handoff.md covering: dead code removal,
+expectedAction/validationNote fields, re-generation confirmation guards,
+step title sync, isGenerating loading state, and generation error state.
+Removes resolved items from todo.md Known Issues table.
+EOF
+)"
+```
+
+**Files excluded by `.gitignore` — must never be committed:**
+```
+dist/         — Vite production build output
+node_modules/ — installed packages
+```
+
+---
+
+*End of Session 3.*
