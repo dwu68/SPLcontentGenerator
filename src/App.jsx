@@ -142,6 +142,12 @@ function App() {
     setLessonContent((prev) =>
       prev.map((step) => (step.id === stepId ? { ...step, ...updatedFields } : step))
     )
+    // Keep lessonStructure title in sync when the author renames a step in Screen 2
+    if (updatedFields.title !== undefined) {
+      setLessonStructure((prev) =>
+        prev.map((s) => (s.id === stepId ? { ...s, title: updatedFields.title } : s))
+      )
+    }
     setDirtyStepIds((prev) => new Set([...prev, stepId]))
     setSaveStatus('unsaved')
   }

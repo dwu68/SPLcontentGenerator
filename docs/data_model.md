@@ -65,7 +65,7 @@ Produced by `generateLessonContent(lessonStructure)`. Represents the authored co
 {
   id           : string   // same id as the LessonStructure step
   stepNumber   : number   // same as LessonStructure step
-  title        : string   // step title (editable independently in Screen 2)
+  title        : string   // step title; edits in Screen 2 are mirrored back to lessonStructure
   concept      : string   // conceptual explanation shown to the learner
   instructions : string   // task the learner must complete
   hint             : string   // optional nudge shown when the learner is stuck
