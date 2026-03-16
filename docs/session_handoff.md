@@ -764,7 +764,7 @@ All infrastructure is already in place: both handlers are `async`, `isGenerating
 **ID:** 5
 **Date:** 2026-03-16
 **Session scope:** Phase 2 — Screen 1 AI integration scaffold (service layer)
-**Git state at close:** See Git Commands below
+**Git state at close:** Working tree clean — all changes committed across 2 commits (see below)
 
 > **Cross-references:** [product_overview.md](product_overview.md) · [user_flow.md](user_flow.md) · [data_model.md](data_model.md) · [decisions.md](decisions.md) · [todo.md](todo.md)
 
@@ -773,8 +773,8 @@ All infrastructure is already in place: both handlers are `async`, `isGenerating
 ## Commits This Session
 
 ```
-feat: scaffold Screen 1 AI integration — lessonStructureService with callProvider stub
-docs: update README, decisions, todo, and session handoff for service layer
+c108d3f feat: scaffold Screen 1 AI integration with lessonStructureService
+5f355c5 docs: update project docs for lessonStructure service layer
 ```
 
 ---
@@ -862,15 +862,25 @@ All previous functionality unchanged. New in this session:
 
 ---
 
-## Next Recommended Step
+## Next 3 Recommended Steps
 
-**Wire a real provider into `callProvider()`.**
+### 1. Wire a real provider into `callProvider()` (Phase 2, Screen 1)
 
-1. Add `VITE_ANTHROPIC_API_KEY=sk-ant-...` to `.env.local` (already covered by `*.local` in `.gitignore`).
-2. Replace the body of `callProvider()` in `lessonStructureService.js` with a `fetch()` call. A full stub is included in the JSDoc comment inside that function.
-3. Write a `buildPrompt(courseName, moduleName, subtopicsText)` helper in the same file that constructs the prompt instructing Claude to return `Array<{ title, goal, coveredSubtopics }>` as JSON.
-4. Write a `parseProviderResponse(data)` helper that extracts the JSON array from the API response text block.
-5. Update the `catch` block in `handleSubmit` (`App.jsx`) to inspect `err.message` for specific failures (rate limit, network, invalid JSON).
+All infrastructure is in place. The work is contained entirely within `src/services/lessonStructureService.js`:
+
+1. Add `VITE_ANTHROPIC_API_KEY=sk-ant-...` to `.env.local` (already gitignored via `*.local`).
+2. Replace the body of `callProvider()` with a `fetch()` call — a complete stub is in the JSDoc comment inside that function.
+3. Add a `buildPrompt(courseName, moduleName, subtopicsText)` helper that instructs the model to return `Array<{ title, goal, coveredSubtopics }>` as a JSON block.
+4. Add a `parseProviderResponse(data)` helper that extracts the JSON array from the API text response.
+5. Update the `catch` block in `handleSubmit` in `App.jsx` to inspect `err.message` and surface specific failures (rate limit, network error, invalid JSON from provider).
+
+### 2. Scaffold Screen 2 AI generation service (Phase 2, Screen 2)
+
+Once Screen 1 is verified working with a real provider, extract `src/services/lessonContentService.js` following the exact same three-layer pattern (`callProvider` / `normalizeContent` / `generateLessonContent`). Update the import in `App.jsx`. The `// [AI HOOK]` comment at the Screen 2 call site marks the integration point.
+
+### 3. Add JSON export button (Phase 3, quick win — no API needed)
+
+No data model changes required. Add a download button in the Screen 2 header. The state is already in the correct export shape — see [data_model.md → Future: JSON Export Shape](data_model.md).
 
 ---
 

@@ -10,7 +10,7 @@ Internal teams producing SPL lesson content — primarily data science educators
 
 ## Current State (as of 2026-03-16)
 
-This is the **UI skeleton phase**. The full two-screen interface is built and functional. All AI generation is mocked with template content. There is no backend. The only persistence is `localStorage`.
+The full two-screen interface is built and functional. Screen 1 generation is scaffolded behind a dedicated service layer (`src/services/lessonStructureService.js`) — the provider call is isolated and ready to be replaced with a real API call. Screen 2 generation is still mocked. There is no backend. The only persistence is `localStorage`.
 
 ---
 
@@ -32,7 +32,7 @@ For each step, the author edits the full lesson content: concept explanation, ta
 
 | Feature | Current state |
 |---|---|
-| Lesson structure generation | Template: one step per sub-topic line, boilerplate goal text |
+| Lesson structure generation | Service layer scaffolded (`lessonStructureService.js`); `callProvider()` still delegates to template mock — replace with real API call |
 | Lesson content generation | Template: generic concept, instructions, hint, and starter code strings |
 | Starter code | Python-flavored boilerplate; not subject-specific |
 
