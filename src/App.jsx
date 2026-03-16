@@ -3,7 +3,8 @@ import Header from './components/Header'
 import LessonInputForm from './components/LessonInputForm'
 import LessonStructurePreview from './components/LessonStructurePreview'
 import LessonAuthoringView from './components/LessonAuthoringView'
-import { generateLessonStructure, generateLessonContent } from './utils/mockGeneration'
+import { generateLessonContent } from './utils/mockGeneration'
+import { generateLessonStructure } from './services/lessonStructureService'
 
 const STORAGE_KEY = 'spl_lesson_draft'
 
@@ -24,8 +25,9 @@ const STORAGE_KEY = 'spl_lesson_draft'
  *   generationError     string | null  (message from the most recent failed generation)
  *   titleValidationError string | null  (set when generate is blocked by empty step titles)
  *
- * Future integration points are marked with  // [AI HOOK]  comments.
- * Future persistence points are marked with  // [PERSIST HOOK]  comments.
+ * Screen 1 AI integration point: src/services/lessonStructureService.js — callProvider()
+ * Screen 2 AI integration point: src/utils/mockGeneration.js — generateLessonContent() [AI HOOK]
+ * Persistence integration point: handleSaveDraft() below [PERSIST HOOK]
  */
 function App() {
   // ── Screen ──────────────────────────────────────────────────────────────
@@ -91,8 +93,8 @@ function App() {
     setGenerationError(null)
     setIsGenerating(true)
     try {
-      // [AI HOOK] replace generateLessonStructure with API call
-      const structure = generateLessonStructure(courseName, moduleName, subtopics)
+      // [AI HOOK] see src/services/lessonStructureService.js — callProvider()
+      const structure = await generateLessonStructure(courseName, moduleName, subtopics)
       setLessonStructure(structure)
     } catch {
       setGenerationError('Failed to generate lesson structure. Please check your inputs and try again.')
