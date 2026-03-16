@@ -47,7 +47,6 @@ SPLcontentGenerator/
 │       ├── SaveStatus.jsx               Saved / Unsaved changes / Saving… indicator
 │       ├── LessonInputForm.jsx          Screen 1 left panel — form inputs
 │       ├── LessonStructurePreview.jsx   Screen 1 right panel — editable step cards
-│       ├── LessonStructureEditor.jsx    Unused (superseded — safe to delete)
 │       ├── LessonAuthoringView.jsx      Screen 2 layout: sidebar + editors
 │       ├── InstructionPanelEditor.jsx   Screen 2 left panel — instruction fields
 │       └── CodeEditorPanel.jsx          Screen 2 right panel — dark code textarea
@@ -71,7 +70,7 @@ generateLessonStructure(courseName, moduleName, subtopicsText)  →  called on S
 generateLessonContent(lessonStructure)                           →  called on "Generate Lesson Content"
 ```
 
-Replace the function bodies with API calls. Add `isGenerating` state in `App.jsx` for loading feedback.
+Replace the function bodies with API calls. `isGenerating` state is already wired in `App.jsx` — both handlers are `async` with `try/finally` guards, so adding `await` to the call is all that's needed.
 
 ## Where to Connect a Backend
 

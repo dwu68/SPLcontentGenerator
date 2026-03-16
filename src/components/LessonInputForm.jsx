@@ -6,7 +6,8 @@ import React from 'react'
  * Props:
  *   courseName / moduleName / subtopics        controlled values
  *   onCourseNameChange / onModuleNameChange / onSubtopicsChange   setters
- *   onSubmit   fn — called when the user clicks "Generate Structure Preview"
+ *   onSubmit      fn — called when the user clicks "Generate Structure Preview"
+ *   isGenerating  boolean — true while generation is in flight
  */
 function LessonInputForm({
   courseName,
@@ -16,6 +17,7 @@ function LessonInputForm({
   onModuleNameChange,
   onSubtopicsChange,
   onSubmit,
+  isGenerating,
 }) {
   const isValid =
     courseName.trim().length > 0 &&
@@ -24,7 +26,7 @@ function LessonInputForm({
 
   const handleKeyDown = (e) => {
     // Allow Ctrl/Cmd+Enter to submit
-    if ((e.ctrlKey || e.metaKey) && e.key === 'Enter' && isValid) {
+    if ((e.ctrlKey || e.metaKey) && e.key === 'Enter' && isValid && !isGenerating) {
       onSubmit()
     }
   }
@@ -87,10 +89,10 @@ function LessonInputForm({
       <button
         className="btn btn-primary btn-full btn-lg"
         onClick={onSubmit}
-        disabled={!isValid}
+        disabled={!isValid || isGenerating}
         title={!isValid ? 'Fill in all fields to continue' : 'Generate the lesson structure preview'}
       >
-        Generate Structure Preview
+        {isGenerating ? 'Generating…' : 'Generate Structure Preview'}
       </button>
 
       <p

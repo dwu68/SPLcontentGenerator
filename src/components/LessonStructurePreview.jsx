@@ -14,6 +14,7 @@ import React, { useState, useEffect } from 'react'
  *   onDeleteStep  fn(id)
  *   onMoveStep    fn(id, 'up' | 'down')
  *   onGenerate    fn()
+ *   isGenerating  boolean — true while generation is in flight
  */
 function LessonStructurePreview({
   structure,
@@ -22,6 +23,7 @@ function LessonStructurePreview({
   onDeleteStep,
   onMoveStep,
   onGenerate,
+  isGenerating,
 }) {
   const isEmpty = structure.length === 0
 
@@ -66,8 +68,12 @@ function LessonStructurePreview({
 
           {/* Generate footer */}
           <div className="structure-footer">
-            <button className="btn btn-success btn-lg" onClick={onGenerate}>
-              ✨ Generate Lesson Content →
+            <button
+              className="btn btn-success btn-lg"
+              onClick={onGenerate}
+              disabled={isGenerating}
+            >
+              {isGenerating ? '⏳ Generating…' : '✨ Generate Lesson Content →'}
             </button>
           </div>
         </>

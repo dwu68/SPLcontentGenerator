@@ -20,6 +20,7 @@ const STORAGE_KEY = 'spl_lesson_draft'
  *   selectedStepId    string | null
  *   dirtyStepIds      Set<string>  (steps edited since last save)
  *   saveStatus        'saved' | 'unsaved' | 'saving'
+ *   isGenerating      boolean  (true while either generation call is in flight)
  *
  * Future integration points are marked with  // [AI HOOK]  comments.
  * Future persistence points are marked with  // [PERSIST HOOK]  comments.
@@ -44,6 +45,9 @@ function App() {
   const [dirtyStepIds, setDirtyStepIds] = useState(new Set())
   const [saveStatus, setSaveStatus] = useState('saved')
 
+  // ── Generation loading state ─────────────────────────────────────────────
+  const [isGenerating, setIsGenerating] = useState(false)
+
   // ── Restore draft from localStorage on mount ────────────────────────────
   useEffect(() => {
     try {
@@ -65,7 +69,7 @@ function App() {
   }, [])
 
   // ── Screen 1: submit form → generate structure ───────────────────────────
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (!courseName.trim() || !moduleName.trim() || !subtopics.trim()) return
     if (lessonStructure.length > 0) {
       const ok = window.confirm(
@@ -73,9 +77,14 @@ function App() {
       )
       if (!ok) return
     }
-    // [AI HOOK] replace generateLessonStructure with API call
-    const structure = generateLessonStructure(courseName, moduleName, subtopics)
-    setLessonStructure(structure)
+    setIsGenerating(true)
+    try {
+      // [AI HOOK] replace generateLessonStructure with API call
+      const structure = generateLessonStructure(courseName, moduleName, subtopics)
+      setLessonStructure(structure)
+    } finally {
+      setIsGenerating(false)
+    }
   }
 
   // ── Screen 1: step-level mutations (all renumber automatically) ──────────
@@ -121,20 +130,25 @@ function App() {
   }
 
   // ── Screen 1 → Screen 2: generate content from structure ────────────────
-  const handleGenerate = () => {
+  const handleGenerate = async () => {
     if (lessonContent.length > 0) {
       const ok = window.confirm(
         'Generate new lesson content?\n\nAll edits in the Lesson Authoring view will be replaced. This cannot be undone.'
       )
       if (!ok) return
     }
-    // [AI HOOK] replace generateLessonContent with API call
-    const content = generateLessonContent(lessonStructure)
-    setLessonContent(content)
-    setSelectedStepId(content[0]?.id || null)
-    setDirtyStepIds(new Set())
-    setSaveStatus('unsaved')
-    setScreen('authoring')
+    setIsGenerating(true)
+    try {
+      // [AI HOOK] replace generateLessonContent with API call
+      const content = generateLessonContent(lessonStructure)
+      setLessonContent(content)
+      setSelectedStepId(content[0]?.id || null)
+      setDirtyStepIds(new Set())
+      setSaveStatus('unsaved')
+      setScreen('authoring')
+    } finally {
+      setIsGenerating(false)
+    }
   }
 
   // ── Screen 2: update a single step's content fields ─────────────────────
@@ -208,6 +222,7 @@ function App() {
               onModuleNameChange={setModuleName}
               onSubtopicsChange={setSubtopics}
               onSubmit={handleSubmit}
+              isGenerating={isGenerating}
             />
           </div>
           <div className="builder-right">
@@ -218,6 +233,7 @@ function App() {
               onDeleteStep={handleDeleteStep}
               onMoveStep={handleMoveStep}
               onGenerate={handleGenerate}
+              isGenerating={isGenerating}
             />
           </div>
         </div>
