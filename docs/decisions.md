@@ -88,18 +88,38 @@ Canonical record of decisions made and their rationale. Covers technology choice
 
 ## AI Generation
 
+### Backend proxy — no direct browser-to-provider calls
+
+**Decision:** The frontend never calls the AI provider directly. All generation requests go to `POST /api/generate-structure` on our own Express backend (`server/index.js`). The backend holds the API key and calls OpenAI.
+
+**Rationale:** Direct browser calls would require exposing the API key in the client bundle (via a `VITE_` prefix env variable), making it visible in DevTools and in version control. A backend proxy keeps the key server-side only, even for an internal tool. It also gives us a single place to add rate limiting, logging, and provider swaps without touching the frontend.
+
+**Dev setup:** Vite proxies `/api/*` → `http://localhost:3001` during development, so the frontend always uses a relative `/api` path with no CORS concerns. In production, Express serves the Vite build and the API at the same origin.
+
+### OpenAI as the AI provider (gpt-4o-mini default)
+
+**Decision:** OpenAI via the official `openai` npm SDK. Default model: `gpt-4o-mini`. Model is overridable via `OPENAI_MODEL` env variable.
+
+**Rationale:** Well-documented SDK, reliable JSON mode (`response_format: { type: 'json_object' }`), and cost-effective at the gpt-4o-mini tier for structured short-form generation. Provider is isolated to `server/index.js` — swapping to a different model or provider only touches that file.
+
+**JSON contract:** The server always returns `Array<{ title, goal, coveredSubtopics }>`. The frontend's `normalizeStructure()` assigns IDs and step numbers. This contract holds regardless of which provider the server uses.
+
+### Mock fallback behind a server-side env flag (USE_MOCK)
+
+**Decision:** `USE_MOCK=true` in `.env` causes the server to return mock data instead of calling OpenAI. The frontend has no knowledge of this — it receives the same JSON shape either way.
+
+**Rationale:** Keeps mock/real switching off the client entirely. Useful for local development without spending API credits. The flag is server-side only so there is no risk of accidentally shipping a "mock mode" to a shared deployment.
+
 ### Service layer for provider calls (lessonStructureService.js)
 
-**Decision:** Screen 1 generation goes through a dedicated service module (`src/services/lessonStructureService.js`) rather than replacing the function body directly in `mockGeneration.js` or putting the API call inline in `App.jsx`.
+**Decision:** Screen 1 generation goes through a dedicated service module (`src/services/lessonStructureService.js`) rather than putting the API call inline in `App.jsx`.
 
 **Rationale:** The service separates three concerns that must stay independent:
-- **Provider call** (`callProvider`) — the only function that changes when swapping providers. Isolated so it can be replaced without touching App state logic.
-- **Normalization** (`normalizeStructure`) — validates the provider response and assigns `id` and `stepNumber` locally. Runs regardless of which provider is used. Prevents malformed or partial API responses from corrupting App state.
-- **App orchestration** (`handleSubmit` in App.jsx) — owns `isGenerating`, `generationError`, confirmation guards, and state updates. Does not change when the provider changes.
+- **Provider call** (`callProvider`) — calls `POST /api/generate-structure`. The only function that changes if the endpoint URL or request shape changes.
+- **Normalization** (`normalizeStructure`) — validates the server response and assigns `id` and `stepNumber` locally. Prevents malformed responses from corrupting App state.
+- **App orchestration** (`handleSubmit` in App.jsx) — owns `isGenerating`, `generationError`, confirmation guards, and state updates. Does not change when the provider or endpoint changes.
 
-**Consequence:** `mockGeneration.js` is kept intact as the current backing implementation, called from `callProvider()`. When a real API is wired, only `callProvider()` is replaced. The mock remains available as a fallback or for offline development.
-
-**Pattern for Screen 2:** When `generateLessonContent` is promoted to a real API call, extract `lessonContentService.js` following the same three-layer pattern.
+**Pattern for Screen 2:** When `generateLessonContent` is promoted to a real API call, add `POST /api/generate-content` to `server/index.js` and extract `lessonContentService.js` on the frontend following the same three-layer pattern.
 
 ---
 

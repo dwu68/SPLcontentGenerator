@@ -7,56 +7,31 @@
  *
  *   App.jsx  →  generateLessonStructure()
  *                       │
- *                  callProvider()          ← [AI PROVIDER] replace this body
+ *                  callProvider()          ← calls POST /api/generate-structure
  *                       │
  *               normalizeStructure()       ← validates shape, assigns ids
  *                       │
  *               LessonStructure[]  →  App.jsx
  *
- * To wire in a real AI call:
- *   1. Replace the body of callProvider() with your fetch() / SDK call.
- *   2. Parse the response into Array<{ title, goal, coveredSubtopics }>.
- *   3. Return that array — do NOT include ids or stepNumbers (assigned here).
- *
- * Everything else — loading state, error handling, confirmation guards — stays
- * in App.jsx and does not need to change.
+ * The backend (server/index.js) owns the provider API key and the OpenAI call.
+ * Mock vs real switching is a server-side concern (USE_MOCK env flag).
+ * This module only calls the endpoint — it never talks to OpenAI directly.
  */
 
-import { generateLessonStructure as mockGenerateStructure } from '../utils/mockGeneration'
-
 // ---------------------------------------------------------------------------
-// [AI PROVIDER] Replace the body of this function with a real API call
+// Provider call — POST /api/generate-structure
 // ---------------------------------------------------------------------------
 
 /**
  * callProvider
  *
- * Calls the generation provider and returns raw step data.
+ * Calls the backend endpoint and returns raw step data.
  *
- * Expected return shape:
+ * Expected return shape (from server):
  *   Array<{ title: string, goal: string, coveredSubtopics: string[] }>
  *
- * Do NOT return ids or stepNumbers — normalizeStructure() assigns them.
- *
- * Example swap for a real Anthropic call:
- *
- *   const response = await fetch('https://api.anthropic.com/v1/messages', {
- *     method: 'POST',
- *     headers: {
- *       'x-api-key': import.meta.env.VITE_ANTHROPIC_API_KEY,
- *       'anthropic-version': '2023-06-01',
- *       'anthropic-dangerous-direct-browser-access': 'true',
- *       'content-type': 'application/json',
- *     },
- *     body: JSON.stringify({
- *       model: 'claude-sonnet-4-6',
- *       max_tokens: 2048,
- *       messages: [{ role: 'user', content: buildPrompt(courseName, moduleName, subtopicsText) }],
- *     }),
- *   })
- *   if (!response.ok) throw new Error(`API error ${response.status}`)
- *   const data = await response.json()
- *   return parseProviderResponse(data)   // extract the JSON array from the text block
+ * The Vite dev proxy forwards /api/* to http://localhost:3001.
+ * In production the frontend and backend share the same origin.
  *
  * @param {string} courseName
  * @param {string} moduleName
@@ -64,15 +39,16 @@ import { generateLessonStructure as mockGenerateStructure } from '../utils/mockG
  * @returns {Promise<Array<{ title: string, goal: string, coveredSubtopics: string[] }>>}
  */
 async function callProvider(courseName, moduleName, subtopicsText) {
-  // Delegating to the local mock until a real provider is wired.
-  // The mock returns full LessonStructure objects (with ids). We strip ids here
-  // so that normalizeStructure() is the single place that assigns them.
-  const mockResult = mockGenerateStructure(courseName, moduleName, subtopicsText)
-  return mockResult.map(({ title, goal, coveredSubtopics }) => ({
-    title,
-    goal,
-    coveredSubtopics,
-  }))
+  const res = await fetch('/api/generate-structure', {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ courseName, moduleName, subtopicsText }),
+  })
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({}))
+    throw new Error(body.error || `Server error ${res.status}`)
+  }
+  return res.json()
 }
 
 // ---------------------------------------------------------------------------
@@ -82,10 +58,10 @@ async function callProvider(courseName, moduleName, subtopicsText) {
 /**
  * Validates the raw provider response and promotes it to a full LessonStructure[].
  * Throws if the response is not a non-empty array.
- * Missing or wrong-typed fields are coerced to safe defaults rather than thrown.
+ * Missing or wrong-typed fields are coerced to safe defaults.
  *
  * @param {unknown} rawSteps
- * @returns {import('../utils/mockGeneration').LessonStructure[]}
+ * @returns {LessonStructure[]}
  */
 function normalizeStructure(rawSteps) {
   if (!Array.isArray(rawSteps) || rawSteps.length === 0) {
@@ -109,8 +85,7 @@ function normalizeStructure(rawSteps) {
  * generateLessonStructure
  *
  * Async entry point for Screen 1 structure generation.
- * App.jsx owns isGenerating / generationError / try-finally — this function
- * only needs to resolve with a valid LessonStructure[] or throw.
+ * App.jsx owns isGenerating / generationError / try-finally.
  *
  * @param {string} courseName
  * @param {string} moduleName

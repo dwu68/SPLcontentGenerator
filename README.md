@@ -2,7 +2,7 @@
 
 An internal web-based authoring tool for generating Codecademy-style self-paced learning (SPL) lesson materials.
 
-Built with Vite + React. All state is local. No backend, no real AI generation yet — this is the UI skeleton phase.
+Built with Vite + React frontend and a small Express backend proxy. The backend holds the provider API key and calls OpenAI. Screen 2 content generation is still mocked.
 
 ---
 
@@ -10,9 +10,22 @@ Built with Vite + React. All state is local. No backend, no real AI generation y
 
 ```bash
 npm install
-npm run dev        # http://localhost:5173
-npm run build      # production build → dist/
-npm run preview    # preview the production build
+
+# 1. Create your local env file (never committed)
+cp .env.example .env
+# Edit .env — set OPENAI_API_KEY to your key
+# (or set USE_MOCK=true to run without an API key)
+
+# 2. Start both servers (Vite on :5173, Express on :3001)
+npm run dev:all
+
+# Or start them separately in two terminals:
+npm run dev       # Vite frontend  →  http://localhost:5173
+npm run server    # Express backend →  http://localhost:3001
+
+# Production
+npm run build     # build frontend → dist/
+node server/index.js  # serves dist/ + API on one port
 ```
 
 ---
@@ -36,6 +49,9 @@ SPLcontentGenerator/
 ├── index.html
 ├── vite.config.js
 ├── package.json
+├── .env.example                             copy to .env — holds OPENAI_API_KEY (gitignored)
+├── server/
+│   └── index.js                             Express backend — provider key + /api/generate-structure
 ├── src/
 │   ├── main.jsx                         React entry point
 │   ├── App.jsx                          Central state container
@@ -63,27 +79,23 @@ SPLcontentGenerator/
 
 ---
 
-## Where to Connect Real AI
+## Backend Proxy
 
-### Screen 1 — Lesson Structure Generation (service layer in place)
+The Express server (`server/index.js`) is the only process that holds the provider API key.
 
-Integration point: `src/services/lessonStructureService.js` — `callProvider()`
+```
+Browser → Vite (:5173) → [proxy /api/*] → Express (:3001) → OpenAI
+```
 
-The service layer is scaffolded. To wire in a real provider:
+| Endpoint | File | What it does |
+|---|---|---|
+| `POST /api/generate-structure` | `server/index.js` | Calls OpenAI (or mock) and returns `{ title, goal, coveredSubtopics }[]` |
 
-1. Replace the body of `callProvider()` in `lessonStructureService.js` with a `fetch()` / SDK call.
-2. Return `Array<{ title, goal, coveredSubtopics }>` — no ids or step numbers (assigned by `normalizeStructure()`).
-3. Add `VITE_ANTHROPIC_API_KEY=sk-ant-...` to `.env.local` (already gitignored via `*.local`).
+**To use mock data instead of OpenAI:** set `USE_MOCK=true` in `.env`.
 
-`isGenerating`, `generationError`, `try/finally`, and `await` are all wired in `App.jsx` — no changes needed there.
+**Screen 2 AI generation** is still mocked (`src/utils/mockGeneration.js`). When ready, add `POST /api/generate-content` to `server/index.js` and extract `lessonContentService.js` on the frontend following the same pattern as `lessonStructureService.js`.
 
-### Screen 2 — Lesson Content Generation (still mocked)
-
-Integration point: `src/utils/mockGeneration.js` — `generateLessonContent()` — marked `// [AI HOOK]` in `App.jsx`.
-
-When ready: extract a `lessonContentService.js` following the same pattern as `lessonStructureService.js`, then update the import in `App.jsx`.
-
-## Where to Connect a Backend
+## Where to Connect a Backend for Persistence
 
 `handleSaveDraft()` in `src/App.jsx` is marked `// [PERSIST HOOK]`. Currently writes to `localStorage`. Replace with a `fetch()` call to save to a backend.
 

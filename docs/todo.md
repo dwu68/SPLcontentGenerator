@@ -25,16 +25,22 @@ Tighten up the current implementation before adding new capabilities.
 
 ## Phase 2 — AI Integration
 
-**Prerequisite:** API access to Anthropic (or similar).
+**Prerequisite:** OpenAI API key. Add to `.env` (see `.env.example`).
 
-- 🔲 Wire a real provider into `callProvider()` in `src/services/lessonStructureService.js`
-  - Service layer is scaffolded — `callProvider()` currently delegates to the mock
-  - Input: `courseName`, `moduleName`, `subtopicsText`
-  - Output: `Array<{ title, goal, coveredSubtopics }>` — ids/stepNumbers assigned by `normalizeStructure()`
-  - Add `VITE_ANTHROPIC_API_KEY` to `.env.local`; see service file for the exact fetch call stub
-- 🔲 Replace `generateLessonContent()` in `src/utils/mockGeneration.js` with a real API call — hook in `App.jsx` is marked `// [AI HOOK]`
-  - Input: `LessonStructure[]`
-  - Output: `LessonContent[]` (including `expectedAction` and `validationNote`)
+- ✅ Scaffold Screen 1 service layer (`src/services/lessonStructureService.js`)
+- ✅ Add Express backend proxy (`server/index.js`) with `POST /api/generate-structure`
+- ✅ Wire Vite dev proxy (`/api` → `http://localhost:3001`)
+- ✅ Add mock fallback behind server-side `USE_MOCK` env flag
+- 🔲 **Test and verify the real OpenAI path end-to-end**
+  - Copy `.env.example` to `.env`, set `OPENAI_API_KEY`, run `npm run dev:all`
+  - Confirm structure generation returns valid steps from OpenAI
+  - Confirm `USE_MOCK=true` path still works
+- 🔲 **Screen 2: wire real AI content generation**
+  - Add `POST /api/generate-content` to `server/index.js`
+    - Input: `LessonStructure[]`
+    - Output: `LessonContent[]` (including `expectedAction` and `validationNote`)
+  - Extract `src/services/lessonContentService.js` (same three-layer pattern)
+  - Update import in `App.jsx`; add `await`
 - ✅ Add `isGenerating` boolean to `App.jsx` state
 - ✅ Disable "Generate" buttons and show a loading indicator while generation is in progress
 - ✅ Add error state: surface AI generation failures with a clear message

@@ -96,8 +96,8 @@ function App() {
       // [AI HOOK] see src/services/lessonStructureService.js — callProvider()
       const structure = await generateLessonStructure(courseName, moduleName, subtopics)
       setLessonStructure(structure)
-    } catch {
-      setGenerationError('Failed to generate lesson structure. Please check your inputs and try again.')
+    } catch (err) {
+      setGenerationError(err.message || 'Failed to generate lesson structure. Please try again.')
     } finally {
       setIsGenerating(false)
     }
