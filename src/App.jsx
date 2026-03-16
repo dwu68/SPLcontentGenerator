@@ -21,6 +21,7 @@ const STORAGE_KEY = 'spl_lesson_draft'
  *   dirtyStepIds      Set<string>  (steps edited since last save)
  *   saveStatus        'saved' | 'unsaved' | 'saving'
  *   isGenerating      boolean  (true while either generation call is in flight)
+ *   generationError   string | null  (message from the most recent failed generation)
  *
  * Future integration points are marked with  // [AI HOOK]  comments.
  * Future persistence points are marked with  // [PERSIST HOOK]  comments.
@@ -45,8 +46,9 @@ function App() {
   const [dirtyStepIds, setDirtyStepIds] = useState(new Set())
   const [saveStatus, setSaveStatus] = useState('saved')
 
-  // ── Generation loading state ─────────────────────────────────────────────
+  // ── Generation loading / error state ────────────────────────────────────
   const [isGenerating, setIsGenerating] = useState(false)
+  const [generationError, setGenerationError] = useState(null)
 
   // ── Restore draft from localStorage on mount ────────────────────────────
   useEffect(() => {
@@ -77,11 +79,14 @@ function App() {
       )
       if (!ok) return
     }
+    setGenerationError(null)
     setIsGenerating(true)
     try {
       // [AI HOOK] replace generateLessonStructure with API call
       const structure = generateLessonStructure(courseName, moduleName, subtopics)
       setLessonStructure(structure)
+    } catch {
+      setGenerationError('Failed to generate lesson structure. Please check your inputs and try again.')
     } finally {
       setIsGenerating(false)
     }
@@ -137,6 +142,7 @@ function App() {
       )
       if (!ok) return
     }
+    setGenerationError(null)
     setIsGenerating(true)
     try {
       // [AI HOOK] replace generateLessonContent with API call
@@ -146,6 +152,8 @@ function App() {
       setDirtyStepIds(new Set())
       setSaveStatus('unsaved')
       setScreen('authoring')
+    } catch {
+      setGenerationError('Failed to generate lesson content. Please try again.')
     } finally {
       setIsGenerating(false)
     }
@@ -223,6 +231,7 @@ function App() {
               onSubtopicsChange={setSubtopics}
               onSubmit={handleSubmit}
               isGenerating={isGenerating}
+              generationError={generationError}
             />
           </div>
           <div className="builder-right">
@@ -234,6 +243,7 @@ function App() {
               onMoveStep={handleMoveStep}
               onGenerate={handleGenerate}
               isGenerating={isGenerating}
+              generationError={generationError}
             />
           </div>
         </div>

@@ -7,7 +7,8 @@ import React from 'react'
  *   courseName / moduleName / subtopics        controlled values
  *   onCourseNameChange / onModuleNameChange / onSubtopicsChange   setters
  *   onSubmit      fn — called when the user clicks "Generate Structure Preview"
- *   isGenerating  boolean — true while generation is in flight
+ *   isGenerating    boolean — true while generation is in flight
+ *   generationError string | null — error message from the last failed generation
  */
 function LessonInputForm({
   courseName,
@@ -18,6 +19,7 @@ function LessonInputForm({
   onSubtopicsChange,
   onSubmit,
   isGenerating,
+  generationError,
 }) {
   const isValid =
     courseName.trim().length > 0 &&
@@ -94,6 +96,10 @@ function LessonInputForm({
       >
         {isGenerating ? 'Generating…' : 'Generate Structure Preview'}
       </button>
+
+      {generationError && (
+        <p className="generation-error">{generationError}</p>
+      )}
 
       <p
         style={{

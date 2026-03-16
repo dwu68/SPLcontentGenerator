@@ -35,7 +35,7 @@ Tighten up the current implementation before adding new capabilities.
   - Output: `LessonContent[]` (including `expectedAction` and `validationNote`)
 - ✅ Add `isGenerating` boolean to `App.jsx` state
 - ✅ Disable "Generate" buttons and show a loading indicator while generation is in progress
-- 🔲 Add error state: surface AI generation failures with a clear message
+- ✅ Add error state: surface AI generation failures with a clear message
 
 ---
 
