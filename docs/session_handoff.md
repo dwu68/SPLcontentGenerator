@@ -896,3 +896,178 @@ No data model changes required. Add a download button in the Screen 2 header. Th
 ---
 
 *End of Session 5.*
+
+---
+---
+
+# Session 6 Handoff
+
+**ID:** 6
+**Date:** 2026-03-16
+**Session scope:** Phase 2 — Backend proxy for Screen 1 AI generation (OpenAI, server-side key)
+**Git state at close:** Working tree clean — all changes in `ee62b8c`
+
+> **Cross-references:** [product_overview.md](product_overview.md) · [user_flow.md](user_flow.md) · [data_model.md](data_model.md) · [decisions.md](decisions.md) · [todo.md](todo.md)
+
+---
+
+## Commits This Session
+
+```
+ee62b8c feat: add Express backend proxy for Screen 1 AI generation
+```
+
+(plus `71941eb` docs cleanup for Session 5 — carried over from previous session close)
+
+---
+
+## What Was Completed
+
+### Direction correction
+
+The previous session scaffolded `callProvider()` to call Anthropic directly from the browser using `VITE_ANTHROPIC_API_KEY`. That approach was rejected: the API key must stay server-side only. This session replaced it with a proper backend proxy.
+
+### Backend proxy (`server/index.js`)
+
+New Express server. Single responsibility: hold the provider API key and call OpenAI.
+
+- `POST /api/generate-structure` — accepts `{ courseName, moduleName, subtopicsText }`, returns `Array<{ title, goal, coveredSubtopics }>`
+- If `USE_MOCK=true` in `.env`, returns mock data without calling OpenAI (server-side only — frontend has no knowledge of this flag)
+- Validates `OPENAI_API_KEY` on startup; exits with a clear error if missing and `USE_MOCK` is not set
+- In production (`NODE_ENV=production`), also serves `dist/` as static files — one process, one port
+- Model defaults to `gpt-4o-mini`; overridable via `OPENAI_MODEL` env variable
+
+### Frontend service update (`lessonStructureService.js`)
+
+`callProvider()` now calls `POST /api/generate-structure` via `fetch`. The mock import was removed entirely. `normalizeStructure()` is unchanged.
+
+### Vite dev proxy (`vite.config.js`)
+
+`/api/*` proxied to `http://localhost:3001` in dev. The browser always uses a relative `/api` path — no CORS issues, no port mismatch.
+
+### Env file handling
+
+- `.env` added to `.gitignore` (was not previously covered — `*.local` only covered `.env.local`)
+- `.env.example` committed with all four variables: `OPENAI_API_KEY`, `USE_MOCK`, `OPENAI_MODEL`, `PORT`
+
+### `App.jsx` — error surfacing fix
+
+`catch` → `catch (err)` in `handleSubmit`. Server error messages (rate limit, bad key, invalid JSON) now reach the `generationError` UI instead of a static fallback string.
+
+### New dependencies
+
+| Package | Type |
+|---|---|
+| `express` | dependency |
+| `openai` | dependency |
+| `dotenv` | dependency |
+| `concurrently` | devDependency |
+
+### New scripts
+
+| Script | What it does |
+|---|---|
+| `npm run server` | Start Express backend only |
+| `npm run dev:all` | Start Vite + Express together via `concurrently` |
+
+---
+
+## Important Decisions Made
+
+| Decision | Rationale |
+|---|---|
+| Backend proxy, not direct browser call | API key must never be in the client bundle. See `decisions.md` — "Backend proxy" section. |
+| `USE_MOCK` is server-side only | Frontend always calls the same endpoint regardless of mock/real; switching is invisible to the client. |
+| OpenAI `gpt-4o-mini` as default model | Cost-effective for structured short-form generation; overridable via `OPENAI_MODEL` env var. |
+| `response_format: { type: 'json_object' }` | Forces OpenAI to return valid JSON; server parses `{ steps: [] }` and strips the wrapper before sending to frontend. |
+| `.env` explicitly gitignored | `*.local` only covered `.env.local`. A plain `.env` required an explicit entry. |
+
+---
+
+## Files Created, Changed, or Deleted
+
+**Created:**
+```
+server/index.js              — Express backend proxy
+.env.example                 — committed env template (no real keys)
+```
+
+**Modified:**
+```
+src/services/lessonStructureService.js  — callProvider() calls /api; mock import removed
+src/App.jsx                             — catch (err) to surface server error messages
+vite.config.js                          — /api proxy added
+package.json                            — new deps + server/dev:all scripts
+package-lock.json                       — lockfile updated
+.gitignore                              — .env added
+README.md                               — Quick Start rewritten; Backend Proxy section added
+docs/decisions.md                       — backend proxy + OpenAI decisions added
+docs/todo.md                            — Phase 2 items updated; Known Issues corrected
+```
+
+---
+
+## What Is Currently Working
+
+All previous UI behavior is unchanged. New in this session:
+
+- **`npm run dev:all`** starts Vite on `:5173` and Express on `:3001` together
+- **`POST /api/generate-structure`** is live and returns the correct shape
+- **`USE_MOCK=true`** path works without an API key (server returns mock data)
+- **Real OpenAI path is wired** — not yet end-to-end tested (see next steps)
+- **Server error messages** reach the frontend `generationError` UI correctly
+
+---
+
+## What Is NOT Implemented Yet
+
+- **End-to-end test with a real OpenAI key** — the integration is wired but has not been run with a live key
+- **Screen 2 AI generation** — `generateLessonContent` is still the mock in `mockGeneration.js`; no `/api/generate-content` endpoint exists yet
+- **Backend persistence** — `handleSaveDraft()` still writes to `localStorage` only
+- **JSON export, rich code editor, drag-and-drop, multi-lesson management** — Phases 3–6
+
+---
+
+## Next 3 Steps for the Next Session
+
+### 1. End-to-end validation (first priority — do this before any new code)
+
+```bash
+cp .env.example .env
+# Set OPENAI_API_KEY in .env
+npm run dev:all
+```
+
+Verify:
+- Structure generation returns real OpenAI-authored steps (not mock boilerplate)
+- `isGenerating` loading state is visibly active during the network call
+- A missing or invalid API key surfaces a clear error message in the UI
+- `USE_MOCK=true` still returns mock data correctly
+- All existing UI guards still work (confirmation dialog, empty-title block, error display)
+
+### 2. Wire Screen 2 AI content generation
+
+Once Screen 1 is verified:
+- Add `POST /api/generate-content` to `server/index.js` (input: `LessonStructure[]`, output: `LessonContent[]`)
+- Extract `src/services/lessonContentService.js` following the same three-layer pattern as `lessonStructureService.js`
+- Update the import in `App.jsx`; add `await` at the Screen 2 call site
+
+### 3. JSON export button (quick win, no API needed)
+
+Add a download button in the Screen 2 header. No data model changes needed — the state is already in the correct export shape. See [data_model.md → Future: JSON Export Shape](data_model.md).
+
+---
+
+## Known Issues
+
+| Item | Severity | Notes |
+|---|---|---|
+| OpenAI path not yet end-to-end tested | High | First task next session — see Step 1 above |
+| Screen 2 generation still mocked | Expected | Phase 2, Step 2 |
+| `isGenerating` invisible during `USE_MOCK=true` | Info | Mock path is synchronous; resolves on real OpenAI path due to network latency |
+| S1 title edits don't back-propagate to S2 | Low | Resolves on next confirmed re-generation |
+| All state in one `App.jsx` | Low | Fine for two screens; a third screen would warrant extracting contexts |
+
+---
+
+*End of Session 6.*

@@ -90,5 +90,5 @@ Tighten up the current implementation before adding new capabilities.
 |---|---|---|
 | ~~`coveredSubtopics` local state can drift~~ | ~~Low~~ | Fixed — `lastSentCanonicalRef` prevents user-typed round-trips from resetting the input while still syncing external changes |
 | All state in one `App.jsx` | Low | Fine for two screens; a third screen would warrant extracting contexts |
-| Generation errors use fixed messages | Low | `catch` blocks use static strings; when real API calls land, inspect `err` to surface specific failures (rate limit, network, invalid response) |
-| `isGenerating` loading state invisible during mock use | Info | Mock generation is synchronous — "Generating…" label flashes for one render tick; becomes visible once real async AI calls are wired in |
+| ~~Generation errors use fixed messages~~ | ~~Low~~ | Fixed — `handleSubmit` catch block now uses `err.message`; server returns specific error text for 400/500 responses |
+| `isGenerating` loading state invisible during mock use | Info | Mock path (`USE_MOCK=true`) is synchronous on the server — label flashes one tick; becomes visible on the real OpenAI path due to network latency |
