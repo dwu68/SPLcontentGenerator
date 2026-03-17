@@ -26,6 +26,11 @@ selectedStepId    : string | null
 // Save state
 dirtyStepIds      : Set<string>   // step IDs edited since last save
 saveStatus        : 'saved' | 'unsaved' | 'saving'
+
+// Generation loading / error state
+isGenerating         : boolean        // true while any generation call is in flight
+generationError      : string | null  // message from the most recent failed generation
+titleValidationError : string | null  // set when generate is blocked by empty step titles
 ```
 
 ---
@@ -108,7 +113,7 @@ StepBuilderCard.topicsStr        : string     ← local, comma-separated
   - on change: parses to array → calls onUpdate → updates App state
 ```
 
-**Known limitation:** `topicsStr` resets only when `step.id` changes, not when `coveredSubtopics` content changes from outside the card. Currently safe — no external mutation of this field exists. Will become a bug if undo or bulk-edit is added. See [todo.md](todo.md) — Phase 1.
+**Fixed (Phase 1):** `topicsStr` now uses a `lastSentCanonicalRef` guard that prevents user-typed round-trips from resetting the input while still syncing external changes. The previous limitation (reset only on `step.id` change) no longer applies.
 
 ---
 

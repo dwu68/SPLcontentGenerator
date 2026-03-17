@@ -82,7 +82,7 @@ Canonical record of decisions made and their rationale. Covers technology choice
 
 **Rationale:** If the input value is derived directly from the array on every render, the array→string conversion after each keystroke produces a normalized string (trimmed, sorted) that resets the cursor position. Local string state lets the user type freely (including a trailing comma mid-entry) without disruption. The `useEffect` dependency on `step.id` ensures the local state resets correctly when a new structure is generated.
 
-**Known limitation:** If `coveredSubtopics` is modified from outside the card (e.g., a future undo operation or bulk-edit feature), the local string will not update. See [todo.md](todo.md).
+**Status:** This limitation was resolved in Phase 1. A `lastSentCanonicalRef` guard now prevents user-typed round-trips from resetting the input while still syncing external changes to `coveredSubtopics`.
 
 ---
 

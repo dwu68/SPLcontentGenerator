@@ -34,12 +34,14 @@ The "Generate Structure Preview" button is disabled until all three fields have 
 
 **2. Generate the structure**
 
-Clicking "Generate Structure Preview" calls `generateLessonStructure()` in `mockGeneration.js`. This creates one `LessonStructure` step per non-empty sub-topic line. Each step gets:
+Clicking "Generate Structure Preview" calls `generateLessonStructure()` in `lessonStructureService.js`, which sends `POST /api/generate-structure` to the Express backend. The backend calls OpenAI (or returns mock data if `USE_MOCK=true`). While the request is in flight, `isGenerating` is `true` — the button is disabled and a loading indicator is shown. If the request fails, `generationError` is set and an error message is displayed.
+
+On success, the response is normalized into one `LessonStructure` step per returned item. Each step gets:
 - A unique `id`
 - A `stepNumber` (1-based)
-- A `title` (the sub-topic text)
-- A boilerplate `goal` string
-- A `coveredSubtopics` array containing the sub-topic text
+- A `title`
+- A `goal` string
+- A `coveredSubtopics` array
 
 The right panel updates immediately to show the editable step cards.
 
@@ -90,11 +92,13 @@ Click any step in the left sidebar to load its content into both editor panels. 
 
 **2. Edit instruction content (center panel)**
 
-Four fields, all editable textareas or inputs:
+Six fields, all editable textareas or inputs:
 - **Title** — single-line text input (also controls the step's name in the sidebar)
 - **Concept** — multi-line textarea for the conceptual explanation
 - **Task Instructions** — multi-line textarea for what the learner must do
 - **Hint** — textarea for a nudge shown when the learner is stuck
+- **Expected Action** — textarea describing what the learner must do to complete the step (used by future validation)
+- **Validation Note** — textarea with guidance for the validator (not shown to the learner)
 
 Each keystroke immediately updates that step's `LessonContent` entry in app state and marks the step as having unsaved changes.
 
