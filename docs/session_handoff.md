@@ -1341,7 +1341,7 @@ No files created. No files deleted.
 
 | Feature | Status | Location |
 |---|---|---|
-| Real OpenAI path end-to-end test | **Highest priority** — wired but never run with a real key | `.env` has placeholder `OPENAI_API_KEY` |
+| ~~Real OpenAI path end-to-end test~~ | ~~Highest priority~~ | Verified in Session 11 — `gpt-5.4`, all checks passed, no code changes |
 | Screen 2 AI content generation | Mocked (`mockGeneration.js`) | `todo.md` Phase 2 |
 | JSON export | Not started | `todo.md` Phase 3 |
 | Backend persistence | Not started (localStorage only) | `todo.md` Phase 3 |
@@ -1395,56 +1395,84 @@ No files created. No files deleted.
 
 **ID:** 11
 **Date:** 2026-03-18
-**Session scope:** Phase 2 — End-to-end validation of real OpenAI path for Screen 1
-**Git state at close:** Working tree clean after this doc commit
+**Session scope:** Phase 2 — project review, doc consistency pass, end-to-end validation of real OpenAI path for Screen 1
+**Git state at close:** Working tree clean — all changes committed (see log below)
 
 > **Cross-references:** [product_overview.md](product_overview.md) · [user_flow.md](user_flow.md) · [data_model.md](data_model.md) · [decisions.md](decisions.md) · [todo.md](todo.md)
 
 ---
 
+## Commits This Session
+
+```
+d4d7f9a docs: mark Screen 1 real OpenAI path as verified (Session 11)
+70f36d3 docs: session 10 handoff — content model, view/edit mode, next steps   ← carried in from prior session
+```
+
+---
+
 ## What Was Completed
 
-### Screen 1 real OpenAI path — fully verified
+### 1. Full project review
 
-Tested via `curl` against the running Express server (`server/index.js`) with `USE_MOCK=false` and a real `OPENAI_API_KEY` in `.env`. Model: `gpt-5.4` (confirmed valid by OpenAI).
+Read all seven project docs (`README.md`, `product_overview.md`, `user_flow.md`, `data_model.md`, `decisions.md`, `todo.md`, `session_handoff.md`) and confirmed the documented state matched the codebase. No inconsistencies found requiring code changes.
+
+### 2. Screen 1 real OpenAI path — fully verified
+
+Tested via `curl` against the running Express server (`server/index.js`) with `USE_MOCK=false` and a real `OPENAI_API_KEY` in `.env`. Model used: `gpt-5.4` (confirmed valid by the OpenAI API — not a typo or alias).
 
 **All checks passed — no code changes required.**
 
 | Check | Result |
 |---|---|
-| Real AI content returned (not mock boilerplate) | ✅ — step titles, goals, and covered subtopics are subject-specific and well-scoped |
+| Real AI content returned (not mock boilerplate) | ✅ — step titles, goals, and subtopics are subject-specific and well-scoped |
 | Response shape `[{ title, goal, coveredSubtopics }]` | ✅ — exact match; no extra or missing keys |
 | `coveredSubtopics` is a JSON array | ✅ |
-| Multiple sub-topics correctly grouped into steps | ✅ — 4 subtopics → 4 focused steps |
+| Multiple sub-topics correctly split into steps | ✅ — 4 subtopics → 4 focused steps |
 | Missing request field → HTTP 400 | ✅ |
 | Blank-only subtopics → `[]` → `normalizeStructure` error path | ✅ |
-| `gpt-5.4` model accepted by OpenAI API | ✅ — confirmed valid (not a typo or alias) |
+| `gpt-5.4` model confirmed valid by OpenAI | ✅ |
 | `USE_MOCK=true` path still works | ✅ — confirmed in Session 7; unchanged |
 
+### 3. Doc updates
+
+- `docs/todo.md` — Phase 2 OpenAI path item marked ✅; verification details added
+- `docs/session_handoff.md` — Session 10 "Real OpenAI path untested" Known Issue struck through; this entry added
+
 ---
 
-## Code Changes
+## Important Decisions Made
 
-**None.** The integration was correct as implemented. No fixes required.
+| Decision | Rationale |
+|---|---|
+| Verify Screen 1 before writing any Screen 2 backend code | Avoids building Screen 2 generation on an unproven integration layer. Confirmed correct before proceeding. |
+| Validate via `curl`, not browser | Server-side validation isolates the Express + OpenAI layer cleanly; no frontend state noise. |
+| Keep `gpt-5.4` in `.env` | Confirmed valid OpenAI model. No reason to change to `gpt-4o-mini` unless cost or rate-limit concerns arise. |
+| No code changes after a clean validation | The integration was correct as-built. Minimal intervention — don't touch what isn't broken. |
 
 ---
 
-## Files Changed
+## Files Created, Changed, or Deleted
+
+**No files created. No files deleted. No code changed.**
 
 **Modified (doc-only):**
 ```
-docs/todo.md              — Phase 2 OpenAI path item marked ✅; verification details added
-docs/session_handoff.md   — Session 10 "Real OpenAI path untested" Known Issue struck through; this entry added
+docs/todo.md              — Phase 2 real OpenAI path item marked ✅; verification note added
+docs/session_handoff.md   — Session 10 Known Issue struck through; Session 11 entry added
 ```
 
 ---
 
 ## What Is Currently Working
 
-All Session 10 functionality unchanged. Additionally confirmed:
+All Session 10 functionality is unchanged. Additionally confirmed this session:
 
-- **Screen 1 AI generation is fully operational end-to-end:** form inputs → `lessonStructureService.js` → `POST /api/generate-structure` → Express → OpenAI (`gpt-5.4`) → `normalizeStructure()` → editable step cards
-- Both the real OpenAI path and the `USE_MOCK=true` path are verified working for Screen 1
+- **Screen 1 end-to-end AI generation is fully operational:** form inputs → `lessonStructureService.js` → `POST /api/generate-structure` → Express → OpenAI (`gpt-5.4`) → `normalizeStructure()` → editable step cards
+- **Both paths verified for Screen 1:** real OpenAI (`USE_MOCK=false`) and mock (`USE_MOCK=true`)
+- Full two-screen authoring tool functional: Screen 1 structure builder + Screen 2 lesson authoring (view/edit mode)
+- Draft persistence via `localStorage` with dirty state tracking
+- All UI guards in place: loading state, error display, confirmation dialogs, empty-title validation
 
 ---
 
@@ -1452,7 +1480,7 @@ All Session 10 functionality unchanged. Additionally confirmed:
 
 | Feature | Status | Location |
 |---|---|---|
-| Screen 2 AI content generation | Mocked (`mockGeneration.js`) — next Phase 2 step | `todo.md` Phase 2 |
+| Screen 2 AI content generation | Mocked (`mockGeneration.js`) — **next step** | `todo.md` Phase 2 |
 | JSON export | Not started | `todo.md` Phase 3 |
 | Backend persistence | Not started (localStorage only) | `todo.md` Phase 3 |
 | Syntax-highlighted code editor | Not started | `todo.md` Phase 4 |
@@ -1460,28 +1488,78 @@ All Session 10 functionality unchanged. Additionally confirmed:
 
 ---
 
-## Next Recommended Step
+## Next 3 Recommended Steps
 
-**Wire Screen 2 AI content generation (Phase 2, Step 2):**
+### 1. Wire Screen 2 AI content generation (Phase 2, Step 2) — primary next task
+
+All infrastructure is in place. Work is contained to two files + one import update:
 
 1. Add `POST /api/generate-content` to `server/index.js`
    - Input: `{ courseName, moduleName, steps: LessonStructure[] }`
    - Output: `LessonContent[]` — all 8 fields: `title`, `concept`, `codeExample`, `instructions`, `hint`, `expectedAction`, `validationNote`, `starterCode`
-2. Extract `src/services/lessonContentService.js` (same three-layer pattern as `lessonStructureService.js`)
-3. Update import in `App.jsx`; `handleGenerate` is already `async`
-4. Note in the AI prompt: `concept` paragraphs must be separated by blank lines (`\n\n`) for correct view-mode rendering
+   - AI prompt note: `concept` paragraphs must use blank lines (`\n\n`) for correct view-mode rendering
+2. Extract `src/services/lessonContentService.js` — same three-layer pattern as `lessonStructureService.js` (`callProvider` / `normalizeContent` / `generateLessonContent`)
+3. Update import in `App.jsx`; `handleGenerate` is already `async` — add `await`
+
+### 2. Add JSON export button in Screen 2 header (Phase 3, quick win)
+
+No data model changes needed. State is already in the correct export shape (see `data_model.md` — Future: JSON Export Shape).
+
+- Add a Download button to `Header.jsx` shown when `screen === 'authoring'`
+- Filename: `${courseName}-${moduleName}.json` (slugified, e.g. replace spaces with `-`)
+- One `URL.createObjectURL` + `<a>` click — no new dependencies
+
+### 3. Remove dead props from `LessonAuthoringView` (minor cleanup)
+
+`App.jsx` passes `saveStatus` and `onSaveDraft` to `LessonAuthoringView`, but neither prop is used by that component. Two-line removal in `App.jsx`'s render call. Safe to do as a standalone chore commit at any time.
 
 ---
 
-## Known Issues
+## Known Issues, Rough Edges, and Cleanup Items
 
 | Item | Severity | Notes |
 |---|---|---|
-| Old localStorage drafts lack `codeExample` | Low | Pre-Session 8 drafts show empty Code Example field. Graceful — no crash. Clear draft or regenerate to fix. |
-| `concept` split on `\n\n` in view mode | Low | Single newlines within a paragraph are not treated as line breaks. AI prompt for `generate-content` must use blank-line paragraph separation. |
-| Dead props on `LessonAuthoringView` | Info | `App.jsx` passes `saveStatus` and `onSaveDraft` to `LessonAuthoringView`; unused. Safe to remove when convenient. |
-| Screen 2 generation still mocked | Expected | Phase 2, Step 2 |
-| `isGenerating` invisible during `USE_MOCK=true` | Info | Mock is synchronous; resolves on real OpenAI path due to network latency |
+| Old localStorage drafts lack `codeExample` | Low | Pre-Session 8 drafts show empty Code Example in edit mode; section omitted in view mode. Graceful — no crash. `localStorage.removeItem('spl_lesson_draft')` or regenerate content to fix. |
+| `concept` split on `\n\n` in view mode | Low | Single newlines within a paragraph are not treated as line breaks. The AI prompt for `generate-content` must explicitly require blank-line paragraph separation. |
+| Dead props on `LessonAuthoringView` | Info | `App.jsx` passes `saveStatus` and `onSaveDraft` to `LessonAuthoringView`; both unused. Safe to remove from `App.jsx` render call when convenient. |
+| Screen 2 generation still mocked | Expected | Phase 2, Step 2 — primary next task |
+| `isGenerating` invisible during `USE_MOCK=true` | Info | Mock is synchronous on the server; loading flash is one tick. Resolves on real OpenAI path due to network latency. |
+| S1 title edits don't back-propagate to S2 | Low | If a user edits a step title in Screen 1 after visiting Screen 2, `lessonContent.title` diverges until the next confirmed re-generation. Low risk at current scale. |
+
+---
+
+## Commit Messages
+
+**Recommended:**
+```
+docs: finalize Session 11 handoff — Screen 1 OpenAI path fully verified
+```
+
+**Alternative A** (shorter):
+```
+docs: close session 11; Screen 1 real AI path confirmed, no code changes
+```
+
+**Alternative B** (describes content more):
+```
+docs: add full Session 11 handoff with decisions, next steps, and known issues
+```
+
+---
+
+## Git Commands
+
+```bash
+git add docs/session_handoff.md
+git commit -m "docs: finalize Session 11 handoff — Screen 1 OpenAI path fully verified" -m "Full structured handoff entry: validation results, decisions, 3 next steps, known issues, commit message suggestions. Session 10 stale Known Issue row also struck through."
+```
+
+**Files excluded by `.gitignore` — must never be committed:**
+```
+.env          — contains real OPENAI_API_KEY
+dist/         — Vite production build output
+node_modules/ — installed packages
+```
 
 ---
 
