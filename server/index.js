@@ -63,14 +63,56 @@ function mockGenerateStructure(subtopicsText) {
 // ---------------------------------------------------------------------------
 
 function mockGenerateContent(step) {
+  const topic = step.title
+  const topicLower = topic.toLowerCase()
   return {
-    concept: `${step.title} is a core concept you will use throughout this module.\n\nWhy it matters: getting ${step.title.toLowerCase()} wrong does not always produce an obvious error — sometimes the code runs but produces incorrect output, which makes it harder to debug.\n\nHow it works: the key rule is that [describe the primary rule or mechanism here]. This applies any time [describe when the rule is in force].\n\nCommon mistake: learners often assume [describe a typical misconception]. The correct approach is always to [describe the correct practice].`,
-    codeExample: `# ${step.title} — short example\n\n# Correct usage:\n[example of correct code here]   # <- why this works\n\n# Common mistake:\n[example of incorrect code here] # <- what goes wrong and why`,
-    instructions: `1. Look at the starter code on the right. Find the section marked TODO.\n2. Apply ${step.title.toLowerCase()} to complete that section.\n3. Run the code and confirm the output matches the expected result shown in the comment.`,
-    hint: `Re-read the explanation above and focus on the key rule for ${step.title.toLowerCase()}. Then look at the code example — the correct usage pattern there is exactly what the TODO is asking for.`,
-    expectedAction: `The learner completes the TODO block by correctly applying ${step.title.toLowerCase()}. The code should run without errors and produce the expected output.`,
+    blocks: [
+      {
+        id: 'b1',
+        type: 'explain',
+        title: 'What it is',
+        content: `${topic} is a core concept you will use throughout this module. Understanding it clearly now will make the next steps much easier.`,
+        language: null,
+      },
+      {
+        id: 'b2',
+        type: 'explain',
+        title: 'Why it matters',
+        content: `Getting ${topicLower} wrong does not always produce an obvious error — sometimes the code runs but produces incorrect output, which makes it harder to debug. The key is to apply it consistently.`,
+        language: null,
+      },
+      {
+        id: 'b3',
+        type: 'code',
+        title: null,
+        content: `# ${topic} — short example\n\n# Correct usage:\nresult = do_the_thing_correctly()   # this works as expected\nprint(result)\n\n# Common mistake (do not do this):\n# wrong_result = do_the_thing_wrong() # produces incorrect output`,
+        language: 'python',
+      },
+      {
+        id: 'b4',
+        type: 'check',
+        title: 'Before you continue',
+        content: `What is the most important rule to remember when applying ${topicLower}?\n\n→ Apply it consistently and verify the output matches the expected result.`,
+        language: null,
+      },
+      {
+        id: 'b5',
+        type: 'task',
+        title: 'Your turn',
+        content: `1. Look at the starter code on the right. Find the section marked TODO.\n2. Apply ${topicLower} to complete that section.\n3. Confirm the output matches the expected result shown in the comment.`,
+        language: null,
+      },
+      {
+        id: 'b6',
+        type: 'hint',
+        title: 'Need a hint?',
+        content: `Look at the code example above — the correct usage pattern there is exactly what the TODO is asking for. Focus on the key rule for ${topicLower}.`,
+        language: null,
+      },
+    ],
+    expectedAction: `The learner completes the TODO block by correctly applying ${topicLower}. The code should run without errors and produce the expected output.`,
     validationNote: `Correct solution: the TODO block is filled in and the output matches what is expected. Watch for: copy-pasting the example without adapting it to the task, and leaving the TODO comment in place.`,
-    starterCode: `# Step ${step.stepNumber}: ${step.title}\n# -----------------------------------------------\n# Read this code carefully. Two concepts below\n# relate directly to: ${step.title}\n\n# TODO: Add your comment here explaining what you notice.\n\n\n# Example code\nif True:\n    print("Step ${step.stepNumber} is running")\n`,
+    starterCode: `# Step ${step.stepNumber}: ${topic}\n# -----------------------------------------------\n# Study the example in the lesson panel, then\n# complete the TODO below.\n\n# TODO: apply ${topicLower} here\n\n\n# Expected output is shown as a comment after each print:\nif True:\n    print("Step ${step.stepNumber} is running")  # Step ${step.stepNumber} is running\n`,
   }
 }
 
