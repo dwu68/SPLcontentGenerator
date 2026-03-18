@@ -1,5 +1,77 @@
 # Session Handoff — SPL Content Generator
 
+**ID** 12
+**Date:** 2026-03-18
+**Session scope:** Server-side prompt infrastructure + Screen 2 AI generation wired end-to-end
+
+---
+
+## What Was Completed
+
+### Session 12 — Prompt infrastructure + Screen 2 AI wired
+
+#### Prompt infrastructure refactor
+
+All AI prompt text is now isolated in editable server-side files. Nothing is embedded inline in route handlers.
+
+New files created:
+
+| File | Purpose |
+|---|---|
+| `server/lib/promptContext.js` | Normalizes and assembles prompt input fields; the single place to add new context variables (learnerLevel, outputLanguage, etc.) |
+| `server/prompts/generateStructurePrompt.js` | Screen 1 prompt builder — moved out of `server/index.js`; exports `buildGenerateStructurePrompt({ courseName, moduleName, subtopicsText })` |
+| `server/prompts/generateContentPrompt.js` | Screen 2 master prompt builder — exports `buildGenerateContentPrompt(context)`; this is the file to open when editing the lesson content prompt |
+| `server/prompts/contentSectionPrompts.js` | Per-section prompt builders (explanation, code example, instructions, hint, starter code, practice task) — placeholder stubs ready for future per-section regeneration endpoints |
+
+`server/index.js` now only does: request validation → `buildPromptContext()` → `buildGenerateContentPrompt()` / `buildGenerateStructurePrompt()` → OpenAI call → response shaping. No prompt text lives in route handlers.
+
+The user pasted the final Screen 2 master prompt into `generateContentPrompt.js` during this session.
+
+#### Screen 2 AI generation wired
+
+- Added `POST /api/generate-content` to `server/index.js`
+  - Accepts: `{ courseName, moduleName, step, lessonStructure?, learnerLevel?, outputLanguage? }`
+  - Returns: `{ concept, codeExample, instructions, hint, expectedAction, validationNote, starterCode }`
+  - Uses `buildPromptContext()` + `buildGenerateContentPrompt()` for the real path
+  - Has a server-side mock (`mockGenerateContent(step)`) used when `USE_MOCK=true`, mirroring the old `mockGeneration.js` behavior
+- Created `src/services/lessonContentService.js` — same three-layer pattern as Screen 1:
+  - `callProvider()` — calls `POST /api/generate-content`
+  - `normalizeContent(rawContent, step)` — validates shape, coerces missing fields to `''`, adds `id`/`stepNumber`/`title`
+  - `generateAllLessonContent({ courseName, moduleName, lessonStructure, ... })` — loops over all steps sequentially, one API call per step; exported public API
+- Updated `App.jsx` — swapped import from `mockGeneration.generateLessonContent` to `lessonContentService.generateAllLessonContent`; added `await`; updated comment
+
+#### Bugs diagnosed and resolved
+
+**404 on `/api/generate-content`**: Route was registered in code but the Express backend process had not been restarted. Fix: `npm run server` (or `npm run dev:all`). No code change required.
+
+**Screen 2 showing old placeholder content**: `App.jsx` on mount restores `lessonContent` from `localStorage` (`spl_lesson_draft`). The saved draft contained mock-generated content from before the real API was wired. Fix: run `localStorage.removeItem('spl_lesson_draft')` in the browser console, then reload and regenerate. No code change required.
+
+---
+
+## State at End of Session
+
+- `USE_MOCK=false` and `OPENAI_MODEL=gpt-5.4` are set in `.env`
+- Both `POST /api/generate-structure` (Screen 1) and `POST /api/generate-content` (Screen 2) are live on the running backend
+- The real AI path for Screen 2 has been wired but not yet end-to-end verified with a live generation (the session ended before a full fresh generation was confirmed working)
+- `src/utils/mockGeneration.js` is now dead code — no file imports it. The mock behavior was moved server-side. Safe to delete.
+
+---
+
+## Next Recommended Step
+
+**Verify Screen 2 real AI generation end-to-end** (same verification done for Screen 1 in Session 11):
+1. Clear localStorage: `localStorage.removeItem('spl_lesson_draft')`
+2. Restart backend: `npm run dev:all`
+3. Fill in the form, generate structure, click "Generate Lesson Content →"
+4. Confirm each step's content looks like real AI output (not bracket-style placeholders)
+5. If generation fails, check the Express terminal for `[generate-content]` error logs
+
+Once verified, the next code work is Phase 3 item 1: **Add JSON export button** in the Screen 2 header. State shape is already correct — no structural changes needed.
+
+---
+
+---
+
 **ID** 1
 **Date:** 2026-03-16
 **Session scope:** Initial build — UI skeleton + local state flow (no backend, no real AI)

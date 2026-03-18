@@ -37,12 +37,12 @@ Tighten up the current implementation before adding new capabilities.
   - Verified with `gpt-5.4`; response shape `[{ title, goal, coveredSubtopics }]` matched `normalizeStructure()` contract exactly
   - Real AI content confirmed (not mock boilerplate); no code changes required
   - `USE_MOCK=true` path confirmed working (validated in Session 7)
-- 🔲 **Screen 2: wire real AI content generation**
-  - Add `POST /api/generate-content` to `server/index.js`
-    - Input: `LessonStructure[]`
-    - Output: `LessonContent[]` (including `expectedAction` and `validationNote`)
-  - Extract `src/services/lessonContentService.js` (same three-layer pattern)
-  - Update import in `App.jsx`; add `await`
+- ✅ **Server-side prompt infrastructure** — all prompt text isolated in `server/prompts/`; `server/index.js` imports builders, no inline prompt strings; `server/lib/promptContext.js` normalizes inputs
+- ✅ **Screen 2: wire real AI content generation**
+  - `POST /api/generate-content` added to `server/index.js` (one call per step; mock + real paths)
+  - `src/services/lessonContentService.js` created (same three-layer pattern as Screen 1)
+  - `App.jsx` updated to import and `await` `generateAllLessonContent`
+- 🔲 **Verify Screen 2 real AI generation end-to-end** — wiring is complete but a live generation has not been confirmed this session; clear localStorage and regenerate to verify (see session 12 handoff)
 - ✅ Add `isGenerating` boolean to `App.jsx` state
 - ✅ Disable "Generate" buttons and show a loading indicator while generation is in progress
 - ✅ Add error state: surface AI generation failures with a clear message
@@ -94,3 +94,4 @@ Tighten up the current implementation before adding new capabilities.
 | All state in one `App.jsx` | Low | Fine for two screens; a third screen would warrant extracting contexts |
 | ~~Generation errors use fixed messages~~ | ~~Low~~ | Fixed — `handleSubmit` catch block now uses `err.message`; server returns specific error text for 400/500 responses |
 | `isGenerating` loading state invisible during mock use | Info | Mock path (`USE_MOCK=true`) is synchronous on the server — label flashes one tick; becomes visible on the real OpenAI path due to network latency |
+| `src/utils/mockGeneration.js` is dead code | Low | No file imports it after Session 12 — mock behavior moved server-side. Safe to delete. |

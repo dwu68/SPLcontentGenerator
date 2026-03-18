@@ -3,7 +3,7 @@ import Header from './components/Header'
 import LessonInputForm from './components/LessonInputForm'
 import LessonStructurePreview from './components/LessonStructurePreview'
 import LessonAuthoringView from './components/LessonAuthoringView'
-import { generateLessonContent } from './utils/mockGeneration'
+import { generateAllLessonContent } from './services/lessonContentService'
 import { generateLessonStructure } from './services/lessonStructureService'
 
 const STORAGE_KEY = 'spl_lesson_draft'
@@ -26,7 +26,7 @@ const STORAGE_KEY = 'spl_lesson_draft'
  *   titleValidationError string | null  (set when generate is blocked by empty step titles)
  *
  * Screen 1 AI integration point: src/services/lessonStructureService.js — callProvider()
- * Screen 2 AI integration point: src/utils/mockGeneration.js — generateLessonContent() [AI HOOK]
+ * Screen 2 AI integration point: src/services/lessonContentService.js — generateAllLessonContent()
  * Persistence integration point: handleSaveDraft() below [PERSIST HOOK]
  */
 function App() {
@@ -164,8 +164,7 @@ function App() {
     setGenerationError(null)
     setIsGenerating(true)
     try {
-      // [AI HOOK] replace generateLessonContent with API call
-      const content = generateLessonContent(lessonStructure)
+      const content = await generateAllLessonContent({ courseName, moduleName, lessonStructure })
       setLessonContent(content)
       setSelectedStepId(content[0]?.id || null)
       setDirtyStepIds(new Set())
