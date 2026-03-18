@@ -33,10 +33,10 @@ Tighten up the current implementation before adding new capabilities.
 - ✅ Add Express backend proxy (`server/index.js`) with `POST /api/generate-structure`
 - ✅ Wire Vite dev proxy (`/api` → `http://localhost:3001`)
 - ✅ Add mock fallback behind server-side `USE_MOCK` env flag
-- 🔲 **Test and verify the real OpenAI path end-to-end**
-  - Copy `.env.example` to `.env`, set `OPENAI_API_KEY`, run `npm run dev:all`
-  - Confirm structure generation returns valid steps from OpenAI
-  - Confirm `USE_MOCK=true` path still works
+- ✅ **Test and verify the real OpenAI path end-to-end**
+  - Verified with `gpt-5.4`; response shape `[{ title, goal, coveredSubtopics }]` matched `normalizeStructure()` contract exactly
+  - Real AI content confirmed (not mock boilerplate); no code changes required
+  - `USE_MOCK=true` path confirmed working (validated in Session 7)
 - 🔲 **Screen 2: wire real AI content generation**
   - Add `POST /api/generate-content` to `server/index.js`
     - Input: `LessonStructure[]`

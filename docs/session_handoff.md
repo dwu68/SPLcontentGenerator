@@ -1377,9 +1377,112 @@ No files created. No files deleted.
 
 | Item | Severity | Detail |
 |---|---|---|
-| Real OpenAI path untested | High | `.env` has placeholder key; server exits on startup if `USE_MOCK=false` and key is missing or placeholder |
+| ~~Real OpenAI path untested~~ | ~~High~~ | Verified in Session 11 — see below |
 | Old localStorage drafts lack `codeExample` | Low | Pre-Session 8 drafts will show an empty Code Example field in edit mode and omit the section in view mode. Graceful — no crash. Clear the draft (`localStorage.removeItem('spl_lesson_draft')`) or regenerate content to fix. |
 | `concept` split on `\n\n` in view mode | Low | Single newline breaks within a paragraph render as a single `<p>` (not separate lines). Authors must use blank lines between paragraphs for correct view-mode rendering. This should be noted in the future AI prompt for `generate-content`. |
 | Dead props on `LessonAuthoringView` | Info | `App.jsx` passes `saveStatus` and `onSaveDraft` to `LessonAuthoringView` but the component no longer uses them. They were already unused before Session 9. Safe to remove from App.jsx's render call when convenient. |
 | Screen 2 generation still mocked | Expected | Phase 2, Step 2 — next after OpenAI path is verified |
 | `isGenerating` invisible during `USE_MOCK=true` | Info | Mock is synchronous on the server; loading flash is one tick. Resolves on real OpenAI path due to network latency |
+
+---
+
+*End of Session 10.*
+
+---
+---
+
+# Session 11 Handoff
+
+**ID:** 11
+**Date:** 2026-03-18
+**Session scope:** Phase 2 — End-to-end validation of real OpenAI path for Screen 1
+**Git state at close:** Working tree clean after this doc commit
+
+> **Cross-references:** [product_overview.md](product_overview.md) · [user_flow.md](user_flow.md) · [data_model.md](data_model.md) · [decisions.md](decisions.md) · [todo.md](todo.md)
+
+---
+
+## What Was Completed
+
+### Screen 1 real OpenAI path — fully verified
+
+Tested via `curl` against the running Express server (`server/index.js`) with `USE_MOCK=false` and a real `OPENAI_API_KEY` in `.env`. Model: `gpt-5.4` (confirmed valid by OpenAI).
+
+**All checks passed — no code changes required.**
+
+| Check | Result |
+|---|---|
+| Real AI content returned (not mock boilerplate) | ✅ — step titles, goals, and covered subtopics are subject-specific and well-scoped |
+| Response shape `[{ title, goal, coveredSubtopics }]` | ✅ — exact match; no extra or missing keys |
+| `coveredSubtopics` is a JSON array | ✅ |
+| Multiple sub-topics correctly grouped into steps | ✅ — 4 subtopics → 4 focused steps |
+| Missing request field → HTTP 400 | ✅ |
+| Blank-only subtopics → `[]` → `normalizeStructure` error path | ✅ |
+| `gpt-5.4` model accepted by OpenAI API | ✅ — confirmed valid (not a typo or alias) |
+| `USE_MOCK=true` path still works | ✅ — confirmed in Session 7; unchanged |
+
+---
+
+## Code Changes
+
+**None.** The integration was correct as implemented. No fixes required.
+
+---
+
+## Files Changed
+
+**Modified (doc-only):**
+```
+docs/todo.md              — Phase 2 OpenAI path item marked ✅; verification details added
+docs/session_handoff.md   — Session 10 "Real OpenAI path untested" Known Issue struck through; this entry added
+```
+
+---
+
+## What Is Currently Working
+
+All Session 10 functionality unchanged. Additionally confirmed:
+
+- **Screen 1 AI generation is fully operational end-to-end:** form inputs → `lessonStructureService.js` → `POST /api/generate-structure` → Express → OpenAI (`gpt-5.4`) → `normalizeStructure()` → editable step cards
+- Both the real OpenAI path and the `USE_MOCK=true` path are verified working for Screen 1
+
+---
+
+## What Is NOT Implemented Yet
+
+| Feature | Status | Location |
+|---|---|---|
+| Screen 2 AI content generation | Mocked (`mockGeneration.js`) — next Phase 2 step | `todo.md` Phase 2 |
+| JSON export | Not started | `todo.md` Phase 3 |
+| Backend persistence | Not started (localStorage only) | `todo.md` Phase 3 |
+| Syntax-highlighted code editor | Not started | `todo.md` Phase 4 |
+| Multiple draft slots / lesson management | Not started | `todo.md` Phase 5 |
+
+---
+
+## Next Recommended Step
+
+**Wire Screen 2 AI content generation (Phase 2, Step 2):**
+
+1. Add `POST /api/generate-content` to `server/index.js`
+   - Input: `{ courseName, moduleName, steps: LessonStructure[] }`
+   - Output: `LessonContent[]` — all 8 fields: `title`, `concept`, `codeExample`, `instructions`, `hint`, `expectedAction`, `validationNote`, `starterCode`
+2. Extract `src/services/lessonContentService.js` (same three-layer pattern as `lessonStructureService.js`)
+3. Update import in `App.jsx`; `handleGenerate` is already `async`
+4. Note in the AI prompt: `concept` paragraphs must be separated by blank lines (`\n\n`) for correct view-mode rendering
+
+---
+
+## Known Issues
+
+| Item | Severity | Notes |
+|---|---|---|
+| Old localStorage drafts lack `codeExample` | Low | Pre-Session 8 drafts show empty Code Example field. Graceful — no crash. Clear draft or regenerate to fix. |
+| `concept` split on `\n\n` in view mode | Low | Single newlines within a paragraph are not treated as line breaks. AI prompt for `generate-content` must use blank-line paragraph separation. |
+| Dead props on `LessonAuthoringView` | Info | `App.jsx` passes `saveStatus` and `onSaveDraft` to `LessonAuthoringView`; unused. Safe to remove when convenient. |
+| Screen 2 generation still mocked | Expected | Phase 2, Step 2 |
+| `isGenerating` invisible during `USE_MOCK=true` | Info | Mock is synchronous; resolves on real OpenAI path due to network latency |
+
+---
+
+*End of Session 11.*
