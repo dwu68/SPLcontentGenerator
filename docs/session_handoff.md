@@ -1223,7 +1223,7 @@ Once confirmed, proceed to **Phase 2 Step 2** in `todo.md`: wire Screen 2 AI gen
 **Files changed:**
 - `src/utils/mockGeneration.js` — added `mockExplanation()`, `mockCodeExample()`; rewrote all mock helpers with real teaching-tone content; removed `mockConcept()`
 - `src/components/InstructionPanelEditor.jsx` — added Code Example textarea; relabeled "Concept" → "Explanation", "Task Instructions" → "Task"; tightened placeholder text
-- `src/components/LessonAuthoringView.jsx` — sidebar header "Lesson Steps" → "Topic List"; panel tag "Step N" → "Topic N"
+- `src/components/LessonAuthoringView.jsx` — no sidebar label changes (reverted)
 - `docs/data_model.md` — added `codeExample` field to `LessonContent` shape; updated `concept` and `instructions` descriptions
 - `docs/product_overview.md` — updated Screen 2 field list
 - `docs/user_flow.md` — updated Screen 2 field list (six → seven fields)
@@ -1236,3 +1236,30 @@ Once confirmed, proceed to **Phase 2 Step 2** in `todo.md`: wire Screen 2 AI gen
 ---
 
 *End of Session 8.*
+
+---
+
+## Session 9
+**Date:** 2026-03-18
+**Session scope:** Screen 2 view/edit mode — readable lesson page by default, explicit Edit/Save/Cancel controls
+
+### What Was Completed
+
+**Screen 2 now has two modes:**
+- **View mode (default):** instruction panel renders as readable prose (title, explanation, code example, task, hint). No textareas. No nested scroll. The main area scrolls naturally as a page.
+- **Edit mode (on-demand):** triggered by the "Edit" button in the instruction panel header. InstructionPanelEditor (textareas) and editable code panel are shown. "Save" keeps changes and exits. "Cancel" restores a snapshot taken on edit entry and exits. Switching steps while editing silently cancels (restores snapshot).
+
+**Files changed:**
+- `src/components/LessonAuthoringView.jsx` — added `isEditing` + `editSnapshot` local state; added `LessonStepView` component for view mode; added Edit/Save/Cancel controls in panel header; intercepts step selection to cancel edits; passes `readOnly` to `CodeEditorPanel`
+- `src/components/CodeEditorPanel.jsx` — added `readOnly` prop; renders `<pre className="code-pre">` in view mode
+- `src/App.css` — added `.view-mode` layout override (natural scroll, no nested scrollboxes); added `.lesson-step-view` prose typography; added `.code-pre` read-only code block; added `.panel-header-actions`
+- `docs/user_flow.md` — added View mode / Edit mode section; updated Screen 2 flow
+
+### Assumptions
+- `expectedAction` and `validationNote` are intentionally hidden in view mode — they are author metadata, not learner-facing content.
+- Switching steps while in edit mode silently cancels (no confirm dialog). This is consistent with Cancel semantics and avoids interrupting navigation.
+- The 50/50 panel width split is preserved in view mode; only height and overflow behavior change.
+
+---
+
+*End of Session 9.*

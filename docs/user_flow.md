@@ -84,15 +84,21 @@ Three columns:
 
 The header shows a breadcrumb (`Course Name › Module Name`), the SaveStatus indicator, a Save Draft button, and a "← Back to Builder" button.
 
+### View mode vs Edit mode
+
+Screen 2 opens in **view mode** by default. The instruction panel renders lesson content as readable prose — no textareas, no nested scroll areas. The starter code is shown in a read-only dark block. The overall page scrolls naturally.
+
+Clicking the **Edit** button (top-right of the instruction panel) enters **edit mode** for the currently selected step. Clicking **Save** keeps changes and returns to view mode. Clicking **Cancel** discards in-progress edits and returns to view mode. Switching to a different step while in edit mode automatically cancels in-progress edits (same behavior as Cancel).
+
 ### Step-by-step flow
 
 **1. Select a step**
 
-Click any step in the left sidebar to load its content into both editor panels. The active step is highlighted with a blue background and a filled blue number badge. Steps with unsaved changes show a small amber dot.
+Click any step in the left sidebar to load its content into the view panel. The active step is highlighted with a blue background and a filled blue number badge. Steps with unsaved changes show a small amber dot.
 
 **2. Edit instruction content (center panel)**
 
-Seven fields, all editable textareas or inputs:
+Click **Edit** in the panel header to enter edit mode. Seven fields, all editable textareas or inputs:
 - **Title** — single-line text input (also controls the step's name in the sidebar)
 - **Explanation** — multi-line textarea for the teaching narrative: why the concept matters, how it works, rules, common mistakes
 - **Code Example** — short textarea for an annotated 4–8 line snippet illustrating the concept; distinct from the full starter code

@@ -3,15 +3,25 @@ import React from 'react'
 /**
  * CodeEditorPanel — right panel in Screen 2.
  *
- * Renders the starter code in a dark-themed monospaced textarea.
- * Handles Tab key for indentation so the editing experience feels
- * natural without a full code editor library.
+ * Modes:
+ *   readOnly=false (edit mode) — dark-themed monospaced textarea with Tab-indent support.
+ *   readOnly=true  (view mode) — same dark styling rendered as a <pre> block; not interactive.
  *
  * Props:
  *   step      LessonContent
  *   onUpdate  fn(fields: Partial<LessonContent>)
+ *   readOnly  boolean
  */
-function CodeEditorPanel({ step, onUpdate }) {
+function CodeEditorPanel({ step, onUpdate, readOnly }) {
+  if (readOnly) {
+    return (
+      <div className="code-editor-wrapper">
+        <span className="code-field-label">starter_code.py</span>
+        <pre className="code-pre">{step.starterCode}</pre>
+      </div>
+    )
+  }
+
   const handleKeyDown = (e) => {
     // Insert 4 spaces on Tab instead of moving focus
     if (e.key === 'Tab') {
