@@ -93,6 +93,7 @@ function normalizeContent(rawContent, step) {
     id:         step.id,
     stepNumber: step.stepNumber,
     title:      step.title,
+    blocks:     Array.isArray(raw.blocks) ? raw.blocks : [],
     ...coerced,
   }
 }

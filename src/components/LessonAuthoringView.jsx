@@ -1,6 +1,7 @@
 import React, { useState } from 'react'
 import InstructionPanelEditor from './InstructionPanelEditor'
 import CodeEditorPanel from './CodeEditorPanel'
+import BlockEditor from './BlockEditor'
 
 /**
  * LessonAuthoringView — Screen 2 layout.
@@ -119,10 +120,17 @@ function LessonAuthoringView({
               </div>
               <div className="panel-body">
                 {isEditing ? (
-                  <InstructionPanelEditor
-                    step={selectedStep}
-                    onUpdate={(fields) => onUpdateContent(selectedStep.id, fields)}
-                  />
+                  selectedStep.blocks?.length > 0 ? (
+                    <BlockEditor
+                      blocks={selectedStep.blocks}
+                      onUpdate={(newBlocks) => onUpdateContent(selectedStep.id, { blocks: newBlocks })}
+                    />
+                  ) : (
+                    <InstructionPanelEditor
+                      step={selectedStep}
+                      onUpdate={(fields) => onUpdateContent(selectedStep.id, fields)}
+                    />
+                  )
                 ) : (
                   <LessonStepView step={selectedStep} />
                 )}
@@ -156,10 +164,18 @@ function LessonAuthoringView({
 
 /**
  * LessonStepView — read-only lesson content for view mode.
- * Renders concept, codeExample, instructions, and hint as prose blocks.
- * expectedAction and validationNote are author metadata — not shown here.
+ *
+ * If the step has a non-empty `blocks` array, delegates to BlocksView (block mode).
+ * Otherwise falls back to the original flat-field prose rendering.
+ *
+ * expectedAction and validationNote are author metadata — not shown in either mode.
  */
 function LessonStepView({ step }) {
+  if (step.blocks?.length > 0) {
+    return <BlocksView step={step} />
+  }
+
+  // ── Flat-field fallback (original rendering, unchanged) ──────────────────
   return (
     <div className="lesson-step-view">
       <h2 className="lesson-view-title">{step.title}</h2>
@@ -205,6 +221,99 @@ function LessonStepView({ step }) {
           <p className="lesson-view-hint">{step.hint}</p>
         </div>
       )}
+    </div>
+  )
+}
+
+// ── Block-based view mode ────────────────────────────────────────────────────
+
+/**
+ * BlocksView — renders a step's `blocks` array in sequence.
+ * Each block is passed to Block, which dispatches on block.type.
+ */
+function BlocksView({ step }) {
+  return (
+    <div className="block-view">
+      <h2 className="block-view-title">{step.title}</h2>
+      {step.blocks.map((block) => (
+        <Block key={block.id} block={block} />
+      ))}
+    </div>
+  )
+}
+
+/**
+ * Block — renders one block by type.
+ *
+ * Types: explain | code | check | task | hint
+ * All types support an optional `title` field rendered as a small label above the content.
+ */
+function Block({ block }) {
+  const { type, title, content } = block
+
+  // Shared helpers
+  const paragraphs = content
+    .split('\n\n')
+    .filter(Boolean)
+    .map((para, i) => <p key={i}>{para}</p>)
+
+  const lines = content
+    .split('\n')
+    .filter(Boolean)
+    .map((line, i) => <p key={i}>{line}</p>)
+
+  if (type === 'explain') {
+    return (
+      <div className="block block-explain">
+        {title && <div className="block-heading">{title}</div>}
+        <div className="block-body">{paragraphs}</div>
+      </div>
+    )
+  }
+
+  if (type === 'code') {
+    return (
+      <div className="block block-code">
+        {title && <div className="block-heading">{title}</div>}
+        <pre className="block-body">{content}</pre>
+      </div>
+    )
+  }
+
+  if (type === 'task') {
+    return (
+      <div className="block block-task">
+        {title && <div className="block-heading">{title}</div>}
+        <div className="block-body">{lines}</div>
+      </div>
+    )
+  }
+
+  if (type === 'check') {
+    return (
+      <div className="block block-check">
+        {title && <div className="block-heading">{title}</div>}
+        <div className="block-body">{paragraphs}</div>
+      </div>
+    )
+  }
+
+  if (type === 'hint') {
+    return (
+      <div className="block block-hint">
+        <details>
+          <summary>{title || 'Need a hint?'}</summary>
+          <div className="block-body">{paragraphs}</div>
+        </details>
+      </div>
+    )
+  }
+
+  // Unknown type — render content as plain text so nothing is silently dropped
+  return (
+    <div className="block">
+      {title && <div className="block-heading">{title}</div>}
+      <div>{content}</div>
     </div>
   )
 }

@@ -1115,6 +1115,295 @@ body {
   white-space: nowrap;
 }
 
+/* =============================================================================
+   Screen 2 — Block editor (edit mode for block-based steps)
+   ============================================================================= */
+
+.block-editor {
+  display: flex;
+  flex-direction: column;
+}
+
+.block-editor-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+
+/* Card chrome */
+.block-editor-card {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  background: var(--color-surface);
+  box-shadow: var(--shadow-sm);
+}
+
+.block-editor-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 7px 10px 7px 12px;
+  background: var(--color-surface-raised);
+  border-bottom: 1px solid var(--color-border);
+}
+
+/* Type badge — per-type color */
+.block-type-badge {
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  padding: 2px 8px;
+  border-radius: 999px;
+}
+.block-type-badge--explain { background: var(--color-primary-subtle); color: var(--color-primary); }
+.block-type-badge--code    { background: var(--color-code-bg); color: var(--color-code-text); }
+.block-type-badge--check   { background: #fef9c3; color: #92400e; }
+.block-type-badge--task    { background: #dbeafe; color: #1e40af; }
+.block-type-badge--hint    { background: var(--color-surface-raised); color: var(--color-text-secondary); border: 1px solid var(--color-border); }
+
+/* Delete button */
+.block-delete-btn {
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: 1px solid transparent;
+  border-radius: var(--radius-xs);
+  background: transparent;
+  font-size: 16px;
+  line-height: 1;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  transition: background 0.1s, border-color 0.1s, color 0.1s;
+}
+.block-delete-btn:hover {
+  background: #fef2f2;
+  border-color: #fca5a5;
+  color: var(--color-danger);
+}
+
+/* Field area inside a card */
+.block-editor-fields {
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.block-editor-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.block-editor-field-label {
+  font-size: 10.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--color-text-muted);
+}
+
+/* Language input — narrower than a full-width field */
+.block-editor-lang-input {
+  width: 130px;
+  padding: 5px 9px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--color-text);
+  background: var(--color-bg);
+  outline: none;
+  transition: border-color 0.12s, box-shadow 0.12s;
+}
+.block-editor-lang-input:focus {
+  border-color: var(--color-border-focus);
+  box-shadow: 0 0 0 2px rgb(37 99 235 / 0.1);
+}
+
+/* Code content textarea — dark, monospace */
+.block-editor-code-textarea {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid var(--color-code-border);
+  border-radius: var(--radius-sm);
+  font-family: var(--font-mono);
+  font-size: 12.5px;
+  color: var(--color-code-text);
+  background: var(--color-code-surface);
+  outline: none;
+  resize: vertical;
+  line-height: 1.65;
+  tab-size: 4;
+  transition: border-color 0.12s;
+}
+.block-editor-code-textarea:focus {
+  border-color: #585b70;
+  box-shadow: 0 0 0 2px rgb(37 99 235 / 0.1);
+}
+
+/* Add block row */
+.block-editor-add-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding-top: 14px;
+  border-top: 1px solid var(--color-border);
+}
+
+.block-add-btn {
+  padding: 5px 11px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface);
+  font-family: var(--font-sans);
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  transition: background 0.12s, border-color 0.12s, color 0.12s;
+}
+.block-add-btn:hover {
+  background: var(--color-primary-subtle);
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+}
+
+/* =============================================================================
+   Screen 2 — Block-based view mode
+   Activated when step.blocks.length > 0. Flat-field view is the fallback.
+   ============================================================================= */
+
+.block-view {
+  padding-bottom: 40px;
+}
+
+.block-view-title {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--color-text);
+  line-height: 1.3;
+  margin-bottom: 28px;
+}
+
+/* Base block wrapper — every block type gets this + its own modifier */
+.block {
+  margin-bottom: 20px;
+}
+.block:last-child {
+  margin-bottom: 0;
+}
+
+/* Optional label rendered above any block when block.title is set */
+.block-heading {
+  font-size: 10.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--color-text-muted);
+  margin-bottom: 8px;
+}
+
+/* ── explain ────────────────────────────────────────────────────────────────── */
+.block-explain .block-body {
+  font-size: 14px;
+  line-height: 1.75;
+  color: var(--color-text);
+}
+.block-explain .block-body p { margin-bottom: 10px; }
+.block-explain .block-body p:last-child { margin-bottom: 0; }
+
+/* ── code ───────────────────────────────────────────────────────────────────── */
+.block-code .block-body {
+  background: var(--color-code-surface);
+  border: 1px solid var(--color-code-border);
+  border-radius: var(--radius-sm);
+  color: var(--color-code-text);
+  font-family: var(--font-mono);
+  font-size: 13px;
+  line-height: 1.75;
+  padding: 14px 16px;
+  white-space: pre;
+  overflow-x: auto;
+  display: block;
+}
+
+/* ── task ───────────────────────────────────────────────────────────────────── */
+.block-task {
+  background: var(--color-primary-subtle);
+  border: 1px solid #bfdbfe;
+  border-radius: var(--radius-md);
+  padding: 14px 16px;
+}
+.block-task .block-heading { color: var(--color-primary); }
+.block-task .block-body {
+  font-size: 14px;
+  line-height: 1.65;
+  color: var(--color-text);
+}
+.block-task .block-body p { margin-bottom: 6px; }
+.block-task .block-body p:last-child { margin-bottom: 0; }
+
+/* ── check ──────────────────────────────────────────────────────────────────── */
+.block-check {
+  background: #fefce8;
+  border: 1px solid #fde68a;
+  border-left: 3px solid #f59e0b;
+  border-radius: var(--radius-md);
+  padding: 14px 16px;
+}
+.block-check .block-heading { color: #92400e; }
+.block-check .block-body {
+  font-size: 14px;
+  line-height: 1.65;
+  color: var(--color-text);
+}
+.block-check .block-body p { margin-bottom: 8px; }
+.block-check .block-body p:last-child { margin-bottom: 0; }
+
+/* ── hint (collapsible via <details>) ──────────────────────────────────────── */
+.block-hint details {
+  background: var(--color-surface-raised);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: 10px 14px;
+}
+.block-hint summary {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  user-select: none;
+  list-style: none;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+.block-hint summary::-webkit-details-marker { display: none; }
+.block-hint summary::before {
+  content: '▸';
+  font-size: 10px;
+  color: var(--color-text-muted);
+  transition: transform 0.15s;
+  flex-shrink: 0;
+}
+.block-hint details[open] summary::before { transform: rotate(90deg); }
+.block-hint .block-body {
+  font-size: 13.5px;
+  line-height: 1.65;
+  color: var(--color-text-secondary);
+  font-style: italic;
+  margin-top: 10px;
+}
+.block-hint .block-body p { margin-bottom: 6px; }
+.block-hint .block-body p:last-child { margin-bottom: 0; }
+
 /* Custom scrollbars */
 ::-webkit-scrollbar        { width: 5px; height: 5px; }
 ::-webkit-scrollbar-track  { background: transparent; }
