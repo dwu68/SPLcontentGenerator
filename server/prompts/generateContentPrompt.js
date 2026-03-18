@@ -123,8 +123,16 @@ Think of it as four stages:
   5. Provide a lifeline   →  one hint block   (optional)
 
 Rules:
-- A typical step has 3–5 blocks. Do not pad.
-  A sharp 3-block step is better than a padded 6-block step.
+- Every topic listed in "Step topics" is a coverage requirement.
+  Every topic must be addressed by at least one explain or code block.
+  Do not silently omit a listed topic because the block count feels high.
+- A step with one or two topics typically needs 3–5 blocks.
+  A step with three or more topics may need up to 7 blocks to meet coverage.
+  Use as many blocks as the topics require — up to 7.
+- Do not pad. "Padding" means adding a block that restates a topic already fully
+  covered, or adding a block to hit a count. It does not mean covering all listed topics.
+  A focused 3-block step is better than a padded 6-block step.
+  A 7-block step that covers five distinct topics is not padding.
 - Use two explain blocks only when the concept has two genuinely distinct parts that
   the learner needs to hold separately. Do not split one idea into two blocks to add length.
 - Add a check block when the concept has a non-obvious implication or a common confusion
