@@ -945,12 +945,14 @@ body {
 .panel-body {
   flex: 1;
   overflow-y: auto;
+  overflow-x: hidden; /* Safari does not reliably compute this from overflow-y alone */
   padding: 22px 20px;
 }
 
 .panel-body-code {
   flex: 1;
   overflow-y: auto;
+  overflow-x: hidden; /* Safari does not reliably compute this from overflow-y alone */
   padding: 20px;
   background: var(--color-code-bg);
 }
@@ -1334,6 +1336,25 @@ body {
   display: block;
 }
 
+/* Inline code block embedded inside prose blocks (explain, check, hint).
+   Triggered when a \n\n-separated chunk has any line starting with whitespace. */
+.block-inline-code {
+  background: var(--color-code-surface);
+  border: 1px solid var(--color-code-border);
+  border-radius: var(--radius-sm);
+  color: var(--color-code-text);
+  font-family: var(--font-mono);
+  font-size: 12.5px;
+  line-height: 1.65;
+  padding: 10px 12px;
+  white-space: pre;
+  overflow-x: auto;
+  display: block;
+  margin: 4px 0;
+  max-width: 100%;     /* prevent pre from sizing itself beyond its flex container */
+  box-sizing: border-box;
+}
+
 /* ── task ───────────────────────────────────────────────────────────────────── */
 .block-task {
   background: var(--color-primary-subtle);
@@ -1410,30 +1431,6 @@ body {
 ::-webkit-scrollbar-thumb  { background: var(--color-border); border-radius: 3px; }
 ::-webkit-scrollbar-thumb:hover { background: var(--color-border-strong); }
 
-/* =============================================================================
-   Screen 2 — View Mode (natural scroll, no nested scroll boxes)
-   ============================================================================= */
-
-/* Make the main area scroll as a single unit; panels take their natural height */
-.authoring-main.view-mode {
-  overflow-y: auto;
-  align-items: flex-start;
-}
-
-.authoring-main.view-mode .panel {
-  overflow: visible;
-  /* Keep 50/50 width split but don't force full viewport height */
-  flex: 1 1 50%;
-  height: auto;
-  min-height: 0;
-}
-
-.authoring-main.view-mode .panel-body,
-.authoring-main.view-mode .panel-body-code {
-  overflow: visible;
-  flex: none;
-  height: auto;
-}
 
 /* =============================================================================
    Screen 2 — Edit / Save / Cancel controls in panel header
@@ -1527,4 +1524,6 @@ body {
   white-space: pre;
   overflow-x: auto;
   min-height: 200px;
+  max-width: 100%;
+  box-sizing: border-box;
 }

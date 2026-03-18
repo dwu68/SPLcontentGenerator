@@ -94,7 +94,7 @@ function LessonAuthoringView({
       </aside>
 
       {/* ── Main Editor Area ─────────────────────────────────────────────── */}
-      <main className={`authoring-main${isEditing ? '' : ' view-mode'}`}>
+      <main className="authoring-main">
         {selectedStep ? (
           <>
             {/* Instruction Panel */}
@@ -140,7 +140,7 @@ function LessonAuthoringView({
             {/* Code Panel */}
             <section className="panel panel-code" aria-label="Code editor panel">
               <div className="panel-header panel-header-code">
-                <span className="panel-title panel-title-code">Starter Code</span>
+                <span className="panel-title panel-title-code">Lab</span>
                 <span className="panel-step-tag panel-step-tag-code">starter_code.py</span>
               </div>
               <div className="panel-body-code">
@@ -251,11 +251,24 @@ function BlocksView({ step }) {
 function Block({ block }) {
   const { type, title, content } = block
 
-  // Shared helpers
-  const paragraphs = content
+  // Render double-newline-separated content.
+  // A chunk is treated as code and rendered as <pre> when either:
+  //   (a) any line starts with whitespace — the AI indented the snippet, or
+  //   (b) the chunk is multi-line AND starts with a lowercase letter —
+  //       the AI generated unindented code (prose paragraphs always start
+  //       with a capital letter or a digit).
+  const segments = content
     .split('\n\n')
     .filter(Boolean)
-    .map((para, i) => <p key={i}>{para}</p>)
+    .map((chunk, i) => {
+      const lines = chunk.split('\n')
+      const isCode =
+        lines.some((line) => /^\s/.test(line)) ||
+        (lines.length >= 2 && /^[a-z_]/.test(chunk))
+      return isCode
+        ? <pre key={i} className="block-inline-code">{chunk}</pre>
+        : <p key={i}>{chunk}</p>
+    })
 
   const lines = content
     .split('\n')
@@ -266,7 +279,7 @@ function Block({ block }) {
     return (
       <div className="block block-explain">
         {title && <div className="block-heading">{title}</div>}
-        <div className="block-body">{paragraphs}</div>
+        <div className="block-body">{segments}</div>
       </div>
     )
   }
@@ -293,7 +306,7 @@ function Block({ block }) {
     return (
       <div className="block block-check">
         {title && <div className="block-heading">{title}</div>}
-        <div className="block-body">{paragraphs}</div>
+        <div className="block-body">{segments}</div>
       </div>
     )
   }
@@ -303,7 +316,7 @@ function Block({ block }) {
       <div className="block block-hint">
         <details>
           <summary>{title || 'Need a hint?'}</summary>
-          <div className="block-body">{paragraphs}</div>
+          <div className="block-body">{segments}</div>
         </details>
       </div>
     )

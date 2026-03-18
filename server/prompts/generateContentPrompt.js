@@ -219,7 +219,7 @@ type: "check"
 
 title:
   Optional. If used, name what the learner is checking — not "Before you continue".
-  Good:        "Quick trace — what does this print?"
+  Good:        "Quick check — what does this print?"
                "Before you write the task code"
   Acceptable:  null
   Bad:         "Before you continue"  (generic filler label — never use this)
@@ -261,7 +261,7 @@ type: "task"
 
 title:
   A short label that signals the learner's turn to act.
-  Good:  "Your turn"  "Now write it"  "Complete the starter code"
+  Good:  "Your turn"  "Now write it"  "Lab task"
   Use null if no title is needed.
 
 content:
