@@ -18,7 +18,7 @@ The full two-screen interface is built and functional. Screen 1 generation is li
 
 ### Screen 1 — Lesson Structure Builder
 
-The author enters a course name, module name, and list of sub-topics. The app generates one editable step card per sub-topic. Cards are always editable inline — no separate edit mode. The author can add, delete, and reorder steps before clicking **"Generate Lesson Content →"** to proceed.
+The author enters a course name, module name, and list of sub-topics. The app generates an editable lesson structure from those sub-topics — steps may be grouped or split as the AI sees fit. Cards are always editable inline — no separate edit mode. The author can add, delete, and reorder steps before clicking **"Generate Lesson Content →"** to proceed.
 
 ### Screen 2 — Lesson Authoring View
 
@@ -40,7 +40,7 @@ For each step, the author edits the full lesson content: concept explanation, ta
 
 ## What Is Not Built Yet
 
-See [todo.md](todo.md) for the full prioritized backlog. Top items: delete dead code, stabilize the data model (add `expectedAction` / `validationNote` fields), then wire in real AI generation.
+See [todo.md](todo.md) for the full prioritized backlog. Current top item: end-to-end verification of the real OpenAI path for Screen 1 (the integration is wired but has not been run with a live key). After that: wire Screen 2 AI content generation.
 
 ---
 
