@@ -293,12 +293,12 @@ title:
 
 content:
   Write a lab problem statement in natural learner-facing prose.
-  Do not write numbered implementation steps. Do not reference specific line numbers,
-  variable names, or TODO markers — those details belong in the starterCode comments.
+  Do not write numbered implementation steps. Do not reference specific line numbers, or TODO markers — those details belong in the starterCode comments.
 
   The content should read like a brief, direct briefing: what the learner is trying to
   accomplish, what concept or mechanic they are applying, and what a correct result
   looks like. Write it as connected sentences, not as a labeled template or a checklist.
+  
 
   Quality rules:
 
@@ -321,6 +321,17 @@ content:
 
   5. Keep it short. Two to four sentences is the right length for a lab objective.
      The starterCode carries the local implementation detail — this block carries the goal.
+
+  6. Write this block as natural learner-facing prose.
+    It should read like a brief coding objective or scenario, not like a checklist or worksheet instruction list.
+
+    Describe:
+    - what the learner is trying to accomplish,
+    - what they are exploring, building, or producing,
+    - and what a correct result looks like.
+
+    Prefer natural verbs like explore, inspect, build, create, retrieve, compare, or show.
+    Avoid micromanaging verbs like find, replace, run, confirm unless absolutely necessary.
 
 
 ── HINT BLOCKS ─────────────────────────────────────────────
@@ -365,16 +376,21 @@ Apply these rules:
    stated in the task block. The variables, data, and TODO must directly support
    what the task block describes as the goal and expected result.
 
-2. Use a single, clearly marked TODO. Format it as two comment lines:
-     # TODO: [what the learner must write — one concrete action]
-     # Expected: [exact output or value the correct solution produces]
-   Example:
-     # TODO: write an f-string that inserts name and city into a greeting
-     # Expected: Hello, Ada from Rome
-   The Expected line is the learner's success criterion — it belongs here, in the
-   code panel, where the learner is working. Do not put it only in the task block.
-   Do not add multiple TODO markers unless the task genuinely has two distinct exercises —
-   and even then, reconsider whether this is one step or two.
+2. Starter code comments should provide conceptual local guidance, not exact implementation instructions.
+  Good comments describe:
+  - what the current data represents,
+  - what the learner needs to produce,
+  - what kind of result a line should generate.
+
+  Do not reveal the exact method, operator, or expression when choosing it is part of the exercise.
+
+  Bad:
+  # TODO: print pet.keys(), pet.values(), and pet.items()
+
+  Good:
+  # TODO: print the field names stored in the pet dictionary
+  # TODO: print the stored values
+  # TODO: print each field together with its value
 
 3. Use variable names and values that give the task concrete anchors.
    If the task step says "use name and city", define them with real values:
