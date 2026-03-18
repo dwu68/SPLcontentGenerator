@@ -5,8 +5,9 @@ import React from 'react'
  *
  * Renders editable fields for:
  *   - step title
- *   - concept
- *   - task instructions
+ *   - concept (UI: "Explanation") — teaching narrative
+ *   - codeExample — short annotated snippet illustrating the concept
+ *   - instructions (UI: "Task") — action-focused numbered steps
  *   - hint
  *   - expected action
  *   - validation note
@@ -36,10 +37,10 @@ function InstructionPanelEditor({ step, onUpdate }) {
         />
       </div>
 
-      {/* Concept */}
+      {/* Explanation */}
       <div className="field-group">
         <label className="field-label" htmlFor={`concept-${step.id}`}>
-          Concept
+          Explanation
         </label>
         <textarea
           id={`concept-${step.id}`}
@@ -47,22 +48,37 @@ function InstructionPanelEditor({ step, onUpdate }) {
           value={step.concept}
           rows={6}
           onChange={(e) => onUpdate({ concept: e.target.value })}
-          placeholder="Explain the underlying concept the learner will encounter…"
+          placeholder="Teach the concept: why it matters, how it works, the rules, common mistakes…"
         />
       </div>
 
-      {/* Task Instructions */}
+      {/* Code Example */}
+      <div className="field-group">
+        <label className="field-label" htmlFor={`code-example-${step.id}`}>
+          Code Example
+        </label>
+        <textarea
+          id={`code-example-${step.id}`}
+          className="field-textarea"
+          value={step.codeExample}
+          rows={5}
+          onChange={(e) => onUpdate({ codeExample: e.target.value })}
+          placeholder="A short annotated snippet illustrating the concept (4–8 lines). Not the full starter code."
+        />
+      </div>
+
+      {/* Task */}
       <div className="field-group">
         <label className="field-label" htmlFor={`instructions-${step.id}`}>
-          Task Instructions
+          Task
         </label>
         <textarea
           id={`instructions-${step.id}`}
           className="field-textarea"
           value={step.instructions}
-          rows={6}
+          rows={4}
           onChange={(e) => onUpdate({ instructions: e.target.value })}
-          placeholder="What should the learner do in this exercise?"
+          placeholder="What must the learner do? Numbered steps, action-focused only."
         />
       </div>
 

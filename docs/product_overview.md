@@ -22,7 +22,7 @@ The author enters a course name, module name, and list of sub-topics. The app ge
 
 ### Screen 2 — Lesson Authoring View
 
-For each step, the author edits the full lesson content: concept explanation, task instructions, hint, expected action, validation note, and starter code. A step sidebar tracks unsaved changes. **Save Draft** persists everything to `localStorage`.
+For each step, the author edits the full lesson content: explanation (teaching narrative), code example (short annotated snippet), task instructions, hint, expected action, validation note, and starter code. A step sidebar tracks unsaved changes. **Save Draft** persists everything to `localStorage`.
 
 → See [user_flow.md](user_flow.md) for the complete step-by-step interaction detail.
 

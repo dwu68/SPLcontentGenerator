@@ -32,8 +32,8 @@ function LessonAuthoringView({
     <div className="authoring-layout">
       {/* ── Step Sidebar ────────────────────────────────────────────────── */}
       <aside className="step-sidebar">
-        <div className="step-sidebar-header">Lesson Steps</div>
-        <nav className="step-sidebar-list" aria-label="Lesson steps">
+        <div className="step-sidebar-header">Topic List</div>
+        <nav className="step-sidebar-list" aria-label="Topic list">
           {lessonContent.map((step) => (
             <button
               key={step.id}
@@ -60,7 +60,7 @@ function LessonAuthoringView({
             <section className="panel panel-instruction" aria-label="Instruction panel">
               <div className="panel-header">
                 <span className="panel-title">Instructions</span>
-                <span className="panel-step-tag">Step {selectedStep.stepNumber}</span>
+                <span className="panel-step-tag">Topic {selectedStep.stepNumber}</span>
               </div>
               <div className="panel-body">
                 <InstructionPanelEditor

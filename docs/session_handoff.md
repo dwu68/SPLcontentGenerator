@@ -1071,3 +1071,168 @@ Add a download button in the Screen 2 header. No data model changes needed — t
 ---
 
 *End of Session 6.*
+
+---
+
+# Session Handoff — SPL Content Generator
+
+**ID** 7
+**Date:** 2026-03-18
+**Session scope:** Docs sync + Screen 1 backend validation (mock and error paths only)
+
+> **Cross-references:** This document is a time-stamped session log.
+> For living documentation, see: [product_overview.md](product_overview.md) · [user_flow.md](user_flow.md) · [data_model.md](data_model.md) · [decisions.md](decisions.md) · [todo.md](todo.md)
+
+---
+
+## What Was Completed
+
+### Docs sync pass
+
+Corrected documentation drift across four living docs before any validation work:
+
+| Doc | What changed |
+|---|---|
+| `product_overview.md` | Removed "no backend" claim; described live Express+OpenAI path for Screen 1; added `expectedAction`/`validationNote` to Screen 2 field list and mocked table |
+| `user_flow.md` | Screen 1 Step 2: replaced false `mockGeneration.js` reference with correct service→backend→OpenAI path + `isGenerating`/`generationError` behavior; Screen 2 instruction fields updated from four to six |
+| `data_model.md` | Added `isGenerating`, `generationError`, `titleValidationError` to App State block; marked `coveredSubtopics` limitation as fixed |
+| `decisions.md` | Marked `coveredSubtopics` limitation as resolved |
+
+Committed as: `49ae9ea docs: sync living docs to current implemented state`
+
+### Screen 1 backend validation
+
+Tested via `curl` against a running `server/index.js` instance. No code was changed.
+
+**Mock path (`USE_MOCK=true`) — PASSED**
+
+| Check | Result |
+|---|---|
+| Server starts and logs `[mock]` | ✅ |
+| Returns `[{ title, goal, coveredSubtopics }]` array | ✅ |
+| Shape matches `normalizeStructure()` input exactly | ✅ |
+| Missing request fields → HTTP 400 `{ error: "..." }` | ✅ |
+| All-blank subtopics → `[]` → `normalizeStructure` throws "Provider returned no steps." → `generationError` set | ✅ |
+
+**Error path (invalid API key, `USE_MOCK=false`) — PASSED**
+
+| Check | Result |
+|---|---|
+| Server returns HTTP 500 | ✅ — `callProvider`'s `!res.ok` branch fires |
+| Body is `{ error: "401 Incorrect API key provided…" }` — specific and readable | ✅ |
+| Error propagates: `body.error` → `throw new Error(…)` → `handleSubmit` catch → `setGenerationError` | ✅ (verified by tracing) |
+
+**Real OpenAI path — NOT TESTED**
+
+No `OPENAI_API_KEY` was available in the environment or shell config. The `.env` file was created with `USE_MOCK=true` as the safe default (gitignored — not committed).
+
+---
+
+## Code Changes
+
+**None.** All validated paths are correct as implemented. No fixes were required.
+
+---
+
+## Files Created, Changed, or Deleted
+
+**Created (gitignored — not committed):**
+```
+.env    — local dev config; USE_MOCK=true; placeholder API key
+```
+
+**Modified (committed earlier this session):**
+```
+docs/product_overview.md
+docs/user_flow.md
+docs/data_model.md
+docs/decisions.md
+```
+
+---
+
+## What Is Currently Working
+
+Unchanged from Session 6. Additionally validated:
+- Mock path response shape is correct end-to-end through the full call chain
+- Bad-key error message reaches `generationError` UI correctly
+
+---
+
+## What Is NOT Implemented Yet
+
+- **Real OpenAI path end-to-end verified** — wired but never run with a live key
+- **Screen 2 AI generation** — `generateLessonContent` still mocked; no `/api/generate-content` endpoint
+- **Backend persistence** — `handleSaveDraft()` still writes to `localStorage` only
+- **JSON export, rich code editor, drag-and-drop, multi-lesson management** — Phases 3–6
+
+---
+
+## Exact Next Step for the Next Session
+
+**Step 1 only — do not start new feature work until this is verified.**
+
+```bash
+# 1. Set your real key in .env
+#    OPENAI_API_KEY=sk-...
+#    USE_MOCK=false
+
+npm run dev:all
+```
+
+Then in the UI:
+- Fill course name, module name, and 2–3 sub-topics
+- Click "Generate Structure Preview"
+- Verify:
+  - `isGenerating` loading state is visibly active during the network call
+  - Real OpenAI-authored step titles and goals come back (not mock boilerplate)
+  - Response shape matches `normalizeStructure()` input: `[{ title, goal, coveredSubtopics }]`
+
+Once confirmed, proceed to **Phase 2 Step 2** in `todo.md`: wire Screen 2 AI generation (`POST /api/generate-content` + `lessonContentService.js`).
+
+---
+
+## Known Issues
+
+| Item | Severity | Notes |
+|---|---|---|
+| OpenAI path not yet end-to-end tested | High | First and only task next session before any new code |
+| Screen 2 generation still mocked | Expected | Phase 2, Step 2 |
+| `isGenerating` invisible during `USE_MOCK=true` | Info | Mock is synchronous; resolves on real OpenAI path due to network latency |
+| S1 title edits don't back-propagate to S2 | Low | Resolves on next confirmed re-generation |
+| All state in one `App.jsx` | Low | Fine for two screens; a third screen would warrant extracting contexts |
+
+---
+
+*End of Session 7.*
+
+---
+
+## Session 8
+**Date:** 2026-03-18
+**Session scope:** Screen 2 content model improvement — add `codeExample` field, improve teaching structure, rename sidebar labels
+
+### What Was Completed
+
+**Content model: added `codeExample` field to `LessonContent`**
+- `concept` (UI label: "Explanation") — now clearly scoped to teaching narrative: why the concept matters, how it works, rules, common mistakes
+- `codeExample` (new) — short annotated snippet (4–8 lines) illustrating the concept; distinct from the full `starterCode` block
+- `instructions` (UI label: "Task") — now scoped to action-only numbered steps; no teaching content
+- All other fields (`hint`, `expectedAction`, `validationNote`, `starterCode`) unchanged
+
+**Files changed:**
+- `src/utils/mockGeneration.js` — added `mockExplanation()`, `mockCodeExample()`; rewrote all mock helpers with real teaching-tone content; removed `mockConcept()`
+- `src/components/InstructionPanelEditor.jsx` — added Code Example textarea; relabeled "Concept" → "Explanation", "Task Instructions" → "Task"; tightened placeholder text
+- `src/components/LessonAuthoringView.jsx` — sidebar header "Lesson Steps" → "Topic List"; panel tag "Step N" → "Topic N"
+- `docs/data_model.md` — added `codeExample` field to `LessonContent` shape; updated `concept` and `instructions` descriptions
+- `docs/product_overview.md` — updated Screen 2 field list
+- `docs/user_flow.md` — updated Screen 2 field list (six → seven fields)
+
+### Assumptions
+- The data field name `concept` was kept as-is (not renamed to `explanation`) to avoid breaking existing localStorage drafts. The UI label is "Explanation."
+- `codeExample` is intentionally short and author-editable — it is not generated from the starter code.
+- No UI layout changes beyond the new textarea and label renames.
+
+---
+
+*End of Session 8.*

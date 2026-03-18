@@ -92,10 +92,11 @@ Click any step in the left sidebar to load its content into both editor panels. 
 
 **2. Edit instruction content (center panel)**
 
-Six fields, all editable textareas or inputs:
+Seven fields, all editable textareas or inputs:
 - **Title** — single-line text input (also controls the step's name in the sidebar)
-- **Concept** — multi-line textarea for the conceptual explanation
-- **Task Instructions** — multi-line textarea for what the learner must do
+- **Explanation** — multi-line textarea for the teaching narrative: why the concept matters, how it works, rules, common mistakes
+- **Code Example** — short textarea for an annotated 4–8 line snippet illustrating the concept; distinct from the full starter code
+- **Task** — multi-line textarea with the specific numbered actions the learner must complete; action-focused only
 - **Hint** — textarea for a nudge shown when the learner is stuck
 - **Expected Action** — textarea describing what the learner must do to complete the step (used by future validation)
 - **Validation Note** — textarea with guidance for the validator (not shown to the learner)

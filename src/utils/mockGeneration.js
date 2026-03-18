@@ -37,7 +37,8 @@ export function generateLessonContent(lessonStructure) {
     id: step.id,
     stepNumber: step.stepNumber,
     title: step.title,
-    concept: mockConcept(step),
+    concept: mockExplanation(step),
+    codeExample: mockCodeExample(step),
     instructions: mockInstructions(step),
     hint: mockHint(step),
     starterCode: mockStarterCode(step),
@@ -50,24 +51,28 @@ export function generateLessonContent(lessonStructure) {
 // Mock content helpers — replace with AI calls later
 // ---------------------------------------------------------------------------
 
-function mockConcept(step) {
-  return `${step.title}\n\nThis step introduces learners to the concept of "${step.title}". Understanding this will help students build a strong foundation as they progress through the module.\n\nPay close attention to the example code on the right. Notice how the code demonstrates this concept in a realistic context.`
+function mockExplanation(step) {
+  return `${step.title} is a core concept you will use throughout this module.\n\nWhy it matters: getting ${step.title.toLowerCase()} wrong does not always produce an obvious error — sometimes the code runs but produces incorrect output, which makes it harder to debug.\n\nHow it works: the key rule is that [describe the primary rule or mechanism here]. This applies any time [describe when the rule is in force]. If the rule is broken, Python will either raise an error or silently produce the wrong result.\n\nCommon mistake: learners often assume [describe a typical misconception]. The correct approach is always to [describe the correct practice] — especially when [describe the edge case where beginners slip up most].`
+}
+
+function mockCodeExample(step) {
+  return `# ${step.title} — short example\n\n# Correct usage:\n[example of correct code here]   # <- why this works\n\n# Common mistake:\n[example of incorrect code here] # <- what goes wrong and why`
 }
 
 function mockInstructions(step) {
-  return `In this exercise, you will practice: "${step.title}".\n\n1. Read through the starter code on the right.\n2. Identify where the concept is demonstrated.\n3. Add a comment to the code that explains what you observe.\n4. Run the code to confirm your understanding.`
+  return `1. Look at the starter code on the right. Find the section marked TODO.\n2. Apply ${step.title.toLowerCase()} to complete that section.\n3. Run the code and confirm the output matches the expected result shown in the comment.`
 }
 
 function mockHint(step) {
-  return `Think carefully about what "${step.title}" means in this programming context. Look for clues in the existing comments in the starter code.`
+  return `Re-read the explanation above and focus on the key rule for ${step.title.toLowerCase()}. Then look at the code example — the correct usage pattern there is exactly what the TODO is asking for.`
 }
 
 function mockExpectedAction(step) {
-  return `Add a comment or line of code that demonstrates understanding of "${step.title}". The learner should modify the starter code, not just read it.`
+  return `The learner completes the TODO block by correctly applying ${step.title.toLowerCase()}. The code should run without errors and produce the expected output.`
 }
 
 function mockValidationNote(step) {
-  return `A correct solution will show the learner has applied "${step.title}" — not just copied the example. Watch for: copy-paste without modification, missing required output, or comments that do not reflect the concept. Common mistakes: skipping the TODO line entirely, or writing a comment that describes the code rather than the concept.`
+  return `Correct solution: the TODO block is filled in and the output matches what is expected. Watch for: copy-pasting the example without adapting it to the task, producing output that looks right but uses the wrong approach, and leaving the TODO comment in place. The most common slip for ${step.title.toLowerCase()} is [describe the specific mistake most likely for this concept].`
 }
 
 function mockStarterCode(step) {

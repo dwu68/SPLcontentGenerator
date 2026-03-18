@@ -71,8 +71,9 @@ Produced by `generateLessonContent(lessonStructure)`. Represents the authored co
   id           : string   // same id as the LessonStructure step
   stepNumber   : number   // same as LessonStructure step
   title        : string   // step title; edits in Screen 2 are mirrored back to lessonStructure
-  concept      : string   // conceptual explanation shown to the learner
-  instructions : string   // task the learner must complete
+  concept      : string   // teaching narrative: why it matters, how it works, rules, common mistakes (UI label: "Explanation")
+  codeExample  : string   // short annotated snippet (4–8 lines) illustrating the concept; distinct from starterCode
+  instructions : string   // the specific task the learner must complete; action-focused only (UI label: "Task")
   hint             : string   // optional nudge shown when the learner is stuck
   starterCode      : string   // initial code shown in the code editor
   expectedAction   : string   // what the learner must do to complete the step; used by future validation
