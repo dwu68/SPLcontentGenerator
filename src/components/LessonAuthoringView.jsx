@@ -236,7 +236,7 @@ function BlocksView({ step }) {
     <div className="block-view">
       <h2 className="block-view-title">{step.title}</h2>
       {step.blocks.map((block) => (
-        <Block key={block.id} block={block} />
+        <Block key={`${step.id}-${block.id}`} block={block} />
       ))}
     </div>
   )
@@ -248,6 +248,50 @@ function BlocksView({ step }) {
  * Types: explain | code | check | task | hint
  * All types support an optional `title` field rendered as a small label above the content.
  */
+function CheckBlock({ title, content, segments }) {
+  const [revealed, setRevealed] = useState(false)
+
+  // Split on the "→ " answer marker (with optional leading newline)
+  const arrowIndex = content.indexOf('\n→ ')
+  const hasAnswer = arrowIndex !== -1
+  const questionContent = hasAnswer ? content.slice(0, arrowIndex).trim() : content
+  const answerText = hasAnswer ? content.slice(arrowIndex + 3).trim() : null
+
+  // Re-run the segment renderer on just the question portion
+  const questionSegments = questionContent
+    .split('\n\n')
+    .filter(Boolean)
+    .map((chunk, i) => {
+      const lines = chunk.split('\n')
+      const isCode =
+        lines.some((line) => /^\s/.test(line)) ||
+        (lines.length >= 2 && /^[a-z_]/.test(chunk))
+      return isCode
+        ? <pre key={i} className="block-inline-code">{chunk}</pre>
+        : <p key={i}>{chunk}</p>
+    })
+
+  return (
+    <div className="block block-check">
+      {title && <div className="block-heading">{title}</div>}
+      <div className="block-body">
+        {hasAnswer ? questionSegments : segments}
+        {hasAnswer && (
+          <div className="check-solution">
+            <button
+              className="check-solution-btn"
+              onClick={() => setRevealed((v) => !v)}
+            >
+              {revealed ? 'Hide solution' : 'Solution'}
+            </button>
+            {revealed && <p className="check-solution-text">{answerText}</p>}
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
+
 function Block({ block }) {
   const { type, title, content } = block
 
@@ -296,19 +340,14 @@ function Block({ block }) {
   if (type === 'task') {
     return (
       <div className="block block-task">
-        {title && <div className="block-heading">{title}</div>}
+        <div className="block-heading">{title || 'Lab'}</div>
         <div className="block-body">{lines}</div>
       </div>
     )
   }
 
   if (type === 'check') {
-    return (
-      <div className="block block-check">
-        {title && <div className="block-heading">{title}</div>}
-        <div className="block-body">{segments}</div>
-      </div>
-    )
+    return <CheckBlock title={title} content={content} segments={segments} />
   }
 
   if (type === 'hint') {

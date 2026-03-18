@@ -1304,11 +1304,10 @@ body {
 
 /* Optional label rendered above any block when block.title is set */
 .block-heading {
-  font-size: 10.5px;
+  font-size: 13px;
   font-weight: 700;
-  text-transform: uppercase;
   letter-spacing: 0.08em;
-  color: var(--color-text-muted);
+  color: #000;
   margin-bottom: 8px;
 }
 
@@ -1387,6 +1386,23 @@ body {
 }
 .block-check .block-body p { margin-bottom: 8px; }
 .block-check .block-body p:last-child { margin-bottom: 0; }
+.check-solution { margin-top: 10px; }
+.check-solution-btn {
+  font-size: 12px;
+  font-weight: 600;
+  color: #92400e;
+  background: none;
+  border: 1px solid #f59e0b;
+  border-radius: 4px;
+  padding: 3px 10px;
+  cursor: pointer;
+}
+.check-solution-btn:hover { background: #fde68a; }
+.check-solution-text {
+  margin-top: 8px;
+  font-size: 14px;
+  color: var(--color-text);
+}
 
 /* ── hint (collapsible via <details>) ──────────────────────────────────────── */
 .block-hint details {

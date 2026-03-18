@@ -161,26 +161,45 @@ title:
   information beyond the block type name, use null.
 
 content:
-  Write enough to explain the idea clearly — usually 2–4 sentences, but let the concept
-  determine the length. Short sentences, one idea per sentence. Apply these rules:
+  Teach the idea, do not merely summarize it.
 
-  1. Connect to what the learner already knows before introducing the new thing.
-     Begin from the familiar, then show what is new or different.
+  Write enough for a learner reading alone to understand both the rule and how it behaves in code.
+  Usually 3–6 sentences. Use fewer only when the idea is truly simple. Use more when a short explanation
+  would leave an important distinction unclear.
+
+  Apply these rules:
+
+  1. Begin from something the learner already knows, then introduce the new rule or behavior.
+     Move from familiar → new, not definition → definition.
 
   2. Name the mechanism — describe what actually happens when this runs,
      not just what the concept is called.
-     Bad:  "f-strings are a way to format strings."
-     Good: "Writing f before the opening quote tells Python to evaluate any expression
-            inside {} before constructing the final string."
 
-  3. One explain block = one idea. If you are about to make two distinct points,
-     use two explain blocks with different titles.
+  3. Explain the practical distinction when nearby topics are easy to confuse.
+     If this step includes related ideas (for example indexing vs slicing, keys vs values vs items,
+     tuple immutability vs list mutability), make the difference explicit in the prose.
 
-  4. A brief inline code snippet in the prose is allowed when it makes one point concrete
-     (e.g. "Writing f'{name}' inserts the current value of name.").
-     Keep it to a single expression or line — this is not the code block.
+  4. Do not stop at naming the rule. Also state the consequence:
+     what the learner can do with it, what result it produces, or what limitation it introduces.
 
-  5. Do not begin with meta-language. Start with the idea itself.
+  5. One explain block = one teachable idea.
+     A teachable idea may include the rule, its behavior, and one important distinction,
+     but do not cram multiple unrelated ideas into one block.
+
+  6. A brief inline code snippet in the prose is allowed when it sharpens one point.
+     Keep it to a single expression or line — this is not the main code block.
+
+  7. Do not begin with meta-language. Start with the idea itself.
+
+Depth check for explain blocks:
+- After reading this block, the learner should understand not only what the idea is,
+  but how it behaves and how it differs from the most similar nearby idea in this step.
+- If the block could be reduced to a glossary entry without losing meaning, it is too shallow.
+- If the block only lists features or names examples without clarifying the rule, it is too shallow.
+- A strong explain block usually includes at least two of these three elements:
+  the rule, the behavior in code, and the distinction from a nearby similar idea.
+- If the learner could read the block and still not know when to use this idea,
+  the block is too shallow.
 
 ── CODE BLOCKS ─────────────────────────────────────────────
 
@@ -195,10 +214,11 @@ content:
      Do not use placeholder names: no do_thing(), my_func(), example_code,
      correct_usage(), or similar. Name things after what they represent.
 
-  2. Demonstrate exactly ONE mechanic — the specific thing explained in the immediately
-     preceding explain block. Do not try to demonstrate the full topic in one block.
-     If there are two explain blocks covering two distinct mechanics, you may write
-     two code blocks, one per mechanic.
+  2. Demonstrate one main mechanic clearly.
+    A code block may also include one closely related supporting mechanic when the learner
+    needs to see how they work together in real code.
+    Do not try to demonstrate the full topic in one block, but do not reduce the example
+    to an unnaturally isolated fragment if a nearby idea is essential to understanding it.
 
   3. If contrasting correct usage with a common mistake, label each clearly with comments:
        # Correct — Python evaluates the expression and inserts the result:
@@ -221,6 +241,9 @@ content:
   7. This code is a demonstration, not a template for the task. It must not look like
      a near-complete solution to what the task block asks the learner to write.
 
+The example should still be rich enough to make the mechanic feel real.
+Prefer code that shows the mechanic in a small meaningful context, not in the thinnest possible toy form.
+
 ── CHECK BLOCKS ────────────────────────────────────────────
 
 type: "check"
@@ -233,34 +256,32 @@ title:
   Bad:         "Before you continue"  (generic filler label — never use this)
 
 content:
-  A question the learner should think about for a few seconds before moving to the task.
+  A short reasoning check the learner should use to confirm understanding before the task.
 
   Format: the question text, then a blank line, then "→ " and the answer.
 
   Quality rules:
 
-  1. Ask the learner to APPLY the concept, not recall its definition.
-
-     Bad (recall — answered by re-reading the explain block):
-       "What is an f-string?"
-       "Why are f-strings useful?"
-
-     Good (apply — requires tracing execution):
-       "What does this print?\\n\\n  city = 'Rome'\\n  print(f'I love {city}!')\\n\\nThink, then scroll.\\n\\n→ I love Rome!"
-
-     Good (discriminate — requires understanding the rule):
-       "Which of these two lines will raise a TypeError, and why?\\n\\n  a = f'sum: {1 + 2}'\\n  b = f'sum: {1 + \\"2\\"}'\\n\\nThink, then scroll.\\n\\n→ Line b raises TypeError. '2' is a string; Python cannot add it to the integer 1 inside an f-string expression."
+  1. Ask the learner to APPLY or DISCRIMINATE, not merely recall.
+    Good checks make the learner choose, trace, compare, or predict.
 
   2. A short code snippet inside the question is strongly preferred.
-     It forces the learner to trace execution rather than recite a definition.
+    Use it to make the learner reason about behavior, output, validity, or which option is correct.
 
-  3. The answer after "→" is 1–2 sentences. It confirms or corrects the learner's
-     thinking. It does not re-explain the concept from the beginning.
+  3. The answer after "→" should confirm the result and briefly name the key reason.
+    Usually 1–3 sentences.
+    Do not restart the whole explanation, but do include the decisive rule that makes the answer correct.
 
-  4. The question must be answerable from the explain and code blocks shown before it.
+  4. Prefer checks that expose a likely confusion point:
+    - which line works vs fails
+    - which method returns which kind of result
+    - what output appears and why
+    - which operation changes the data and which only reads it
+
+  5. The question must be answerable from the explain and code blocks shown before it.
      Do not ask about anything that only the task block introduces.
 
-  5. If you cannot write a genuinely non-obvious question for this step, omit the check
+  6. If you cannot write a genuinely non-obvious question for this step, omit the check
      block entirely. A weak or trivial check is worse than no check.
 
 ── TASK BLOCKS ─────────────────────────────────────────────
@@ -268,35 +289,39 @@ content:
 type: "task"
 
 title:
-  A short label that signals the learner's turn to act.
-  Good:  "Your turn"  "Now write it"  "Lab task"
-  Use null if no title is needed.
+  Always “Lab”. This block is the lab objective card — the title is always “Lab”.
 
 content:
-  Numbered action steps. Apply these rules:
+  Write a lab problem statement in natural learner-facing prose.
+  Do not write numbered implementation steps. Do not reference specific line numbers,
+  variable names, or TODO markers — those details belong in the starterCode comments.
 
-  1. Reference specific, named elements from the starterCode in each step:
-     variable names, function names, TODO marker context, or line descriptions.
+  The content should read like a brief, direct briefing: what the learner is trying to
+  accomplish, what concept or mechanic they are applying, and what a correct result
+  looks like. Write it as connected sentences, not as a labeled template or a checklist.
 
-     Bad:  "Apply f-strings to complete the TODO section."
-     Good: "Find the variable greeting. Replace the TODO with an f-string
-            that uses the variables name and city."
+  Quality rules:
 
-  2. Each step is ONE action. Do not chain two actions with "and".
+  1. State the goal, not the procedure.
+     Bad:  “Find the greeting variable. Replace the TODO with an f-string. Run the code.”
+     Good: “Your job is to build a formatted greeting string using an f-string. When the
+            code runs correctly, it will print: Hello, Ada from Rome”
 
-  3. Do not open with "Look at the starter code on the right." The learner knows
-     where the code is. Start with the action itself.
+  2. The task must require a real application of the concept — not a syntax copy.
+     If the learner can finish by pasting the demo code with one word changed, it is too weak.
+     Prefer tasks that require the learner to choose the right operation, combine two values,
+     retrieve part of a structure, or apply the mechanic to new data.
 
-  4. The final step is usually a verification that states the exact expected output:
-     "Run the code. Confirm it prints:\\n  Hello, Ada from Rome"
-     If the exercise produces no printed output, use a different concrete verification
-     that tells the learner what to look for — not just "confirm it is correct".
+  3. If the step covers two closely related ideas, the lab should exercise both when natural.
+     Do not force it, but do not collapse the lab to the single easiest action.
 
-  5. 2–4 steps. A focused 2-step task (one action + one verification) is often
-     better than a padded 4-step task.
+  4. State the expected result concretely.
+     Give the exact output string, return value, or observable change the learner should see.
+     “The code should work” is not a success criterion.
 
-  6. The learner should be able to complete all steps by editing only the TODO area.
-     Do not ask them to change variable definitions, imports, or other scaffolding.
+  5. Keep it short. Two to four sentences is the right length for a lab objective.
+     The starterCode carries the local implementation detail — this block carries the goal.
+
 
 ── HINT BLOCKS ─────────────────────────────────────────────
 
@@ -336,13 +361,18 @@ content:
 
 Apply these rules:
 
-1. The starterCode must match the task block steps exactly.
-   Every named element the task references must exist in the starterCode.
-   If the task says "find the variable greeting", there must be a variable named greeting.
-   If the task says "replace the TODO", there must be exactly one TODO marker.
+1. The starterCode must be set up so the learner can accomplish the lab objective
+   stated in the task block. The variables, data, and TODO must directly support
+   what the task block describes as the goal and expected result.
 
-2. Use a single, clearly marked TODO. Format it as:
-     # TODO: [one-line description of what the learner must write here]
+2. Use a single, clearly marked TODO. Format it as two comment lines:
+     # TODO: [what the learner must write — one concrete action]
+     # Expected: [exact output or value the correct solution produces]
+   Example:
+     # TODO: write an f-string that inserts name and city into a greeting
+     # Expected: Hello, Ada from Rome
+   The Expected line is the learner's success criterion — it belongs here, in the
+   code panel, where the learner is working. Do not put it only in the task block.
    Do not add multiple TODO markers unless the task genuinely has two distinct exercises —
    and even then, reconsider whether this is one step or two.
 
@@ -353,13 +383,17 @@ Apply these rules:
      # TODO: write an f-string that prints: Hello, Ada from Rome
    Do not use placeholder values like "your_name" or "value_here".
 
-4. Include only the scaffolding the learner needs — no more.
-   Do not include commented-out hints, near-complete implementations,
-   or large blocks of boilerplate that crowd the exercise.
+4. Include brief inline comments that orient the learner locally — what each variable
+   represents, what section they are working in, what kind of value belongs in the TODO.
+   These are orientation comments, not hints. They name the situation, not the answer.
+   Good:  name = "Ada"    # the name to include in the greeting
+   Bad:   name = "Ada"    # hint: put name inside the f-string braces
+   Do not include near-complete implementations or commented-out solution code.
+   Do not add large blocks of boilerplate that crowd the exercise.
 
 5. The expected output must be deterministic. Whatever the learner writes in the
    TODO area, the correct solution should produce one specific, predictable output —
-   the same output shown in the task block's verification step.
+   the same output shown in the TODO's Expected comment line.
 
 6. Do not wrap in markdown fences. Plain code only.
 
@@ -372,8 +406,8 @@ Apply these rules:
   The code block demonstrates the mechanic. The starterCode is the exercise scaffold.
   They serve different purposes and must look clearly different.
 
-- The task block steps must be completable by editing only the TODO area
-  in the starterCode as provided.
+- The lab objective stated in the task block must be achievable by editing only
+  the TODO area in the starterCode as provided.
 
 - The check block question must be answerable from the explain and code blocks
   that precede it. It must not depend on anything introduced in the task block.
