@@ -1263,3 +1263,123 @@ Once confirmed, proceed to **Phase 2 Step 2** in `todo.md`: wire Screen 2 AI gen
 ---
 
 *End of Session 9.*
+
+---
+
+## Session 10 — End-of-Session Handoff
+**Date:** 2026-03-18
+**Session scope:** Screen 2 content model improvement + view/edit mode redesign (covered in Sessions 8 and 9 above). This entry is the forward-looking handoff for the next session.
+
+---
+
+### What Was Completed This Session
+
+Two independent improvements were shipped:
+
+**1. Content model: `codeExample` field added to `LessonContent` (Session 8)**
+- `concept` (data field name kept; UI label: "Explanation") — scoped to teaching narrative: why the concept matters, how it works, rules, common mistakes
+- `codeExample` (new field) — short annotated snippet (4–8 lines) to illustrate the concept inline in the lesson; distinct from the full `starterCode` block
+- `instructions` (UI label: "Task") — scoped to action-only numbered steps
+- All mock helpers rewritten with real teaching-tone content structure
+- `expectedAction` and `validationNote` unchanged
+
+**2. Screen 2 view/edit mode (Session 9)**
+- Default mode is a readable lesson page: content renders as prose blocks (h2 title, labeled sections, `<pre>` for code example), no textareas, no nested scroll
+- Edit/Save/Cancel controls in the instruction panel header
+- Save: keeps edits (already in App state), exits edit mode
+- Cancel: restores a snapshot taken on Edit entry, exits edit mode
+- Step switch while editing: silently cancels (restores snapshot), then switches
+- Code panel: read-only `<pre>` block in view mode, editable textarea in edit mode
+- CSS: `.view-mode` on `.authoring-main` enables natural page scroll; panels take natural height
+
+---
+
+### Important Decisions Made
+
+| Decision | Rationale |
+|---|---|
+| Keep data field name `concept` (not renamed to `explanation`) | Avoids breaking existing localStorage drafts. UI label is "Explanation." |
+| `expectedAction` and `validationNote` hidden in view mode | Author metadata only — not learner-facing content |
+| Step switch while editing = silent cancel, no confirm dialog | Consistent with Cancel semantics; blocking navigation with a dialog would be disruptive |
+| `editSnapshot` is a shallow copy of the step object | `LessonContent` contains only primitives and arrays; shallow copy is safe |
+| `isEditing` is local state in `LessonAuthoringView`, not hoisted to App | Pure display state with no persistence requirement; keeps App.jsx unchanged |
+
+---
+
+### Files Changed This Session
+
+| File | Change |
+|---|---|
+| `src/utils/mockGeneration.js` | Added `codeExample` field; replaced `mockConcept` with `mockExplanation`; rewrote all helpers with teaching-tone content |
+| `src/components/InstructionPanelEditor.jsx` | Added Code Example textarea; relabeled "Concept" → "Explanation", "Task Instructions" → "Task" |
+| `src/components/LessonAuthoringView.jsx` | Added `isEditing` + `editSnapshot` state; `LessonStepView` component; Edit/Save/Cancel controls; step-switch intercept; `.view-mode` class toggle |
+| `src/components/CodeEditorPanel.jsx` | Added `readOnly` prop; renders `<pre className="code-pre">` in view mode |
+| `src/App.css` | Added `.view-mode` layout rules; `.lesson-step-view` prose styles; `.code-pre`; `.panel-header-actions` |
+| `docs/data_model.md` | Added `codeExample` to `LessonContent` shape; updated `concept` and `instructions` field descriptions |
+| `docs/product_overview.md` | Updated date and Current State summary |
+| `docs/user_flow.md` | Added View mode / Edit mode section; updated Screen 2 field list |
+| `docs/todo.md` | Added two ✅ items to Phase 1 for the Session 8/9 work |
+
+No files created. No files deleted.
+
+---
+
+### What Is Currently Working
+
+- Full two-screen authoring tool — Screen 1 (structure builder) + Screen 2 (lesson authoring)
+- Screen 1 AI generation: fully wired (`lessonStructureService.js` → `POST /api/generate-structure` → Express → OpenAI or mock)
+- Screen 2 view mode: readable lesson page — Explanation, Code Example, Task, Hint rendered as prose; no nested scroll
+- Screen 2 edit mode: Edit/Save/Cancel with snapshot-based Cancel; step-switch auto-cancels
+- Starter code: read-only `<pre>` in view mode, editable textarea in edit mode
+- Draft persistence: `localStorage` save/restore with dirty state tracking
+- Mock fallback: `USE_MOCK=true` in `.env` returns deterministic mock content from the server
+- Step navigation, dirty dot indicators, re-generation confirmation guards
+
+---
+
+### What Is Not Implemented Yet
+
+| Feature | Status | Location |
+|---|---|---|
+| Real OpenAI path end-to-end test | **Highest priority** — wired but never run with a real key | `.env` has placeholder `OPENAI_API_KEY` |
+| Screen 2 AI content generation | Mocked (`mockGeneration.js`) | `todo.md` Phase 2 |
+| JSON export | Not started | `todo.md` Phase 3 |
+| Backend persistence | Not started (localStorage only) | `todo.md` Phase 3 |
+| Syntax-highlighted code editor | Not started | `todo.md` Phase 4 |
+| Multiple draft slots / lesson management | Not started | `todo.md` Phase 5 |
+
+---
+
+### Next 3 Recommended Steps
+
+**1. End-to-end test the real OpenAI path for Screen 1 (no code changes needed)**
+- Set `OPENAI_API_KEY` to a real key in `.env`
+- Set `USE_MOCK=false` in `.env`
+- Run `npm run dev:all`
+- Generate a structure, confirm real steps come back, confirm `USE_MOCK=true` still works
+- This is the only blocker before Phase 2 Step 2
+
+**2. Wire Screen 2 AI content generation**
+- Add `POST /api/generate-content` to `server/index.js`
+  - Input: `{ courseName, moduleName, steps: LessonStructure[] }`
+  - Output: `LessonContent[]` (all 8 fields including `codeExample`, `expectedAction`, `validationNote`)
+- Extract `src/services/lessonContentService.js` (same three-layer pattern as `lessonStructureService.js`)
+- Update import in `App.jsx`; `handleGenerate` is already `async`
+
+**3. Add JSON export button in Screen 2 header**
+- No state shape changes needed — data is already in the right shape (see `data_model.md` Future: JSON Export Shape)
+- Add a Download button to `Header.jsx` when `screen === 'authoring'`
+- File name: `${courseName}-${moduleName}.json` (slugified)
+
+---
+
+### Known Issues, Rough Edges, and Cleanup Items
+
+| Item | Severity | Detail |
+|---|---|---|
+| Real OpenAI path untested | High | `.env` has placeholder key; server exits on startup if `USE_MOCK=false` and key is missing or placeholder |
+| Old localStorage drafts lack `codeExample` | Low | Pre-Session 8 drafts will show an empty Code Example field in edit mode and omit the section in view mode. Graceful — no crash. Clear the draft (`localStorage.removeItem('spl_lesson_draft')`) or regenerate content to fix. |
+| `concept` split on `\n\n` in view mode | Low | Single newline breaks within a paragraph render as a single `<p>` (not separate lines). Authors must use blank lines between paragraphs for correct view-mode rendering. This should be noted in the future AI prompt for `generate-content`. |
+| Dead props on `LessonAuthoringView` | Info | `App.jsx` passes `saveStatus` and `onSaveDraft` to `LessonAuthoringView` but the component no longer uses them. They were already unused before Session 9. Safe to remove from App.jsx's render call when convenient. |
+| Screen 2 generation still mocked | Expected | Phase 2, Step 2 — next after OpenAI path is verified |
+| `isGenerating` invisible during `USE_MOCK=true` | Info | Mock is synchronous on the server; loading flash is one tick. Resolves on real OpenAI path due to network latency |

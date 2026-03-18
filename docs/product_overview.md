@@ -8,9 +8,11 @@ An internal authoring tool for creating self-paced learning (SPL) lesson content
 
 Internal teams producing SPL lesson content — primarily data science educators and instructional designers who know their subject matter but need tooling to translate it into structured, consistent lesson formats.
 
-## Current State (as of 2026-03-17)
+## Current State (as of 2026-03-18)
 
 The full two-screen interface is built and functional. Screen 1 generation is live: `lessonStructureService.js` calls `POST /api/generate-structure` on a small Express backend (`server/index.js`), which calls OpenAI (or returns mock data when `USE_MOCK=true`). Screen 2 generation is still mocked (`mockGeneration.js`). The only persistence is `localStorage`.
+
+Screen 2 has a view/edit mode: default is a readable lesson page (prose blocks, natural scroll); the author clicks **Edit** to enter edit mode, then **Save** or **Cancel** to exit. The `LessonContent` model includes a `codeExample` field (short annotated snippet) separate from the full `starterCode` block.
 
 ---
 

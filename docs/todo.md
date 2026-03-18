@@ -20,6 +20,8 @@ Tighten up the current implementation before adding new capabilities.
 - ✅ **Add re-generation confirmation on Screen 1** — clicking "Generate Structure Preview" when a structure already exists silently replaces all edits; show a confirmation prompt
 - ✅ **Add re-generation confirmation on Screen 2** — navigating back to Screen 1 and clicking "Generate Lesson Content →" silently discards all Screen 2 edits; show a confirmation prompt
 - ✅ **Fix `coveredSubtopics` local state drift** — `StepBuilderCard.topicsStr` resets only on `step.id` change; make it also respond to `coveredSubtopics` content changes so future bulk-edit or undo won't break it
+- ✅ **Add `codeExample` field to `LessonContent`** — short annotated snippet (4–8 lines) illustrating the concept; separate from the full `starterCode` block; relabeled `concept` → "Explanation" and `instructions` → "Task" in the UI
+- ✅ **Screen 2 view/edit mode** — default is a readable lesson page (prose blocks, natural scroll, no nested textareas); Edit/Save/Cancel controls in the instruction panel header; Cancel restores a snapshot; switching steps while editing silently cancels
 
 ---
 
