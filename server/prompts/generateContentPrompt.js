@@ -3,36 +3,22 @@
  *
  * Prompt builder for Screen 2 — full lesson content generation for a single step.
  *
- * ── EDIT THIS FILE to paste or refine the master content prompt ───────────
+ * Returns a prompt that asks the model to produce one JSON object:
  *
- * This function is called once per lesson step. It receives a PromptContext
- * object (assembled by buildPromptContext in server/lib/promptContext.js) and
- * returns the prompt string sent to the AI provider.
- *
- * JSON contract this prompt must produce (one object per step call):
- *
- *   {
- *     "blocks": [
- *       {
- *         "id":       string   — unique within the step, e.g. "b1", "b2", …
- *         "type":     "explain" | "code" | "check" | "task" | "hint"
- *         "title":    string?  — optional heading; for hint: used as collapsed label
- *         "content":  string   — prose, code, question text, or action steps
- *         "language": string?  — code blocks only, e.g. "python"
- *       },
- *       …
- *     ]
- *     "starterCode":    string  — initial code shown in the code editor
- *     "expectedAction": string  — what the learner must do to complete the step
- *     "validationNote": string  — guidance for the validator (not shown to learner)
- *   }
- *
- * Block type semantics:
- *   explain — teaching prose (optional title becomes a heading)
- *   code    — read-only annotated example; must include language field
- *   task    — numbered action steps the learner performs
- *   check   — quick comprehension question (rendered as a question card)
- *   hint    — optional nudge, rendered collapsed; title is the collapsed label
+ * {
+ *   "blocks": [
+ *     {
+ *       "id": "b1",
+ *       "type": "explain" | "code" | "check" | "task" | "hint",
+ *       "title": string | null,
+ *       "content": string,
+ *       "language": string | null
+ *     }
+ *   ],
+ *   "starterCode": string,
+ *   "expectedAction": string,
+ *   "validationNote": string
+ * }
  */
 
 /**
@@ -52,17 +38,11 @@ export function buildGenerateContentPrompt(context) {
     outputLanguage,
   } = context
 
-  // ── PASTE YOUR MASTER CONTENT PROMPT BELOW ───────────────────────────────
-  //
-  // Replace the template literal below with your final prompt text.
-  // All context fields listed above are available to interpolate.
-  // The model must return a valid JSON object matching the contract above.
-  //
-  // ─────────────────────────────────────────────────────────────────────────
+  return `You are writing the instructional content for ONE step of a self-paced coding lesson.
 
-return `You are writing the instructional content for one step of a self-paced coding lesson.
-The learner is reading alone — no instructor, no live feedback. Write as a knowledgeable
-author writing directly for this specific learner.
+The learner is studying alone.
+There is no instructor, no live feedback, and no spoken explanation.
+Write like a skilled course author speaking directly to a learner on a lesson page.
 
 Course: ${courseName}
 Module: ${moduleName}
@@ -72,384 +52,405 @@ Step topics: ${stepTopics.join(', ')}
 Learner level: ${learnerLevel}
 Programming language: ${outputLanguage}
 
-Scope:
-- Generate content for this step only. Stay focused on "${stepTitle}" and the step goal.
-- Do not assume knowledge beyond what a ${learnerLevel} learner would have.
-- Do not add caveats or forward references ("later you will learn..."). Stay in this step.
-- If detail is missing, make the safest assumption based on the step goal and topics.
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+AUTHORING PRIORITY
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-Voice:
-- Write concretely. Every word must be real lesson content — no placeholder phrasing.
-- Start with the idea itself. Avoid meta-language: "In this step you will learn...",
-  "is a core concept", "is important because", "you will use this throughout".
-- Use short, direct sentences.
+Write like a real lesson author, not like a worksheet generator, validator, or curriculum database.
 
-Return exactly one JSON object with these top-level keys:
-  "blocks", "starterCode", "expectedAction", "validationNote"
+Natural learner-facing prose is more important than sounding systematic.
+If a sentence sounds like assignment instructions, teacher notes, metadata, or internal planning language, rewrite it as natural lesson prose.
 
-"blocks" is an ordered array. Each element has this shape:
+Prefer writing that feels comfortable to read from top to bottom on a lesson page:
+- concrete
+- clear
+- specific
+- human
+- not stiff
+- not generic
+- not repetitive
 
-  {
-    "id":       string,          // e.g. "b1", "b2" — unique within this step
-    "type":     "explain" | "code" | "check" | "task" | "hint",
-    "title":    string | null,   // optional; see quality rules below
-    "content":  string,          // required; see quality rules below
-    "language": string | null    // required for code blocks; null for all others
-  }
+Do NOT use placeholder phrasing such as:
+- "In this step you will learn..."
+- "This is an important concept..."
+- "This concept is used a lot..."
+- "You will use this later..."
+- "Below is..."
+- "Now let's..."
 
-── TOPIC AND STEP PHRASING ─────────────────────────────────
+Start with the idea itself.
 
-The step title is "${stepTitle}". The topics are: ${stepTopics.join(', ')}.
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SCOPE
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-When referring to the concept across blocks:
-- Do not repeat the step title word-for-word as a heading or sentence opener in every block.
-  Vary the phrasing naturally. Use "this syntax", "the pattern", "this approach",
-  or a short descriptive phrase where the full topic name would be repetitive.
-- Do not make the topic name the grammatical subject of every sentence.
-  Restate the mechanism or behavior instead of restating the name.
-- Block titles (the "title" field) must name the specific idea in that block, not just the
-  topic name. If the step is about f-strings, a title of "f-strings" on every block is wrong.
-  Write titles that distinguish one block from another within the same step.
+Generate content for this step only.
 
-── BLOCK SEQUENCE ──────────────────────────────────────────
+Stay focused on:
+- the step title
+- the step goal
+- the listed step topics
 
-The block sequence must follow the instructional logic of this specific step.
-Think of it as four stages:
+Do not:
+- assume knowledge beyond a ${learnerLevel} learner
+- add side topics that belong to later steps
+- mention future lessons
+- add caveats that distract from this step
+- write teacher notes
+- write author notes
+- explain the whole module
 
-  1. Build understanding  →  one or two explain blocks
-  2. Make it concrete     →  one code block
-  3. Test understanding   →  one check block  (optional)
-  4. Have them do it      →  one task block   (almost always present)
-  5. Provide a lifeline   →  one hint block   (optional)
+If detail is missing, make the safest reasonable assumption based on the step goal and topics.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+RETURN FORMAT
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Return exactly ONE valid JSON object with these top-level keys:
+
+{
+  "blocks": [...],
+  "starterCode": "...",
+  "expectedAction": "...",
+  "validationNote": "..."
+}
+
+Do not return markdown.
+Do not wrap the JSON in code fences.
+Do not include commentary before or after the JSON.
+Do not include extra keys.
+
+"blocks" must be an ordered array.
+Each block must have this exact shape:
+
+{
+  "id": "b1",
+  "type": "explain" | "code" | "check" | "task" | "hint",
+  "title": string | null,
+  "content": string,
+  "language": string | null
+}
 
 Rules:
-- Every topic listed in "Step topics" is a coverage requirement.
-  Every topic must be addressed by at least one explain or code block.
-  Do not silently omit a listed topic because the block count feels high.
-- A step with one or two topics typically needs 3–5 blocks.
-  A step with three or more topics may need up to 7 blocks to meet coverage.
-  Use as many blocks as the topics require — up to 7.
-- Do not pad. "Padding" means adding a block that restates a topic already fully
-  covered, or adding a block to hit a count. It does not mean covering all listed topics.
-  A focused 3-block step is better than a padded 6-block step.
-  A 7-block step that covers five distinct topics is not padding.
-- Use two explain blocks only when the concept has two genuinely distinct parts that
-  the learner needs to hold separately. Do not split one idea into two blocks to add length.
-- Add a check block when the concept has a non-obvious implication or a common confusion
-  point worth pausing on. Do not add one just to have one.
-- Add a hint block only when the task involves a mechanic that is easy to confuse.
-  Omit it when the task is straightforward.
-- The task block is the learner's exercise and is present in almost every step.
-  Omit it only for a pure reading or observation step with no exercise.
+- "language" is required for code blocks and must be "${outputLanguage}".
+- "language" must be null for all non-code blocks.
+- IDs must be unique within this step: "b1", "b2", "b3", ...
+- Keep block order intentional and readable.
 
-── EXPLAIN BLOCKS ──────────────────────────────────────────
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+TOPIC COVERAGE
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-type: "explain"
+Every topic listed in Step topics is a coverage requirement.
 
-title:
-  Name the specific idea in this block. The title should tell the learner what they are
-  about to understand — not label the block generically.
+Every listed topic must be addressed by at least one instructional block.
+Do not silently omit a listed topic just because the block count feels high.
 
-  Good:  "The f prefix and what it tells Python"
-         "Why {} works without concatenation"
-         "What happens when Python evaluates the expression"
-  Bad:   "What it is"  "Why it matters"  "Overview"  "Introduction"
-         The topic name alone  Any variation of "What / Why / How"
+A step with one or two topics typically needs 3–5 blocks.
+A step with three or more topics may need up to 7 blocks.
+Use as many blocks as needed for clear coverage, up to 7.
 
-  Never use "What it is", "Why it matters", or "Common mistake". These are
-  table-of-contents labels, not titles. If you cannot write a title that adds
-  information beyond the block type name, use null.
+Do not pad with redundant blocks.
+But complete coverage is NOT padding.
 
-content:
-  Teach the idea, do not merely summarize it.
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+BLOCK SEQUENCE
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-  Write enough for a learner reading alone to understand both the rule and how it behaves in code.
-  Usually 3–6 sentences. Use fewer only when the idea is truly simple. Use more when a short explanation
-  would leave an important distinction unclear.
+Use the instructional logic of this step, not a rigid template.
 
-  Apply these rules:
+A strong step usually moves through these stages:
+1. explain the idea clearly
+2. show it in code
+3. check understanding with one focused question
+4. give the learner a lab to complete
+5. optionally provide a hint if a real stuck point exists
 
-  1. Begin from something the learner already knows, then introduce the new rule or behavior.
-     Move from familiar → new, not definition → definition.
+Typical valid sequences:
+- explain → code → task
+- explain → explain → code → check → task
+- explain → code → check → task → hint
+- explain → explain → code → task
+- explain → code → task → hint
 
-  2. Name the mechanism — describe what actually happens when this runs,
-     not just what the concept is called.
+Do not include a block just because a type exists.
+Include a block only if it earns its place.
 
-  3. Explain the practical distinction when nearby topics are easy to confuse.
-     If this step includes related ideas (for example indexing vs slicing, keys vs values vs items,
-     tuple immutability vs list mutability), make the difference explicit in the prose.
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+BLOCK TITLES
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-  4. Do not stop at naming the rule. Also state the consequence:
-     what the learner can do with it, what result it produces, or what limitation it introduces.
+Titles must help the learner see what each block is about.
 
-  5. One explain block = one teachable idea.
-     A teachable idea may include the rule, its behavior, and one important distinction,
-     but do not cram multiple unrelated ideas into one block.
+Do:
+- name the specific idea in that block
+- vary titles naturally across the step
+- use short, clear phrases
 
-  6. A brief inline code snippet in the prose is allowed when it sharpens one point.
-     Keep it to a single expression or line — this is not the main code block.
+Do not:
+- repeat the step title as every block title
+- use generic labels such as "What it is", "Why it matters", "Example", "Practice"
+- make every title sound like a template
 
-  7. Do not begin with meta-language. Start with the idea itself.
+Good title style:
+- Reading one value by key
+- Adding a new entry
+- Keys, values, and pairs in use
+- When a tuple cannot change
 
-Depth check for explain blocks:
-- After reading this block, the learner should understand not only what the idea is,
-  but how it behaves and how it differs from the most similar nearby idea in this step.
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+EXPLAIN BLOCKS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Type: "explain"
+
+Purpose:
+Teach the idea clearly.
+Do not merely summarize it.
+
+Content rules:
+- Usually write 3–6 sentences.
+- One explain block should teach one clear idea.
+- A strong explain block usually includes at least two of these:
+  - the rule
+  - the behavior in code
+  - the distinction from a nearby similar idea
+- Explain what actually happens, not just what the concept is called.
+- If nearby ideas are easy to confuse, make the difference explicit.
+- State the consequence:
+  what the learner can do with it, what result it produces, or what limitation it introduces.
+- A brief inline code snippet is allowed when it sharpens one point.
+
+Depth check:
 - If the block could be reduced to a glossary entry without losing meaning, it is too shallow.
-- If the block only lists features or names examples without clarifying the rule, it is too shallow.
-- A strong explain block usually includes at least two of these three elements:
-  the rule, the behavior in code, and the distinction from a nearby similar idea.
-- If the learner could read the block and still not know when to use this idea,
-  the block is too shallow.
-
-── CODE BLOCKS ─────────────────────────────────────────────
-
-type: "code"
-
-language: always "${outputLanguage.toLowerCase()}" — never null for code blocks
-
-content:
-  Real, runnable ${outputLanguage} code. Apply these rules:
-
-  1. Use real variable names, real values, and real function calls relevant to the topic.
-     Do not use placeholder names: no do_thing(), my_func(), example_code,
-     correct_usage(), or similar. Name things after what they represent.
-
-  2. Demonstrate one main mechanic clearly.
-    A code block may also include one closely related supporting mechanic when the learner
-    needs to see how they work together in real code.
-    Do not try to demonstrate the full topic in one block, but do not reduce the example
-    to an unnaturally isolated fragment if a nearby idea is essential to understanding it.
-
-  3. If contrasting correct usage with a common mistake, label each clearly with comments:
-       # Correct — Python evaluates the expression and inserts the result:
-       ...
-       # Common mistake — this treats the {} as a literal character:
-       ...
-     Limit to ONE contrast. Do not catalog multiple mistakes.
-
-  4. Add inline comments where they clarify the mechanism — not on every line.
-     Comment lines that demonstrate the key behavior. Do not comment obvious lines
-     (variable assignments, import statements, simple value lookups).
-
-  5. If any line produces printed output, add a comment on that line showing the exact
-     output the learner will see:
-       print(greeting)   # Hello, Ada from Rome
-
-  6. Target 4–8 lines. If you need more than 8 lines to show the mechanic,
-     the scope is too large — narrow it to the single key point.
-
-  7. This code is a demonstration, not a template for the task. It must not look like
-     a near-complete solution to what the task block asks the learner to write.
-
-The example should still be rich enough to make the mechanic feel real.
-Prefer code that shows the mechanic in a small meaningful context, not in the thinnest possible toy form.
-
-── CHECK BLOCKS ────────────────────────────────────────────
-
-type: "check"
-
-title:
-  Optional. If used, name what the learner is checking — not "Before you continue".
-  Good:        "Quick check — what does this print?"
-               "Before you write the task code"
-  Acceptable:  null
-  Bad:         "Before you continue"  (generic filler label — never use this)
-
-content:
-  A short reasoning check the learner should use to confirm understanding before the task.
-
-  Format: the question text, then a blank line, then "→ " and the answer.
-
-  Quality rules:
-
-  1. Ask the learner to APPLY or DISCRIMINATE, not merely recall.
-    Good checks make the learner choose, trace, compare, or predict.
-
-  2. A short code snippet inside the question is strongly preferred.
-    Use it to make the learner reason about behavior, output, validity, or which option is correct.
-
-  3. The answer after "→" should confirm the result and briefly name the key reason.
-    Usually 1–3 sentences.
-    Do not restart the whole explanation, but do include the decisive rule that makes the answer correct.
-
-  4. Prefer checks that expose a likely confusion point:
-    - which line works vs fails
-    - which method returns which kind of result
-    - what output appears and why
-    - which operation changes the data and which only reads it
-
-  5. The question must be answerable from the explain and code blocks shown before it.
-     Do not ask about anything that only the task block introduces.
-
-  6. If you cannot write a genuinely non-obvious question for this step, omit the check
-     block entirely. A weak or trivial check is worse than no check.
-
-── TASK BLOCKS ─────────────────────────────────────────────
-
-type: "task"
-
-title:
-  Always “Lab”. This block is the lab objective card — the title is always “Lab”.
-
-content:
-  Write a lab problem statement in natural learner-facing prose.
-  Do not write numbered implementation steps. Do not reference specific line numbers, or TODO markers — those details belong in the starterCode comments.
-
-  The content should read like a brief, direct briefing: what the learner is trying to
-  accomplish, what concept or mechanic they are applying, and what a correct result
-  looks like. Write it as connected sentences, not as a labeled template or a checklist.
-  
-
-  Quality rules:
-
-  1. State the goal, not the procedure.
-     Bad:  “Find the greeting variable. Replace the TODO with an f-string. Run the code.”
-     Good: “Your job is to build a formatted greeting string using an f-string. When the
-            code runs correctly, it will print: Hello, Ada from Rome”
-
-  2. The task must require a real application of the concept — not a syntax copy.
-     If the learner can finish by pasting the demo code with one word changed, it is too weak.
-     Prefer tasks that require the learner to choose the right operation, combine two values,
-     retrieve part of a structure, or apply the mechanic to new data.
-
-  3. If the step covers two closely related ideas, the lab should exercise both when natural.
-     Do not force it, but do not collapse the lab to the single easiest action.
-
-  4. State the expected result concretely.
-     Give the exact output string, return value, or observable change the learner should see.
-     “The code should work” is not a success criterion.
-
-  5. Keep it short. Two to four sentences is the right length for a lab objective.
-     The starterCode carries the local implementation detail — this block carries the goal.
-
-  6. Write this block as natural learner-facing prose.
-    It should read like a brief coding objective or scenario, not like a checklist or worksheet instruction list.
-
-    Describe:
-    - what the learner is trying to accomplish,
-    - what they are exploring, building, or producing,
-    - and what a correct result looks like.
-
-    Prefer natural verbs like explore, inspect, build, create, retrieve, compare, or show.
-    Avoid micromanaging verbs like find, replace, run, confirm unless absolutely necessary.
-
-
-── HINT BLOCKS ─────────────────────────────────────────────
-
-type: "hint"
-
-title:
-  Optional. If used, write a short phrase that signals relevance — specific enough that
-  the learner knows whether to open it, without giving the hint away.
-  Good:        "Stuck on the {} syntax?"
-               "Not sure what to put inside the braces?"
-  Acceptable:  "Need a hint?"  null
-  Bad:         A title that restates the task or just says "Hint"
-
-content:
-  One short hint. Apply these rules:
-
-  1. Name the specific mechanic the learner is most likely stuck on — not the general
-     concept. Think about the one sub-thing in this task that trips people up.
-
-     Bad:  "Re-read the explanation above and look at the code example."
-           (sends them back; gives nothing new)
-     Good: "The expression inside {} is evaluated at runtime — you can write
-            name.upper() directly inside the braces without a separate variable."
-
-  2. Give the learner a new angle or a concrete nudge, not a pointer back to what they
-     already read. If the hint sends them back to re-read, it is not a hint.
-
-  3. Do not give away the answer. Name the mechanism and let the learner apply it.
-
-  4. One sentence is usually enough. Two sentences is the maximum.
-
-  Omit the hint block if the task is unlikely to cause confusion.
-
-── STARTER CODE ────────────────────────────────────────────
-
-"starterCode" — the code the learner starts from in the editor
-
-Apply these rules:
-
-1. The starterCode must be set up so the learner can accomplish the lab objective
-   stated in the task block. The variables, data, and TODO must directly support
-   what the task block describes as the goal and expected result.
-
-2. Starter code comments should provide conceptual local guidance, not exact implementation instructions.
-  Good comments describe:
-  - what the current data represents,
-  - what the learner needs to produce,
-  - what kind of result a line should generate.
-
-  Do not reveal the exact method, operator, or expression when choosing it is part of the exercise.
-
-  Bad:
-  # TODO: print pet.keys(), pet.values(), and pet.items()
-
-  Good:
-  # TODO: print the field names stored in the pet dictionary
-  # TODO: print the stored values
-  # TODO: print each field together with its value
-
-3. Use variable names and values that give the task concrete anchors.
-   If the task step says "use name and city", define them with real values:
-     name = "Ada"
-     city = "Rome"
-     # TODO: write an f-string that prints: Hello, Ada from Rome
-   Do not use placeholder values like "your_name" or "value_here".
-
-4. Include brief inline comments that orient the learner locally — what each variable
-   represents, what section they are working in, what kind of value belongs in the TODO.
-   These are orientation comments, not hints. They name the situation, not the answer.
-   Good:  name = "Ada"    # the name to include in the greeting
-   Bad:   name = "Ada"    # hint: put name inside the f-string braces
-   Do not include near-complete implementations or commented-out solution code.
-   Do not add large blocks of boilerplate that crowd the exercise.
-
-5. The expected output must be deterministic. Whatever the learner writes in the
-   TODO area, the correct solution should produce one specific, predictable output —
-   the same output shown in the TODO's Expected comment line.
-
-6. Do not wrap in markdown fences. Plain code only.
-
-── CONSISTENCY RULES ───────────────────────────────────────
-
-- All blocks, starterCode, expectedAction, and validationNote must describe the same
-  concept and the same learning objective. There must be no contradiction between them.
-
-- The code block and the starterCode must not be identical or near-identical.
-  The code block demonstrates the mechanic. The starterCode is the exercise scaffold.
-  They serve different purposes and must look clearly different.
-
-- The lab objective stated in the task block must be achievable by editing only
-  the TODO area in the starterCode as provided.
-
-- The check block question must be answerable from the explain and code blocks
-  that precede it. It must not depend on anything introduced in the task block.
-
-- The expectedAction and the task block describe the same learner action —
-  one for the learner, one for the validator. They must not contradict each other.
-
-- The validationNote describes what a correct completed starterCode looks like.
-  It is internal author/validator guidance only — not learner-facing copy.
-
-- Difficulty must be appropriate for ${learnerLevel}.
-  For a beginner step: the TODO should require writing 1–3 lines of new code,
-  not a function, class, or multi-part algorithm.
-
-── OUTPUT RULES ────────────────────────────────────────────
-
-- Return valid JSON only.
-- Do not return markdown.
-- Do not use code fences anywhere — not around code block content,
-  not around the JSON object itself.
-- Do not add any text before or after the JSON object.
-- Include exactly these top-level keys: "blocks", "starterCode", "expectedAction",
-  "validationNote". No extra keys.
-- Include as many blocks as the instructional logic requires. Do not add blocks to
-  hit a target count, and do not omit blocks the learner needs.
-- Every block must have a non-empty "content" string.
-- Every "code" block must have a non-null "language" string.
-- "starterCode", "expectedAction", and "validationNote" must all be non-empty strings.`
+- If the learner could read the block and still not know when to use the idea, it is too shallow.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+CODE BLOCKS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Type: "code"
+Language: "${outputLanguage}"
+
+Purpose:
+Show the learner the idea in action with a small, readable example.
+
+Content rules:
+- Use real variable names and real values.
+- The example should feel like real code, not abstract placeholders.
+- Show one main mechanic clearly.
+- You may include one closely related supporting mechanic when the learner needs to see how they work together.
+- Do not try to demonstrate the entire topic universe in one code block.
+- Prefer code that shows the mechanic in a small meaningful context, not the thinnest possible toy form.
+- Keep the example readable and compact.
+- Include inline comments only when they genuinely clarify behavior or output.
+- If the code prints output, show the exact output in comments on the print lines when helpful.
+- Preserve proper indentation and formatting.
+
+Good code blocks feel like:
+- a clean example worth reading
+- not a dump of syntax
+- not a mini lab
+- not pseudo-code
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+CHECK BLOCKS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Type: "check"
+
+Purpose:
+Give the learner one short reasoning check before the lab.
+
+Title:
+- Use a natural, specific title.
+- Do not use "Quick trace".
+- "Quick check" is acceptable, but a more specific title is better when natural.
+
+Content rules:
+- Ask the learner to APPLY or DISCRIMINATE, not merely recall.
+- A short code snippet is strongly preferred.
+- Good checks make the learner choose, trace, compare, predict, or identify what would fail.
+- Prefer confusion points over fact checks.
+- The answer should confirm the result and briefly name the decisive reason.
+- Usually 1–3 sentences for the answer.
+- Do not restart the whole lesson explanation in the answer.
+
+A check block may be omitted if there is no genuinely useful non-obvious question for this step.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+TASK BLOCKS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Type: "task"
+Title: always "Lab"
+
+Purpose:
+The middle pane Lab block is a brief learner-facing lab objective.
+
+Content rules:
+- Write the Lab block as natural learner-facing prose.
+- Keep it concise, usually 2–4 sentences.
+- It should read like a small coding objective or scenario, not an assignment sheet.
+- Explain:
+  - what the learner is trying to accomplish,
+  - what idea the lab is practicing,
+  - and what a correct result should look like.
+- State the goal, not the procedure.
+- Do not write numbered steps.
+- Do not mention line numbers, TODO markers, or exact code to type.
+- Do not overuse procedural wording like:
+  "find", "replace", "run", "confirm", "first", "second", "third"
+  unless absolutely necessary.
+
+A good Lab block sounds like:
+- a small coding scenario
+- a natural objective
+- a brief result-oriented description
+
+Not like:
+- a checklist
+- a worksheet instruction list
+- a solution plan
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+HINT BLOCKS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Type: "hint"
+
+Purpose:
+Offer a useful nudge only when there is a real likely stuck point.
+
+Rules:
+- Hint blocks are optional.
+- Include one only if the learner is likely to get stuck in a specific way.
+- The hint should point to the right idea without giving away the answer.
+- It must not say "look above", "review the example", or "read the instructions again".
+- It should give a fresh angle on the exact stuck mechanic.
+
+The hint title is the collapsed label.
+Use a natural learner-facing label such as:
+- Need a hint?
+- Not sure which method fits?
+- Unsure what should change?
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+STARTER CODE
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+The starterCode is the learner's work area.
+
+It should provide enough local orientation for the learner to begin confidently,
+without turning the code pane into a step-by-step solution guide.
+
+Rules:
+1. The lab must be completable by editing only the intended TODO area.
+2. Prefer ONE coherent TODO for the whole lab.
+   Do not split one small lab into multiple mini-exercises unless the exercise truly has distinct parts.
+3. Comments may explain:
+   - what the data represents
+   - what the learner is trying to produce
+   - what kind of result should appear
+4. Do NOT reveal the exact method, operator, or expression when choosing it is part of the exercise.
+5. Use this format:
+   # TODO: [one concise description of the coding goal]
+   # Expected: [result shape, outcome, or success condition]
+6. The Expected line should describe the outcome, not restate the full solution.
+   Do not spell out the full answer line by line unless exact formatting is the actual learning target.
+7. Avoid over-directing the learner.
+   Do not write comments like:
+   - first line do this
+   - second line do that
+   - replace this TODO with ...
+   - call method X here
+   unless that exact sequence is itself the point of the lesson.
+8. Do not include near-solution code or commented-out answer code.
+
+Good starter code feels like:
+- one coherent little work area
+- enough context to begin
+- enough freedom that the learner still has to make the key choice
+
+Bad starter code feels like:
+- a worksheet
+- three mini tasks
+- a disguised answer key
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+EXPECTEDACTION
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+"expectedAction" is NOT shown to the learner.
+It is an internal concise description of what the learner must do.
+
+Rules:
+- Write exactly one concrete sentence.
+- Refer to the actual action needed to complete the lab.
+- Be specific to this step.
+- Do not write vague text like "Complete the lab" or "Finish the task".
+
+Example style:
+- Add one new dictionary entry, remove one old entry, and print the title plus the final dictionary.
+- Use a slice to read the middle values and an index to read the first value.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+VALIDATIONNOTE
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+"validationNote" is NOT shown to the learner.
+It is for internal validation.
+
+Rules:
+- Write 1–2 sentences.
+- Describe what a correct completed starterCode should produce or do.
+- Name one common wrong approach to watch for when useful.
+- Be specific to this step.
+- Do not write generic validator language.
+
+Example style:
+- Correct code should print the movie title first, then the updated dictionary containing title, year, and genre but no rating. A common mistake is deleting the wrong key or printing the dictionary before applying the update.
+- Correct code should use the dictionary method that returns pairs, not only keys or only values.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+CONSISTENCY RULES
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+All parts of the response must agree with each other.
+
+- The Lab block, starterCode, expectedAction, and validationNote must describe the same exercise.
+- The starterCode must support the Lab objective directly.
+- The code example must teach the same step the lab is practicing.
+- The check block should test understanding of a real confusion point from this step.
+- The expected output/result described in the Lab block must match the starterCode's Expected comment.
+- The lab objective must be achievable by editing only the TODO area in starterCode.
+- The learner should not need hidden setup or implied missing code outside starterCode.
+- Keep the difficulty appropriate for a ${learnerLevel} learner.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+FINAL QUALITY BAR
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Before you finalize the JSON, silently check:
+
+- Does this read like a real lesson page, not a content template?
+- Do the explain blocks actually teach?
+- Are all listed step topics covered?
+- Does the code example feel real?
+- Does the check block make the learner think?
+- Does the Lab block sound natural?
+- Does the starterCode guide without giving away the answer?
+- Are expectedAction and validationNote specific rather than generic?
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+OUTPUT RULES
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Return only the JSON object.
+No markdown.
+No code fences.
+No commentary.
+No extra keys.
+No trailing commas.
+Ensure the JSON is valid and parseable.`
 }

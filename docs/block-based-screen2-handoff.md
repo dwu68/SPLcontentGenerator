@@ -1,8 +1,8 @@
 # Branch Handoff — `feature/block-based-screen2`
 
-**Latest checkpoint commit:** `247b609` (no new commits this session — all changes are in working tree, uncommitted)
+**Latest checkpoint commit:** `421cd1d` (Session 14 — prompt quality + UI refinements)
 **Branch base:** `main` at `95a128e` (Session 12 — Screen 2 AI generation wired)
-**Last updated:** 2026-03-18 (Session 13)
+**Last updated:** 2026-03-18 (Session 14)
 
 This document is the working handoff for this experimental branch.
 It is **not** a whole-project handoff — for project-wide context see `docs/session_handoff.md` on `main`.
@@ -48,8 +48,8 @@ rather than a form with fixed slots.
 - Five block types rendered distinctly in view mode:
   - `explain` — prose paragraphs, optional heading
   - `code` — dark monospace pre block
-  - `task` — blue-tinted card with action steps
-  - `check` — amber-accented question card
+  - `task` — blue-tinted card with action steps; title always defaults to "Lab"
+  - `check` — amber-accented question card with hidden solution, revealed on click
   - `hint` — collapsible `<details>` block, optional summary label
 
 ### Phase B — Block-based edit mode (complete, verified)
@@ -73,13 +73,16 @@ rather than a form with fixed slots.
 - `generateContentPrompt.js` completely rewritten with block contract + quality standards
 - `normalizeContent` in `lessonContentService.js` passes through `blocks`
 - `parseContentResponse` in `server/index.js` is permissive — no changes needed
-- **Mock path verified end-to-end**
-- **Real AI path (USE_MOCK=false) verified** — tested with GPT before Session 13. The real AI path
-  returns a valid block-shaped response and renders correctly.
+- **Real AI path (USE_MOCK=false) verified** — tested with GPT before Session 13
 
 ### Phase D — UI polish and cross-browser fixes (completed in Session 13)
 
-See §5 for full details. All issues found in this phase are resolved.
+Independent panel scrolling, "Lab" panel label, code formatting in check/explain/hint blocks,
+Safari blank-area CSS fix, Chrome code-flattening heuristic fix. All stable. Do not re-investigate.
+
+### Phase E — Prompt quality and UI refinements (completed in Session 14)
+
+See §5 for full details.
 
 ### What is verified vs. what is not
 
@@ -87,17 +90,24 @@ See §5 for full details. All issues found in this phase are resolved.
 |---|---|---|
 | Block view mode renders all 5 types | Yes | Manual test with injected data |
 | hint collapses/expands | Yes | Manual test |
+| check block solution hidden by default | Yes | Visual |
+| check block solution revealed on click | Yes | Visual |
+| check solution state isolated per step | Yes | Fix applied (step-scoped key) |
+| task block title defaults to "Lab" | Yes | Visual |
+| block heading: black, normal case, 13px | Yes | Visual |
 | BlockEditor opens for block steps | Yes | Manual test with injected data |
 | Field editing, dirty dot, Save, Cancel | Yes | Manual test |
 | Add block / Delete block | Yes | Manual test |
 | Flat-field fallback unaffected | Yes | Manual test |
 | Mock path returns block shape end-to-end | Yes | Generated lesson with USE_MOCK=true |
-| Real AI path returns block shape | **Yes** | Tested with GPT before Session 13 |
-| Real AI content quality (titles, checks, tasks) | Partially observed | Saw real output; targeted prompt tweaks made |
-| Independent panel scrolling | Yes | Verified after Session 13 layout fix |
-| Code formatting inside check/explain/hint blocks | Yes | Verified in Chrome and Safari after Session 13 |
-| Cross-browser layout (Safari blank area) | Yes | Confirmed fixed; was cache in normal mode, clean in private |
+| Real AI path returns block shape | Yes | Tested with GPT before Session 13 |
+| Topic coverage prompt rule (≥1 block per topic) | Code only | Needs real-AI generation to verify |
+| Lab/check role split (prose objective, solution toggle) | Code only | Needs real-AI generation to verify |
+| Starter code: TODO + Expected format | Code only | Needs real-AI generation to verify |
 | `expectedAction` / `validationNote` quality | **Not yet** | No dedicated prompt quality section written yet |
+| Independent panel scrolling | Yes | Verified after Session 13 layout fix |
+| Code formatting inside check/explain/hint blocks | Yes | Verified Chrome and Safari after Session 13 |
+| Cross-browser layout (Safari blank area) | Yes | Confirmed fixed after Session 13 |
 
 ---
 
@@ -133,37 +143,50 @@ The prompt has five sections in this order:
 
 | Sub-section | Key intention |
 |---|---|
-| Topic and step phrasing | Prevent mechanical repetition of the step title across blocks and titles |
-| Block sequence | Use instructional logic, not a fixed template; don't pad; omit optional blocks when not needed |
-| Explain blocks | Titles must name a specific idea (not "What it is"); name the mechanism, not just the concept; one idea per block |
+| Topic and step phrasing | Prevent mechanical repetition of step title across blocks and titles |
+| Block sequence | Every topic in stepTopics must be covered by ≥1 explain or code block; block ceiling is 7 for multi-topic steps; "do not pad" means redundant blocks only |
+| Explain blocks | Titles must name a specific idea; name the mechanism not just the concept; one idea per block |
 | Code blocks | Real variable names and values; demonstrate one mechanic; comments only where they clarify; exact output on print lines |
-| Check blocks | Apply not recall; code-snippet question strongly preferred; 1–2 sentence answer; omit if no genuinely non-obvious question |
-| Task blocks | Steps must reference named starterCode elements; final step usually a verification with exact output; no stock opener |
+| Check blocks | Apply not recall; code-snippet question strongly preferred; answer hidden behind "Solution" button; omit if no genuinely non-obvious question |
+| Task blocks | Title always "Lab"; content is a prose problem statement (goal + concept + expected result), not numbered steps; implementation detail lives in starterCode |
 | Hint blocks | Title optional; name the specific stuck mechanic; give a new angle, not "re-read above" |
-| Starter code | Must match task steps exactly; single TODO; real variable values; deterministic output |
+| Starter code | Two-line TODO format: `# TODO:` + `# Expected:`; inline orientation comments allowed (name situation, not answer); matched to lab objective not task steps |
 
-### Prompt wording changes made in Session 13
+### Prompt wording changes made in Session 14
 
-| Location | Old wording | New wording | Why |
-|---|---|---|---|
-| Check block title Good-examples (line ~222) | `"Quick trace — what does this print?"` | `"Quick check — what does this print?"` | "Quick trace" felt too technical; "Quick check" is more learner-friendly |
-| Task block title Good-examples (line ~264) | `"Complete the starter code"` | `"Lab task"` | Coupled too tightly to one exercise type; "Lab task" works for any practice type |
+| Location | Change | Why |
+|---|---|---|
+| BLOCK SEQUENCE — rules | Added: every stepTopic is a coverage requirement; block ceiling raised to 7 for 3+ topics; "padding" redefined as redundant-only | Model was silently omitting topics to stay within old 3–5 block ceiling |
+| TASK BLOCKS — title | `"Your turn" / "Now write it" / "Lab task"` → always `"Lab"` | Fixed label, no model variation |
+| TASK BLOCKS — content | Replaced 8-rule numbered-steps format with prose problem-statement format | Middle pane should state the goal, not micromanage implementation |
+| STARTER CODE — Rule 1 | "must match the task block steps exactly" → "must support the lab objective" | Decoupled from task block being a step list |
+| STARTER CODE — Rule 2 | Single `# TODO:` → two-line `# TODO:` + `# Expected:` | Success criterion now lives in the code panel where the learner is working |
+| STARTER CODE — Rule 4 | "do not include commented-out hints" → allow orientation comments (name situation, not answer) | Right pane now carries local implementation guidance |
+| STARTER CODE — Rule 5 | "same output shown in task block's verification step" → "same output shown in TODO's Expected line" | Task block no longer has a verification step |
+| CONSISTENCY RULES | "task block steps must be completable" → "lab objective must be achievable" | Language consistency with new task block role |
 
 ### Known prompt weaknesses — still open
 
 - **`expectedAction` and `validationNote`** have no dedicated quality sub-section.
-  The consistency rules constrain them, but the model may still produce generic content.
+  The consistency rules constrain them, but the model still produces generic content.
   This is the highest-priority prompt improvement remaining.
+- **Screen 1 step granularity** — the structure prompt still allows/encourages multi-topic
+  `coveredSubtopics` arrays (2–5 items from one input line) without guidance on keeping them
+  narrow enough for Screen 2 to cover. The coverage rule (≥1 block per topic) helps but does
+  not prevent steps with 5+ topics from generating an unwieldy block sequence.
 
 ---
 
-## 4. UI Wording State (as of Session 13)
+## 4. UI State (as of Session 14)
 
-| Element | Old label | New label | Where |
-|---|---|---|---|
-| Right panel header | "Starter Code" | "Lab" | `LessonAuthoringView.jsx` line ~143 |
-| Task block title guidance (prompt) | "Complete the starter code" | "Lab task" | `generateContentPrompt.js` line ~264 |
-| Check block title guidance (prompt) | "Quick trace" | "Quick check" | `generateContentPrompt.js` line ~222 |
+| Element | State | Where |
+|---|---|---|
+| Right panel header | "Lab" | `LessonAuthoringView.jsx` ~line 143 |
+| Block heading style | Black (#000), 13px, normal case | `App.css` `.block-heading` |
+| Task block title default | "Lab" (hardcoded fallback in view) | `LessonAuthoringView.jsx` task renderer |
+| Check block solution | Hidden by default; revealed on "Solution" button click | `CheckBlock` component in `LessonAuthoringView.jsx` |
+| Check block solution state isolation | Per-step (block key is `step.id-block.id`) | `BlocksView` in `LessonAuthoringView.jsx` |
+| `starter_code.py` filename badge | Unchanged — still says `starter_code.py` | Not requested |
 
 **Note:** The mock data in `mockGenerateContent` (`server/index.js`) still uses anti-pattern
 titles like "What it is" and "Why it matters". This is intentional — the mock is a low-quality
@@ -172,151 +195,125 @@ content quality.
 
 ---
 
-## 5. Session 13 Changes — Full Record
+## 5. Session 14 Changes — Full Record
 
-### 5a. Independent panel scrolling fix
+### 5a. Block sequence coverage requirement
 
-**Problem:** In view mode, both the Instructions pane and the Lab (starter code) pane shared a
-single page scroll. The user had to scroll the whole page to read the task, then scroll back up
-to see the starter code.
+**Problem diagnosed:** `stepTopics` was passed as background context only. The model silently
+omitted listed topics to stay within the "3–5 blocks, do not pad" ceiling.
 
-**Root cause:** A `.authoring-main.view-mode` CSS block intentionally set `overflow-y: auto` on
-the main container and `overflow: visible` on both panel bodies — collapsing them to natural height
-so everything scrolled together.
-
-**Fix:**
-- Removed the entire `.authoring-main.view-mode` CSS block from `src/App.css`
-- Removed the `view-mode` conditional class from `<main>` in `LessonAuthoringView.jsx`
-- The base CSS already had the correct structure: `.panel` has `overflow: hidden`,
-  `.panel-body` / `.panel-body-code` have `flex: 1; overflow-y: auto` — this gives independent
-  scrolling in both edit and view modes without any special-case override.
-
-**Files:** `src/App.css`, `src/components/LessonAuthoringView.jsx`
-
----
-
-### 5b. Label rename: "Starter Code" → "Lab"
-
-**Problem:** The right panel label "Starter Code" was too narrow. The right panel is the
-learner's work area, not just a snippet.
-
-**Fix:** Changed `"Starter Code"` → `"Lab"` at `LessonAuthoringView.jsx` line ~143 (the
-`panel-title-code` span in the right panel header). One-line change.
-
-**Note:** The filename badge `starter_code.py` in the same header was intentionally left
-unchanged — not requested.
-
-**File:** `src/components/LessonAuthoringView.jsx`
-
----
-
-### 5c. Prompt wording: task title and check title
-
-**Problem:** "COMPLETE THE STARTER CODE" appeared as the AI-generated task block title.
-"QUICK TRACE" appeared as the AI-generated check block title. Both felt awkward.
-
-**Root cause:** Both titles were AI-generated, not hardcoded UI text. The prompt's Good-examples
-list in the check and task quality sub-sections included these exact phrases. The model follows
-the examples literally.
-
-**Fix:** Updated two Good-example strings in `server/prompts/generateContentPrompt.js`:
-- Check title: `"Quick trace — what does this print?"` → `"Quick check — what does this print?"`
-- Task title: `"Complete the starter code"` → `"Lab task"`
+**Fix in `generateContentPrompt.js` — BLOCK SEQUENCE rules:**
+- Added: every topic in "Step topics" is a coverage requirement — at least one explain or
+  code block must address it
+- Block ceiling: raised from 5 to 7 for steps with 3+ topics
+- "Do not pad" redefined: padding = restating a fully-covered topic OR adding blocks to hit
+  a count. Covering all listed topics is not padding.
 
 **File:** `server/prompts/generateContentPrompt.js`
 
 ---
 
-### 5d. Code formatting inside instructional blocks
+### 5b. Task block / Starter code role split
 
-**Problem:** Code snippets embedded inside `check` block content (and potentially `explain`,
-`hint`) were rendering as flat inline text — line breaks and indentation lost.
+**Problem diagnosed:** Task block content was a numbered implementation checklist
+("Find the variable greeting. Replace the TODO. Run the code.") which overlapped with the
+code panel's role and micromanaged implementation detail. Starter code had no local guidance
+because Rule 4 prohibited orientation comments.
 
-**Root cause:** The `paragraphs` renderer in the `Block` component split content on `\n\n` and
-wrapped every chunk in `<p>`. HTML `<p>` does not preserve `\n` or leading whitespace, so
-`city = 'Rome'\nprint(city)` rendered as one flat sentence.
+**Intended role split:**
+- Middle pane (task block) = lab objective: what the learner is trying to accomplish,
+  what concept the lab practices, what success looks like
+- Right pane (starter code) = local implementation guidance through TODO comments and
+  inline orientation comments
 
-**Fix in `LessonAuthoringView.jsx`:** Replaced `paragraphs` with `segments` — a smarter renderer
-that inspects each `\n\n`-separated chunk before deciding how to render it:
-- If any line in the chunk starts with whitespace → `<pre class="block-inline-code">` (indented code)
-- If the chunk is multi-line AND starts with a lowercase letter → `<pre class="block-inline-code">` (unindented code; prose paragraphs always start with capital or digit)
-- Otherwise → `<p>` (prose)
+**Prompt changes in `generateContentPrompt.js`:**
+- TASK BLOCKS title: always "Lab" — no model variation
+- TASK BLOCKS content: replaced numbered-steps format with prose problem-statement format
+  (goal + concept + expected result in 2–4 natural sentences, no step micromanagement)
+- STARTER CODE section: fully rewritten with 8 rules + quality bar:
+  - Rule 1: align to lab objective (not task step list)
+  - Rule 2: brief orientation comments only — describe situation, not solution
+  - Rule 3: prefer one coherent TODO; don't split into mini-exercises
+  - Rule 4: do not name the exact method/operator/expression when choosing it is the exercise
+    (e.g. "# TODO: inspect this dictionary in three ways" not "# TODO: print .keys(), .values()")
+  - Rule 5: TODO + Expected two-line format
+  - Rule 6: Expected describes outcome shape, not full solution line-by-line
+  - Rule 7: no over-directing ("first line do this, second line do that")
+  - Rule 8: no giveaway hints or commented-out solution code
+  - Quality bar: learner must still make the key coding choice; if they can copy the comment into code with no decision, it's too explicit
+- CONSISTENCY RULES: "task block steps" → "lab objective"
 
-Applied to `explain`, `check`, and `hint` block types (all three used the old `paragraphs` helper).
-The `task` block uses the separate `lines` renderer (unchanged).
-
-**Fix in `App.css`:** Added `.block-inline-code` CSS class — dark monospace styling (same palette
-as `.block-code`), `white-space: pre`, `overflow-x: auto`, `max-width: 100%`, `box-sizing: border-box`.
-
-**Files:** `src/components/LessonAuthoringView.jsx`, `src/App.css`
+**File:** `server/prompts/generateContentPrompt.js`
 
 ---
 
-### 5e. Cross-browser layout fix — Safari blank left area
+### 5c. Block heading style
 
-**Problem:** In Safari (normal mode), a large blank area appeared on the left side of the page.
-Chrome was unaffected. The blank area appeared across Screen 2 and also in the Builder (Screen 1),
-confirming it was a layout-level issue, not content-specific.
+**Problem:** Block title labels were all-caps, light grey, and too small (10.5px).
 
-**Root cause:** Safari does not reliably compute `overflow-x` from `overflow-y` alone.
-The CSS spec says setting `overflow-y: auto` on an element should compute `overflow-x` to `auto`
-as well, but Safari leaves `overflow-x: visible` when only `overflow-y` is specified.
-
-Both `.panel-body` and `.panel-body-code` had only `overflow-y: auto` — no explicit `overflow-x`.
-This allowed `<pre>` elements with `white-space: pre` (specifically the `code-pre` in the right
-panel when starter code had long lines) to expand horizontally beyond their containers. Safari
-then extended the page's scrollable area, causing the viewport to appear shifted right, which
-looks like a blank area on the left.
-
-The initial fix added `overflow-x: hidden` only to `.panel-body` (left/instruction panel),
-missing `.panel-body-code` (right/code panel) — which is where the long-line `<pre>` was
-actually escaping. That is why the first fix didn't work in normal-mode Safari.
-
-**Fixes:**
-- Added `overflow-x: hidden` to `.panel-body` (covers instruction panel)
-- Added `overflow-x: hidden` to `.panel-body-code` (covers code panel — the actual escape point)
-- Added `max-width: 100%; box-sizing: border-box` to `.block-inline-code` (inline code pre)
-- Added `max-width: 100%; box-sizing: border-box` to `.code-pre` (read-only starter code view)
-
-**Verification:** Confirmed fixed in Safari private mode immediately. Normal-mode Safari showed
-the issue persisting — confirmed to be a browser cache issue (old CSS cached). Hard refresh
-(`Cmd+Option+R`) or clearing the cache resolves it. The code is correct.
+**Fix in `App.css`:**
+- Removed `text-transform: uppercase`
+- `color` changed from `var(--color-text-muted)` to `#000`
+- `font-size` increased from `10.5px` to `13px`
 
 **File:** `src/App.css`
 
 ---
 
-### 5f. Cross-browser code rendering — Chrome flattened code
+### 5d. Check block — solution hidden by default
 
-**Problem:** On some generated steps, the code snippet inside the `check` block appeared
-flattened in Chrome (rendered as `<p>`, no line breaks) while looking correct in Safari.
+**Problem:** The check block rendered the full content including the `→ answer` inline.
+The learner had no opportunity to think before seeing the answer.
 
-**Root cause:** The detection heuristic `chunk.split('\n').some(line => /^\s/.test(line))`
-only fires when the AI produces indented code (leading whitespace on any line). The model
-sometimes generates unindented code — e.g., `city = 'Rome'\nprint(city)` with no leading
-spaces. When that happens, `/^\s/` returns false and the chunk falls through to `<p>`.
-The AI happened to produce indented code in one browser session and unindented in the other,
-making it appear browser-specific.
+**Fix:** Introduced `CheckBlock` sub-component in `LessonAuthoringView.jsx`:
+- Splits content on `\n→ ` — question goes above, answer goes below
+- Answer is hidden by default
+- "Solution" button toggles visibility; label changes to "Hide solution" when open
+- Styled in the amber check-block palette
+- Safe fallback: if content has no `→`, renders the full `segments` without a button
 
-**Fix:** Extended the detection to also check for multi-line content whose first character is
-a lowercase letter or underscore (`/^[a-z_]/`). Prose paragraphs always open with a capital
-letter. Code identifiers and keywords always start lowercase. This covers unindented code
-without requiring language-specific keyword lists.
+**New CSS classes:** `.check-solution`, `.check-solution-btn`, `.check-solution-text`
+
+**Files:** `src/components/LessonAuthoringView.jsx`, `src/App.css`
+
+---
+
+### 5e. Check block solution state isolated per step
+
+**Problem:** Block components were keyed by `block.id` only (e.g. "b1", "b2"). Block IDs
+repeat across steps, so React reused component instances when navigating between steps —
+causing the `revealed` state to leak from one step to the next.
+
+**Fix in `BlocksView`:** Key changed from `block.id` to `` `${step.id}-${block.id}` ``.
+React now re-mounts each block on step navigation, resetting `revealed` to `false`.
 
 **File:** `src/components/LessonAuthoringView.jsx`
 
 ---
 
-## 6. Files Changed in Session 13
+### 5f. Task block title defaults to "Lab"
+
+**Problem:** Task block title was conditionally rendered — if the AI returned `null` or
+omitted the title, no heading appeared. The prompt says always use "Lab", but UI should
+not silently drop it if the model doesn't comply.
+
+**Fix:** Changed `{title && <div className="block-heading">{title}</div>}` in the task
+renderer to always render `<div className="block-heading">{title || 'Lab'}</div>`.
+
+**File:** `src/components/LessonAuthoringView.jsx`
+
+---
+
+## 6. Files Changed in Session 14
 
 | File | What changed |
 |---|---|
-| `src/components/LessonAuthoringView.jsx` | Removed `view-mode` class; "Starter Code" → "Lab"; replaced `paragraphs` helper with `segments` (code-aware renderer); extended code detection heuristic for unindented code |
-| `src/App.css` | Removed `.authoring-main.view-mode` CSS block; added `.block-inline-code` class; added `overflow-x: hidden` to `.panel-body` and `.panel-body-code`; added `max-width: 100%` + `box-sizing: border-box` to `.block-inline-code` and `.code-pre` |
-| `server/prompts/generateContentPrompt.js` | Check block title example: "Quick trace" → "Quick check"; task block title example: "Complete the starter code" → "Lab task" |
+| `server/prompts/generateContentPrompt.js` | Block sequence coverage rule; task block role rewrite (prose objective); starter code section fully rewritten (8 rules + quality bar: anti-spoiler guidance, TODO+Expected format, orientation-not-solution comments) |
+| `src/components/LessonAuthoringView.jsx` | `CheckBlock` sub-component added (hidden solution + toggle); task block title defaulted to "Lab"; block key changed to `step.id-block.id` |
+| `src/App.css` | `.block-heading` style (no uppercase, black, 13px); `.check-solution`, `.check-solution-btn`, `.check-solution-text` added |
 
 No changes to: `BlockEditor.jsx`, `InstructionPanelEditor.jsx`, `App.jsx`, `server/index.js`,
-`lessonContentService.js`, `server/lib/`.
+`lessonContentService.js`, `server/lib/`, `generateStructurePrompt.js`.
 
 ---
 
@@ -324,16 +321,19 @@ No changes to: `BlockEditor.jsx`, `InstructionPanelEditor.jsx`, `App.jsx`, `serv
 
 | Feature | Status |
 |---|---|
-| `expectedAction` / `validationNote` quality rules | **Highest-priority next prompt task.** No dedicated quality sub-section yet. |
+| `expectedAction` / `validationNote` quality rules | **Highest-priority next prompt task.** No dedicated quality sub-section. Model produces generic content. |
+| Screen 1 step granularity | Structure prompt still allows multi-topic steps (2–5 coveredSubtopics from one input line). Coverage rule helps but doesn't prevent unwieldy sequences. |
+| Lab single-TODO limitation | One TODO = one mechanic. Multi-topic steps cannot be fully exercised in the Lab. Product decision needed. |
+| Fresh real-AI generation to validate Session 14 prompt changes | All Session 14 prompt changes are code-only. Not yet tested against real GPT output. |
 | Block reordering (↑/↓ or drag) | Out of scope. Delete + re-add is the workaround. |
 | Type switching on an existing block | Out of scope. Type is fixed once set. Delete + re-add. |
 | Convert flat fields → blocks | Designed but not built. Not the primary path. |
 | Block-level dirty tracking | Step-level dirty dots work; no per-block granularity. |
 | Language dropdown/autocomplete | Plain text input only. |
 | Block insertion at a specific position | Add always appends at bottom. |
-| `check` blocks are not interactive | Renders as a read-only question card. No learner response mechanism. |
-| File header comment in `generateContentPrompt.js` | Still describes old flat-field contract. Update once a stable commit is made. |
-| `starter_code.py` filename badge in the right panel header | Not renamed. Not requested. Still says `starter_code.py`. |
+| `check` blocks are not interactive | Renders as a question card. No learner response mechanism. |
+| File header comment in `generateContentPrompt.js` | Still describes old flat-field contract. Update once stable commit is made. |
+| `starter_code.py` filename badge | Still says `starter_code.py`. Not requested. |
 
 ---
 
@@ -344,36 +344,39 @@ No changes to: `BlockEditor.jsx`, `InstructionPanelEditor.jsx`, `App.jsx`, `serv
 - Real AI path works. USE_MOCK=false + real API key produces valid block-shaped JSON.
 - Independent panel scrolling works in both Chrome and Safari.
 - Code formatting inside `check`/`explain`/`hint` blocks works in both Chrome and Safari.
-- Safari blank-area issue is resolved (was a CSS `overflow-x` omission on the code panel body).
-- Chrome code-flattening issue is resolved (heuristic extended for unindented code).
+- Safari blank-area and Chrome code-flattening issues are resolved.
+- Check block solution toggle is isolated per step.
 
-### Next session: prompt quality iteration
+### Next session priorities
 
-The UI is stable. The architecture is complete. The focus for the next session should be
-**prompt and content quality** — specifically the two known gaps:
+**1. Run a fresh real-AI generation and evaluate Session 14 prompt changes**
 
-**1. Add a quality sub-section for `expectedAction` and `validationNote`**
+This is the gating task before any further prompt work. Generate 2–3 steps across different
+topic counts and evaluate:
+- Does a step with 3+ topics produce blocks that cover all listed topics?
+- Does the task block read as a prose objective or does it still produce numbered steps?
+- Does the starterCode include `# Expected:` on the TODO line?
+- Does the starterCode include orientation comments, not hints?
 
-These two fields are always generated and have no dedicated guidance beyond the consistency
-rules. The model currently produces generic content for both. Add a dedicated sub-section
-in `generateContentPrompt.js` between the Hint sub-section and the Consistency rules.
+**2. Add a quality sub-section for `expectedAction` and `validationNote`**
+
+These two fields have no dedicated quality guidance. The model produces generic content.
+Insert a new sub-section between the Hint sub-section and Consistency rules.
 
 Intended behavior:
-- `expectedAction`: one concrete sentence describing what the learner must do to pass the step.
+- `expectedAction`: one concrete sentence describing what the learner must do to pass.
   Must reference the specific TODO or action, not just "complete the task."
-- `validationNote`: internal author/validator guidance. Should describe what a correct completed
-  starterCode looks like AND name the one most common wrong approach to watch for.
+- `validationNote`: internal guidance — what the correct completed starterCode looks like
+  AND the one most common wrong approach to watch for.
 
-**2. Run a fresh real-AI generation session and read the output critically**
+**3. Evaluate Screen 1 step granularity**
 
-Evaluate against:
-- Do explain block titles still default to generic labels despite the guidance?
-- Do task steps reference named elements from the starterCode?
-- Is the starterCode anchored tightly to the task (no mismatch between TODO and task steps)?
-- Does the check block contain an apply question with a code snippet, or just a recall question?
-- Are `expectedAction` and `validationNote` still generic?
-
-**3. One round of testing → one round of targeted prompt revision** is the right session scope.
+The structure prompt says "one step per sub-topic line" but generates `coveredSubtopics`
+arrays with 2–5 items from a single input line. The coverage rule (≥1 block per topic)
+now enforces coverage, but 5-topic steps are still potentially too wide for a single
+block sequence and a single-TODO lab. Options:
+- Add guidance to the structure prompt to keep `coveredSubtopics` to ≤3 items per step
+- Provide product guidance on when to split a broad topic into multiple steps
 
 ---
 
@@ -392,16 +395,16 @@ if (!draft.lessonContent?.length) {
   draft.lessonContent[0] = {
     ...draft.lessonContent[0],
     blocks: [
-      { id: 'b1', type: 'explain', title: 'What it is',
+      { id: 'b1', type: 'explain', title: 'The f prefix and what it tells Python',
         content: 'An f-string lets you embed a variable directly inside a string — no concatenation needed.\n\nPut an f before the opening quote, then wrap any variable name in {}.' },
       { id: 'b2', type: 'code', language: 'python',
         content: 'name = "Ada"\nage = 35\n\ngreeting = f"My name is {name} and I am {age} years old."\nprint(greeting)\n# My name is Ada and I am 35 years old.' },
-      { id: 'b3', type: 'check', title: 'Before you continue',
-        content: 'What would this print?\n\n  city = "Rome"\n  print(f"I love {city}!")\n\nThink about it, then scroll.\n\n→  I love Rome!' },
+      { id: 'b3', type: 'check', title: 'Quick check — what does this print?',
+        content: 'What would this print?\n\n  city = "Rome"\n  print(f"I love {city}!")\n\nThink about it, then check.\n→ I love Rome!' },
       { id: 'b4', type: 'explain', title: 'Beyond variables',
         content: 'The {} in an f-string can hold any Python expression — not just a variable name.\n\nThe expression is evaluated at runtime and the result is inserted into the string.' },
-      { id: 'b5', type: 'task', title: 'Your turn',
-        content: '1. Look at the starter code on the right.\n2. Find the two TODO lines.\n3. Replace each one with an f-string that produces the expected output.' },
+      { id: 'b5', type: 'task', title: 'Lab',
+        content: 'Your job is to build a formatted greeting using an f-string that combines a name and a city. The lab exercises embedding two variables in a single string expression. When the code runs correctly, it will print: Hello, Ada from Rome' },
       { id: 'b6', type: 'hint',
         content: 'You can call .upper() directly inside the {} — no intermediate variable needed.' }
     ]
@@ -439,6 +442,30 @@ The flat-field model is still coerced in `normalizeContent` — missing fields b
 `blocks.length > 0` acts as the mode selector. Flat-field mode remains the fallback for any step
 that arrives without blocks. The two modes are isolated.
 
+### Check block solution format (as of Session 14)
+
+The prompt instructs the model to write check block content as:
+
+```
+question text
+
+→ answer text
+```
+
+The `CheckBlock` component in `LessonAuthoringView.jsx` splits on `\n→ ` to separate question
+from answer. Everything before `\n→ ` renders as the visible question; everything after is
+hidden until the learner clicks "Solution". If no `→` is present, the full content renders
+without a button.
+
+### Task block / Starter code role split (as of Session 14)
+
+```
+Middle pane (task block):  lab objective — goal, concept, expected result (prose, 2–4 sentences)
+Right pane (starter code): local guidance — # TODO: action / # Expected: output / orientation comments
+```
+
+The task block no longer contains implementation steps. Local detail lives in the starterCode.
+
 ---
 
 ## 11. Safe Rollback Note
@@ -461,7 +488,5 @@ All block-related work is isolated to `feature/block-based-screen2`.
 The latest committed checkpoint on this branch is:
 
 ```
-247b609  Switch Screen 2 content generation to block-based prompt contract
+421cd1d  update prompts for starter code
 ```
-
-Session 13 changes are in the working tree and have not been committed yet.
