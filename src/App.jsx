@@ -169,6 +169,8 @@ function App() {
       setSelectedStepId(content[0]?.id || null)
       setDirtyStepIds(new Set())
       setSaveStatus('unsaved')
+      // Clear any stale localStorage draft so a page reload won't restore old content
+      localStorage.removeItem(STORAGE_KEY)
       setScreen('authoring')
     } catch {
       setGenerationError('Failed to generate lesson content. Please try again.')
@@ -216,6 +218,34 @@ function App() {
     }
   }
 
+  // ── Export current lesson content to output/ via backend ────────────────
+  const handleExport = async () => {
+    const exportedAt = new Date().toISOString()
+    try {
+      const res = await fetch('/api/export', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({
+          courseName,
+          moduleName,
+          lessonStructure,
+          lessonContent,
+          learnerLevel: 'beginner',
+          outputLanguage: 'Python',
+          exportedAt,
+        }),
+      })
+      const body = await res.json().catch(() => ({}))
+      if (!res.ok) {
+        alert(`Export failed: ${body.error || res.status}`)
+        return
+      }
+      alert(`Exported → output/${body.filename}`)
+    } catch (err) {
+      alert(`Export failed: ${err.message}`)
+    }
+  }
+
   // ── Navigation ───────────────────────────────────────────────────────────
   const handleBackToBuilder = () => {
     setScreen('builder')
@@ -235,6 +265,7 @@ function App() {
         onBack={screen === 'authoring' ? handleBackToBuilder : null}
         saveStatus={screen === 'authoring' ? saveStatus : null}
         onSaveDraft={screen === 'authoring' ? handleSaveDraft : null}
+        onExport={screen === 'authoring' && lessonContent.length > 0 ? handleExport : null}
       />
 
       {screen === 'builder' ? (

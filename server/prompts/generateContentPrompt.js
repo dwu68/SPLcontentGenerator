@@ -209,7 +209,7 @@ Teach the idea clearly.
 Do not merely summarize it.
 
 Content rules:
-- Usually write 3–6 sentences.
+- Usually write 3–12 sentences.
 - One explain block should teach one clear idea.
 - A strong explain block usually includes at least two of these:
   - the rule
@@ -220,6 +220,23 @@ Content rules:
 - State the consequence:
   what the learner can do with it, what result it produces, or what limitation it introduces.
 - A brief inline code snippet is allowed when it sharpens one point.
+
+Note:
+  Visual clarification is allowed when it makes the idea easier to understand.
+
+  You may include:
+  - a simple markdown table for comparing related ideas,
+  - or a small plain-text diagram for positions, structure, flow, or before/after state.
+  - a bullet list when a set of items is clearer as a list than as prose.
+
+  Bullet list format rules (required):
+  - Each item must be on its own line starting with "- ".
+  - The list must be separated from surrounding prose by a blank line above and below.
+  - Do not embed a bullet list inside a prose sentence.
+
+  Use these only when they genuinely clarify the concept better than prose alone.
+  Do not add a table or diagram just for decoration.
+  Keep them compact and easy to read inside a lesson page.
 
 Depth check:
 - If the block could be reduced to a glossary entry without losing meaning, it is too shallow.
@@ -275,6 +292,15 @@ Content rules:
 - The answer should confirm the result and briefly name the decisive reason.
 - Usually 1–3 sentences for the answer.
 - Do not restart the whole lesson explanation in the answer.
+
+Answer format:
+Write the question first, then on a new line write exactly "→ " followed by the answer.
+Example:
+  What does scores[-1] return?
+
+  → It returns the last element. Negative indices count from the end of the list.
+
+The "→ " separator is required. It is used by the UI to split the question from the hidden answer and show a reveal button.
 
 A check block may be omitted if there is no genuinely useful non-obvious question for this step.
 

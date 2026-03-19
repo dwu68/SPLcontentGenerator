@@ -42,7 +42,7 @@ Tighten up the current implementation before adding new capabilities.
   - `POST /api/generate-content` added to `server/index.js` (one call per step; mock + real paths)
   - `src/services/lessonContentService.js` created (same three-layer pattern as Screen 1)
   - `App.jsx` updated to import and `await` `generateAllLessonContent`
-- 🔲 **Verify Screen 2 real AI generation end-to-end** — wiring is complete but a live generation has not been confirmed this session; clear localStorage and regenerate to verify (see session 12 handoff)
+- ✅ **Verify Screen 2 real AI generation end-to-end** — confirmed live with GPT-5.4; block-based schema (`blocks[]`, `starterCode`, `expectedAction`, `validationNote`) working correctly; multiple live generations completed across sessions
 - ✅ Add `isGenerating` boolean to `App.jsx` state
 - ✅ Disable "Generate" buttons and show a loading indicator while generation is in progress
 - ✅ Add error state: surface AI generation failures with a clear message
@@ -51,7 +51,7 @@ Tighten up the current implementation before adding new capabilities.
 
 ## Phase 3 — Export & Persistence
 
-- 🔲 Add JSON export button in Screen 2 header — download `{courseName}-{moduleName}.json`; state shape is documented in [data_model.md](data_model.md), no structural changes needed
+- ✅ **Add JSON export** — "Export JSON" button in Screen 2 header; calls `POST /api/export`; backend writes `output/{slug-course}-{slug-module}-MMDD-HHMM.json`; `output/` folder created automatically; payload includes all steps with blocks, starterCode, expectedAction, validationNote, stepGoal, stepTopics, and metadata
 - 🔲 Replace `localStorage.setItem` in `handleSaveDraft()` with a backend API call — hook is marked `// [PERSIST HOOK]` in `App.jsx`
 - 🔲 Load draft from backend API on mount (alongside or replacing the localStorage restore)
 - 🔲 Support named / multiple drafts — currently only one draft slot exists in `localStorage`
@@ -94,4 +94,8 @@ Tighten up the current implementation before adding new capabilities.
 | All state in one `App.jsx` | Low | Fine for two screens; a third screen would warrant extracting contexts |
 | ~~Generation errors use fixed messages~~ | ~~Low~~ | Fixed — `handleSubmit` catch block now uses `err.message`; server returns specific error text for 400/500 responses |
 | `isGenerating` loading state invisible during mock use | Info | Mock path (`USE_MOCK=true`) is synchronous on the server — label flashes one tick; becomes visible on the real OpenAI path due to network latency |
-| `src/utils/mockGeneration.js` is dead code | Low | No file imports it after Session 12 — mock behavior moved server-side. Safe to delete. |
+| `src/utils/mockGeneration.js` is dead code | Low | No file imports it — mock behavior is server-side. Safe to delete. |
+| `src/components/LessonStructureEditor.jsx` is dead code | Low | Dead since Session 2 — never imported. Safe to delete. |
+| `lessonContentService.js` JSDoc and `CONTENT_FIELDS` describe old flat schema | Low | Runtime behavior is correct (normalization handles both schemas). The comments reference `concept`, `codeExample`, `instructions` etc. — these should be updated to reflect the current block-based schema. |
+| check block reveal/hide only works on newly generated content | Info | The `→ ` separator rule was added to the prompt in Session 13. Existing saved drafts generated before this session will not have the separator and will render as flat text with no reveal button. Regenerate to get the new format. |
+| Bullet list rendering only applies to `\n\n`-separated chunks | Info | Bullet lists embedded inside a prose sentence (no surrounding blank lines) will still render as a flat paragraph. The prompt now instructs the model to separate lists with blank lines; regenerate to get proper rendering. |

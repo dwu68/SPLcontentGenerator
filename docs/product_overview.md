@@ -8,11 +8,19 @@ An internal authoring tool for creating self-paced learning (SPL) lesson content
 
 Internal teams producing SPL lesson content — primarily data science educators and instructional designers who know their subject matter but need tooling to translate it into structured, consistent lesson formats.
 
-## Current State (as of 2026-03-18)
+## Current State (as of 2026-03-19)
 
-The full two-screen interface is built and functional. Screen 1 generation is live: `lessonStructureService.js` calls `POST /api/generate-structure` on a small Express backend (`server/index.js`), which calls OpenAI (or returns mock data when `USE_MOCK=true`). Screen 2 generation is still mocked (`mockGeneration.js`). The only persistence is `localStorage`.
+Both screens are fully live with real AI generation (GPT-5.4). Screen 1 generates a step-by-step lesson structure; Screen 2 generates full lesson content for each step.
 
-Screen 2 has a view/edit mode: default is a readable lesson page (prose blocks, natural scroll); the author clicks **Edit** to enter edit mode, then **Save** or **Cancel** to exit. The `LessonContent` model includes a `codeExample` field (short annotated snippet) separate from the full `starterCode` block.
+Screen 2 uses a **block-based content model**: the AI returns an ordered `blocks[]` array (`explain`, `code`, `check`, `task`, `hint` types) plus `starterCode`, `expectedAction`, and `validationNote`. Blocks render as readable prose in view mode and are editable as individual cards in edit mode (`BlockEditor`).
+
+The check block supports a **reveal/hide answer** mechanic: the AI separates the question from the answer with `\n→ `, and the UI shows a "Show answer" toggle.
+
+Explain blocks support **bullet lists**: when the AI outputs a `\n\n`-separated chunk where every line starts with `- `, the renderer produces a proper `<ul>/<li>` list rather than a flat paragraph.
+
+**Export:** an Export JSON button in the Screen 2 header calls `POST /api/export` on the backend, which writes a timestamped JSON file to the `output/` folder at the project root. The export includes all steps with their blocks, starterCode, expectedAction, validationNote, stepGoal, stepTopics, and metadata.
+
+Persistence is still `localStorage` only (Save Draft). After a new generation, the previous draft is cleared from localStorage so a reload will not restore stale content.
 
 ---
 
@@ -34,15 +42,15 @@ For each step, the author edits the full lesson content: explanation (teaching n
 
 | Feature | Current state |
 |---|---|
-| Lesson structure generation | Live: `lessonStructureService.js` → `POST /api/generate-structure` → Express backend → OpenAI (or mock if `USE_MOCK=true`) |
-| Lesson content generation | Template: generic concept, instructions, hint, expected action, validation note, and starter code strings |
-| Starter code | Python-flavored boilerplate; not subject-specific |
+| Lesson structure generation | Live: `lessonStructureService.js` → `POST /api/generate-structure` → OpenAI (or mock if `USE_MOCK=true`) |
+| Lesson content generation | Live: `lessonContentService.js` → `POST /api/generate-content` → OpenAI (or mock if `USE_MOCK=true`). Block-based schema verified with GPT-5.4. |
+| learnerLevel / outputLanguage | Hardcoded to `'beginner'` / `'Python'` — no UI control yet. Passed as defaults in `generateAllLessonContent()` and exported in the JSON. |
 
 ---
 
 ## What Is Not Built Yet
 
-See [todo.md](todo.md) for the full prioritized backlog. Current top item: end-to-end verification of the real OpenAI path for Screen 1 (the integration is wired but has not been run with a live key). After that: wire Screen 2 AI content generation.
+See [todo.md](todo.md) for the full prioritized backlog. Next items: delete dead code files, then backend persistence to replace localStorage.
 
 ---
 

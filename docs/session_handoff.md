@@ -1,5 +1,109 @@
 # Session Handoff — SPL Content Generator
 
+**ID** 15
+**Date:** 2026-03-19
+**Session scope:** Prompt fixes, export feature, stale-draft bug, bullet list rendering
+
+> **Note on session numbering:** Sessions 13 and 14 (prompt quality iteration, cross-browser CSS/layout fixes, check block UI polish, independent scrolling panes) were completed but not written to this doc. The memory file at `~/.claude/projects/.../memory/project_spl_content_generator.md` was the working context for those sessions. This entry resumes the doc from the current code state.
+
+---
+
+## What Was Completed
+
+### Session 13
+
+#### 1. Check block answer separator — prompt fix
+
+`server/prompts/generateContentPrompt.js` — CHECK BLOCKS section.
+
+Added explicit format instruction: question first, then `→ ` on a new line followed by the answer. This is required for `CheckBlock` in `LessonAuthoringView.jsx` to split the content and show the "Show answer / Hide answer" reveal button. Without the separator the button never appeared. The fix is prompt-only — no frontend changes.
+
+**Note:** Only content generated after this session will have the separator. Existing saved drafts must be regenerated.
+
+#### 2. JSON export
+
+New: `POST /api/export` endpoint in `server/index.js`.
+- Accepts `{ courseName, moduleName, lessonStructure, lessonContent, learnerLevel, outputLanguage, exportedAt }`
+- Creates `output/` dir at project root if absent (`fs.mkdirSync` with `recursive: true`)
+- Joins `lessonContent` + `lessonStructure` by `id` to attach `stepGoal` and `stepTopics` to each step
+- Writes `{slug-course}-{slug-module}-MMDD-HHMM.json`
+- Returns `{ filename }` on success
+
+`src/App.jsx` — added `handleExport()`: calls `POST /api/export` with current state, alerts `output/{filename}` on success.
+`src/components/Header.jsx` — added `onExport` prop; renders "Export JSON" button (secondary style, left of Save Draft) when `onExport` is non-null.
+In `App.jsx` render: `onExport` is only passed when `screen === 'authoring' && lessonContent.length > 0`.
+
+Export payload shape:
+```json
+{
+  "courseName": "...",
+  "moduleName": "...",
+  "learnerLevel": "beginner",
+  "outputLanguage": "Python",
+  "exportedAt": "ISO timestamp",
+  "steps": [
+    {
+      "stepNumber": 1,
+      "stepTitle": "...",
+      "stepGoal": "...",
+      "stepTopics": ["..."],
+      "blocks": [...],
+      "starterCode": "...",
+      "expectedAction": "...",
+      "validationNote": "..."
+    }
+  ]
+}
+```
+
+Export verified live: `output/intro-to-python-collect-and-process-data-0318-2108.json` written successfully.
+
+**Note for next session:** restart Express (`npm run dev:all`) after any change to `server/index.js` — new routes are not live until the process restarts. This caused the first "Export failed: 404".
+
+#### 3. Stale localStorage draft bug
+
+`src/App.jsx` — `handleGenerate()`: after a successful `generateAllLessonContent`, added `localStorage.removeItem(STORAGE_KEY)` before `setScreen('authoring')`.
+
+**Problem it solves:** Vite HMR or any page reload after a new generation was restoring the old saved draft (e.g. a previous "Control Flow" lesson) and overwriting the newly generated content. The fix ensures a successful new generation always clears the stale draft, so reloads start clean.
+
+#### 4. Explain block bullet list rendering
+
+**Problem:** The AI outputs comparison content as `- item\n- item\n- item`. The renderer split on `\n\n`, so the whole list was one `<p>` chunk, and browsers collapsed it to a single line.
+
+**Renderer fix** (`src/components/LessonAuthoringView.jsx`): Added `isBulletList` detection in the `segments` mapping — if every non-empty line in a `\n\n`-separated chunk starts with `- `, render `<ul>/<li>` instead of `<p>`. Runs before the existing `isCode` check. Does not affect code or prose chunks.
+
+**CSS** (`src/App.css`): Added `.block-bullet-list` and `.block-bullet-list li` — standard list styling with left padding and modest item spacing.
+
+**Prompt fix** (`server/prompts/generateContentPrompt.js`): Added bullet list format rules to the EXPLAIN BLOCKS section — each item on its own line starting with `- `, surrounded by blank lines above and below. Prevents the model from embedding bullets inside prose sentences.
+
+**Note:** Existing saved content may not have blank lines around bullet lists. Regenerate to get proper rendering.
+
+---
+
+## State at End of Session
+
+- Both generation endpoints are live and verified with GPT-5.4
+- Export is live and verified — `output/` folder exists with one confirmed export
+- Screen 2 is block-based end-to-end: generation → `blocks[]` → `BlocksView` / `BlockEditor`
+- `learnerLevel` and `outputLanguage` are hardcoded to `'beginner'` / `'Python'` — no UI control yet
+- `src/utils/mockGeneration.js` and `src/components/LessonStructureEditor.jsx` are still present as dead code — not deleted
+
+---
+
+## Next Recommended Step
+
+**Clean up dead code** (two safe deletions):
+- `src/utils/mockGeneration.js` — nothing imports it; mock behavior is server-side
+- `src/components/LessonStructureEditor.jsx` — dead since Session 2
+
+Then update `lessonContentService.js` JSDoc and `CONTENT_FIELDS` to reflect the current block-based schema (low-risk documentation fix).
+
+After that: **Phase 3 — backend persistence** (`handleSaveDraft` → `POST /api/lessons`).
+
+---
+
+---
+
 **ID** 12
 **Date:** 2026-03-18
 **Session scope:** Server-side prompt infrastructure + Screen 2 AI generation wired end-to-end

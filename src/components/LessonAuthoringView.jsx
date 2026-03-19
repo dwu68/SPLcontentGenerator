@@ -251,11 +251,17 @@ function BlocksView({ step }) {
 function CheckBlock({ title, content, segments }) {
   const [revealed, setRevealed] = useState(false)
 
-  // Split on the "→ " answer marker (with optional leading newline)
-  const arrowIndex = content.indexOf('\n→ ')
-  const hasAnswer = arrowIndex !== -1
-  const questionContent = hasAnswer ? content.slice(0, arrowIndex).trim() : content
-  const answerText = hasAnswer ? content.slice(arrowIndex + 3).trim() : null
+  // Detect answer separator — accept "→ ", "Answer:", or "Answer :" variants
+  const SEPARATORS = ['\n→ ', '\n\nAnswer:', '\nAnswer:']
+  let splitAt = -1
+  let sepLen = 0
+  for (const sep of SEPARATORS) {
+    const idx = content.indexOf(sep)
+    if (idx !== -1) { splitAt = idx; sepLen = sep.length; break }
+  }
+  const hasAnswer = splitAt !== -1
+  const questionContent = hasAnswer ? content.slice(0, splitAt).trim() : content
+  const answerText = hasAnswer ? content.slice(splitAt + sepLen).trim() : null
 
   // Re-run the segment renderer on just the question portion
   const questionSegments = questionContent
@@ -282,7 +288,7 @@ function CheckBlock({ title, content, segments }) {
               className="check-solution-btn"
               onClick={() => setRevealed((v) => !v)}
             >
-              {revealed ? 'Hide solution' : 'Solution'}
+              {revealed ? 'Hide answer' : 'Show answer'}
             </button>
             {revealed && <p className="check-solution-text">{answerText}</p>}
           </div>
@@ -296,16 +302,24 @@ function Block({ block }) {
   const { type, title, content } = block
 
   // Render double-newline-separated content.
-  // A chunk is treated as code and rendered as <pre> when either:
-  //   (a) any line starts with whitespace — the AI indented the snippet, or
-  //   (b) the chunk is multi-line AND starts with a lowercase letter —
-  //       the AI generated unindented code (prose paragraphs always start
-  //       with a capital letter or a digit).
+  // Each chunk is classified as:
+  //   bullet list — every non-empty line starts with "- " → <ul>/<li>
+  //   code        — any line starts with whitespace, OR multi-line starting
+  //                 with a lowercase letter (unindented AI code snippet) → <pre>
+  //   prose       — everything else → <p>
   const segments = content
     .split('\n\n')
     .filter(Boolean)
     .map((chunk, i) => {
-      const lines = chunk.split('\n')
+      const lines = chunk.split('\n').filter(Boolean)
+      const isBulletList = lines.length > 0 && lines.every((line) => /^- /.test(line))
+      if (isBulletList) {
+        return (
+          <ul key={i} className="block-bullet-list">
+            {lines.map((line, j) => <li key={j}>{line.slice(2)}</li>)}
+          </ul>
+        )
+      }
       const isCode =
         lines.some((line) => /^\s/.test(line)) ||
         (lines.length >= 2 && /^[a-z_]/.test(chunk))

@@ -1335,6 +1335,16 @@ body {
   display: block;
 }
 
+/* Bullet list inside an explain block. */
+.block-bullet-list {
+  margin: 4px 0 4px 0;
+  padding-left: 20px;
+  line-height: 1.65;
+}
+.block-bullet-list li {
+  margin-bottom: 3px;
+}
+
 /* Inline code block embedded inside prose blocks (explain, check, hint).
    Triggered when a \n\n-separated chunk has any line starting with whitespace. */
 .block-inline-code {

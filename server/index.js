@@ -18,6 +18,7 @@
 
 import 'dotenv/config'
 import express from 'express'
+import fs from 'fs'
 import path from 'path'
 import { fileURLToPath } from 'url'
 import OpenAI from 'openai'
@@ -214,6 +215,68 @@ app.post('/api/generate-content', async (req, res) => {
     return res.json(contentFields)
   } catch (err) {
     console.error('[generate-content]', err.message)
+    return res.status(500).json({ error: err.message })
+  }
+})
+
+// POST /api/export
+app.post('/api/export', (req, res) => {
+  const {
+    courseName,
+    moduleName,
+    lessonStructure = [],
+    lessonContent = [],
+    learnerLevel = 'beginner',
+    outputLanguage = 'Python',
+    exportedAt,
+  } = req.body
+
+  if (!courseName || !moduleName || !lessonContent.length) {
+    return res.status(400).json({ error: 'Missing required fields: courseName, moduleName, lessonContent' })
+  }
+
+  // Build output dir relative to project root
+  const outputDir = path.join(__dirname, '../output')
+  fs.mkdirSync(outputDir, { recursive: true })
+
+  // Filename: slug-course-slug-module-MMDD-HHMM.json
+  const slug = (s) => s.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')
+  const now = new Date(exportedAt || Date.now())
+  const mm = String(now.getMonth() + 1).padStart(2, '0')
+  const dd = String(now.getDate()).padStart(2, '0')
+  const hh = String(now.getHours()).padStart(2, '0')
+  const min = String(now.getMinutes()).padStart(2, '0')
+  const filename = `${slug(courseName)}-${slug(moduleName)}-${mm}${dd}-${hh}${min}.json`
+
+  // Join content + structure by id to attach goal and topics to each step
+  const steps = lessonContent.map((content) => {
+    const structure = lessonStructure.find((s) => s.id === content.id) || {}
+    return {
+      stepNumber:     content.stepNumber,
+      stepTitle:      content.title,
+      stepGoal:       structure.goal || '',
+      stepTopics:     structure.coveredSubtopics || [],
+      blocks:         content.blocks || [],
+      starterCode:    content.starterCode || '',
+      expectedAction: content.expectedAction || '',
+      validationNote: content.validationNote || '',
+    }
+  })
+
+  const payload = {
+    courseName,
+    moduleName,
+    learnerLevel,
+    outputLanguage,
+    exportedAt: exportedAt || now.toISOString(),
+    steps,
+  }
+
+  try {
+    fs.writeFileSync(path.join(outputDir, filename), JSON.stringify(payload, null, 2))
+    return res.json({ filename })
+  } catch (err) {
+    console.error('[export]', err.message)
     return res.status(500).json({ error: err.message })
   }
 })

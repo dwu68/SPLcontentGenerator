@@ -10,7 +10,7 @@ import SaveStatus from './SaveStatus'
  *   saveStatus   string | null   — 'saved' | 'unsaved' | 'saving'
  *   onSaveDraft  fn | null       — save handler
  */
-function Header({ breadcrumb, onBack, saveStatus, onSaveDraft }) {
+function Header({ breadcrumb, onBack, saveStatus, onSaveDraft, onExport }) {
   return (
     <header className="header">
       <div className="header-brand">
@@ -29,6 +29,16 @@ function Header({ breadcrumb, onBack, saveStatus, onSaveDraft }) {
 
       <div className="header-actions">
         {saveStatus && <SaveStatus status={saveStatus} />}
+
+        {onExport && (
+          <button
+            className="btn btn-secondary btn-sm"
+            onClick={onExport}
+            title="Export current lesson content to output/ folder"
+          >
+            Export JSON
+          </button>
+        )}
 
         {onSaveDraft && (
           <button

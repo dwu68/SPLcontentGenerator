@@ -1,0 +1,410 @@
+{
+  "courseName": "Intro to Python",
+  "moduleName": "Collect and process data",
+  "learnerLevel": "beginner",
+  "outputLanguage": "Python",
+  "exportedAt": "2026-03-19T01:08:51.859Z",
+  "steps": [
+    {
+      "stepNumber": 1,
+      "stepTitle": "Working with Tuples",
+      "stepGoal": "Students will be able to build tuples, access elements with indexing and slicing, and explain tuple immutability.",
+      "stepTopics": [
+        "tuples",
+        "indexing",
+        "slicing",
+        "building tuples",
+        "immutability"
+      ],
+      "blocks": [
+        {
+          "id": "b1",
+          "type": "explain",
+          "title": "Grouped values in a fixed order",
+          "content": "A tuple is a collection of values kept in order. It looks a lot like a list, but it uses parentheses, such as `(\"red\", \"green\", \"blue\")`. You can build a tuple with numbers, strings, or mixed data types, and each value keeps its position. That position matters, because you read tuple values by index just like you do with a list. One small syntax detail is easy to miss: a one-item tuple needs a trailing comma, like `(5,)`. Without the comma, Python treats `(5)` as just the number `5` in parentheses.",
+          "language": null
+        },
+        {
+          "id": "b2",
+          "type": "explain",
+          "title": "Indexing and slicing",
+          "content": "Tuple positions start at 0. That means index `0` gives the first item, index `1` gives the second item, and negative indices count from the end, so `-1` gives the last item. You can also slice a tuple to get part of it. A slice like `days[1:4]` starts at index 1 and stops before index 4, returning a new tuple with those values.\n\nFor example:\n- `days[0]` reads one value\n- `days[-1]` reads the last value\n- `days[1:3]` reads a range of values\n\nIndexing gives one item. Slicing gives a smaller tuple.",
+          "language": null
+        },
+        {
+          "id": "b3",
+          "type": "explain",
+          "title": "When a tuple cannot change",
+          "content": "Tuples are immutable, which means their contents cannot be changed after the tuple is created. You can read values from a tuple, but you cannot replace, add, or remove items inside it. For example, if `scores = (88, 91, 95)`, then `scores[0] = 90` will fail. That is the big difference from a list: lists are mutable, tuples are not. Immutability is useful when you want a group of values to stay fixed.",
+          "language": null
+        },
+        {
+          "id": "b4",
+          "type": "code",
+          "title": "A tuple in action",
+          "content": "coordinates = (12, 8, 5, 3)\n\nprint(coordinates[0])      # 12\nprint(coordinates[-1])     # 3\nprint(coordinates[1:3])    # (8, 5)\n\n# coordinates[0] = 99      # This would cause an error",
+          "language": "Python"
+        },
+        {
+          "id": "b5",
+          "type": "check",
+          "title": "What does the slice return?",
+          "content": "If `letters = (\"a\", \"b\", \"c\", \"d\")`, what does `letters[1:3]` return, and why is it not just one value?\n\n→ It returns `(\"b\", \"c\")`. A slice returns a range of items as a new tuple, starting at index 1 and stopping before index 3.",
+          "language": null
+        },
+        {
+          "id": "b6",
+          "type": "task",
+          "title": "Lab",
+          "content": "Build a tuple of four planet names, then use indexing and slicing to print three results from it: the first planet, the last planet, and the two middle planets. The goal is to practice creating a tuple, reading single values by position, and reading a range as a smaller tuple.",
+          "language": null
+        },
+        {
+          "id": "b7",
+          "type": "hint",
+          "title": "Need a hint?",
+          "content": "Use parentheses to create the tuple. For the middle planets, think about a slice that starts at index 1 and stops before the last item.",
+          "language": null
+        }
+      ],
+      "starterCode": "# Planet names in order\n\n# TODO: Create a tuple of four planets and print the first, last, and middle two values\n# Expected: three print results — one first item, one last item, and one tuple containing the middle two items\n",
+      "expectedAction": "Create a four-item tuple of planet names and use one index, one negative index, and one slice to print the requested values.",
+      "validationNote": "Correct code should build a tuple, then print the first item, the last item, and a two-item tuple from the middle. A common mistake is using slice bounds that include the wrong items or trying to modify the tuple instead of only reading from it."
+    },
+    {
+      "stepNumber": 2,
+      "stepTitle": "Comparing Tuples and Lists",
+      "stepGoal": "Students will be able to identify the similarities and differences between tuples and lists.",
+      "stepTopics": [
+        "tuples vs. lists",
+        "similarities",
+        "differences"
+      ],
+      "blocks": [
+        {
+          "id": "b1",
+          "type": "explain",
+          "title": "Same kind of container, different rules",
+          "content": "Lists and tuples both store a sequence of values in order. That means they have a lot in common: you can keep different kinds of data in them, read items by position, and measure their length with `len()`. If a value is at position 0 in a list, it is also at position 0 in a tuple.\n\nThe big difference is whether the sequence can change after it is created. A list is mutable, so you can add, remove, or replace items. A tuple is immutable, so its items stay fixed.\n\nYou can often recognize them by their punctuation:\n\n- Lists use square brackets: `[\"apple\", \"banana\", \"cherry\"]`\n- Tuples use parentheses: `(\"apple\", \"banana\", \"cherry\")`\n\nThat one difference changes how you use them. Choose a list when the data may change. Choose a tuple when the values should stay as they are.",
+          "language": null
+        },
+        {
+          "id": "b2",
+          "type": "explain",
+          "title": "What you can do with each one",
+          "content": "Because both types are ordered sequences, many operations work the same way on both. You can use indexing like `items[1]`, slicing like `items[0:2]`, and `len(items)` to count how many values they contain. You can also loop through either one.\n\nWhere they split apart is updating the data. This works with a list: `colors[0] = \"blue\"`. The same kind of assignment fails with a tuple, because a tuple does not allow its stored positions to be changed.\n\nA simple way to remember it is:\n\n- List: ordered and changeable\n- Tuple: ordered and fixed\n\nSo the similarity is in how you access the values. The difference is in whether you can edit the sequence afterward.",
+          "language": null
+        },
+        {
+          "id": "b3",
+          "type": "code",
+          "title": "Lists can change; tuples keep the same values",
+          "content": "shopping_list = [\"milk\", \"bread\", \"eggs\"]\nstore_hours = (9, 17)\n\nprint(shopping_list[1])\nprint(store_hours[1])\nprint(len(shopping_list))\nprint(len(store_hours))\n\nshopping_list[0] = \"oat milk\"\nshopping_list.append(\"fruit\")\n\nprint(shopping_list)\nprint(store_hours)\n\n# store_hours[0] = 10  # This would cause an error because tuples cannot be changed",
+          "language": "Python"
+        },
+        {
+          "id": "b4",
+          "type": "check",
+          "title": "Which line would fail?",
+          "content": "Look at this code:\n\n`numbers_list = [1, 2, 3]`\n`numbers_tuple = (1, 2, 3)`\n\nWhich line would cause an error?\n\nA. `print(numbers_list[0])`\nB. `print(len(numbers_tuple))`\nC. `numbers_list[1] = 9`\nD. `numbers_tuple[1] = 9`\n\n→ D would cause an error. Lists allow item replacement, but tuples do not allow values at positions to be changed.",
+          "language": null
+        },
+        {
+          "id": "b5",
+          "type": "task",
+          "title": "Lab",
+          "content": "A travel plan has one list and one tuple. Update the list so it reflects a changed plan, and print the final list and tuple. The correct result should show that the list changed while the tuple stayed the same.",
+          "language": null
+        },
+        {
+          "id": "b6",
+          "type": "hint",
+          "title": "Need a hint?",
+          "content": "One of these containers can be edited and one cannot. If you need to change a value or add a new one, use the list variable, not the tuple variable.",
+          "language": null
+        }
+      ],
+      "starterCode": "cities_to_visit = [\"Tokyo\", \"Seoul\", \"Bangkok\"]\nflight_code = (\"JL\", 27)\n\n# TODO: change the first city and add one more city, then print both containers\n# Expected: the list shows the updated cities, and the tuple prints with its original values\n",
+      "expectedAction": "Modify the cities_to_visit list by replacing its first item and adding one new city, then print the updated list and the unchanged flight_code tuple.",
+      "validationNote": "Correct code should show that cities_to_visit has a new first value plus one extra city, while flight_code remains exactly the same tuple. A common mistake is trying to assign into the tuple instead of only changing the list."
+    },
+    {
+      "stepNumber": 3,
+      "stepTitle": "Nested Lists and Tuples",
+      "stepGoal": "Students will be able to work with lists inside tuples and tuples inside lists.",
+      "stepTopics": [
+        "lists inside tuples",
+        "tuples inside lists"
+      ],
+      "blocks": [
+        {
+          "id": "b1",
+          "type": "explain",
+          "title": "Mixing lists and tuples",
+          "content": "A list can hold tuples, and a tuple can hold lists. Python does not require every item in a collection to be the same type, so nested data like this is completely normal.\n\nWhat matters is the outer container. If the outside is a tuple, you access its items with tuple indexing. If one of those items happens to be a list, you can then use list indexing or list methods on that inner value.\n\nFor example, in `( \"Mia\", [88, 91, 95] )`, the first item is a string and the second item is a list. You would use index `1` to get the list, and then another index to get one score from that list.\n\nThe same idea works the other way around. In a list like `[ (\"Mon\", 72), (\"Tue\", 75) ]`, each item is a tuple. You index into the list first, then into the tuple inside it.",
+          "language": null
+        },
+        {
+          "id": "b2",
+          "type": "explain",
+          "title": "What can change",
+          "content": "Lists are mutable, which means their contents can change. Tuples are immutable, which means their items stay fixed after the tuple is created.\n\nThat difference can feel tricky when they are nested. A tuple cannot have one of its items replaced, but if one of those items is a list, the list itself can still change.\n\nFor example, this works: a tuple stores a list, and you append a new value to that inner list. But this does not work: trying to assign a brand-new value directly into a tuple position such as `record[0] = \"Noah\"`.\n\nA good way to think about it is: the tuple keeps the same references in the same positions, but a list inside one of those positions can still grow, shrink, or update.",
+          "language": null
+        },
+        {
+          "id": "b3",
+          "type": "code",
+          "title": "Reading and updating nested data",
+          "content": "student = (\"Ava\", [82, 90, 94])\nprint(student[0])       # Ava\nprint(student[1][2])    # 94\n\nstudent[1].append(99)\nprint(student)          # ('Ava', [82, 90, 94, 99])\n\nforecast = [(\"Mon\", 72), (\"Tue\", 75), (\"Wed\", 70)]\nprint(forecast[1])      # ('Tue', 75)\nprint(forecast[1][0])   # Tue\nprint(forecast[1][1])   # 75",
+          "language": "Python"
+        },
+        {
+          "id": "b4",
+          "type": "check",
+          "title": "Which line would fail?",
+          "content": "Suppose this code has already run:\n\nrecord = (\"Liam\", [10, 20, 30])\n\nWhich line causes an error?\nA. `record[1][0] = 99`\nB. `record[1].append(40)`\nC. `record[0] = \"Noah\"`\n\n→ C causes an error. The outer container is a tuple, so its positions cannot be reassigned, but the list stored at `record[1]` can still be changed.",
+          "language": null
+        },
+        {
+          "id": "b5",
+          "type": "task",
+          "title": "Lab",
+          "content": "A small travel plan is stored as a list of tuples, where each tuple holds a city name and a list of activities. Update the activities for one city and print one city name from the list. A correct result shows that you can read a tuple inside a list and also change a list stored inside that tuple.",
+          "language": null
+        },
+        {
+          "id": "b6",
+          "type": "hint",
+          "title": "Need a hint?",
+          "content": "Start from the outside and move inward. First get the tuple for the city you want from the list, then work with the list of activities inside that tuple.",
+          "language": null
+        }
+      ],
+      "starterCode": "plans = [\n    (\"Kyoto\", [\"temple visit\", \"tea shop\"]),\n    (\"Seoul\", [\"market walk\", \"museum\"]),\n    (\"Lisbon\", [\"tram ride\", \"bakery stop\"])\n]\n\n# TODO: add one more activity to Seoul's activity list, then print the city name \"Lisbon\" and the updated Seoul tuple\n# Expected: the city name prints first, and the Seoul tuple shows one extra activity in its inner list\n",
+      "expectedAction": "Modify the inner list inside the Seoul tuple, then print the city name from the Lisbon tuple and the updated Seoul tuple.",
+      "validationNote": "Correct code should keep the outer list and tuples in place, add one new activity only to Seoul's inner list, print Lisbon, and then print the updated Seoul tuple. A common mistake is trying to replace a tuple item directly instead of changing the list inside the tuple."
+    },
+    {
+      "stepNumber": 4,
+      "stepTitle": "Building and Updating Dictionaries",
+      "stepGoal": "Students will be able to build dictionaries, access values by key, and add or remove key-value pairs.",
+      "stepTopics": [
+        "dictionaries",
+        "building dictionaries",
+        "indexing dictionaries",
+        "adding keys",
+        "removing keys"
+      ],
+      "blocks": [
+        {
+          "id": "b1",
+          "type": "explain",
+          "title": "Keys and values in one object",
+          "content": "A dictionary stores information as key-value pairs. Each key names a piece of data, and the value is the data connected to that key. For example, in `{\"name\": \"Ava\", \"level\": 3}`, the key `\"name\"` points to `\"Ava\"` and the key `\"level\"` points to `3`.\n\nDictionaries use curly braces `{}`. Inside them, each key is followed by a colon and its value. Pairs are separated by commas. This makes dictionaries a good fit when you want to label data instead of relying on positions.\n\nThat is the main difference from a list: lists are ordered by index number, but dictionaries are looked up by key. You ask for `player[\"name\"]`, not `player[0]`.",
+          "language": null
+        },
+        {
+          "id": "b2",
+          "type": "explain",
+          "title": "Reading, adding, and removing entries",
+          "content": "To get one value from a dictionary, use its key inside square brackets. If `book = {\"title\": \"Dune\", \"pages\": 412}`, then `book[\"title\"]` gives you `\"Dune\"`.\n\nYou can also change a dictionary after creating it. Assigning to a new key adds a new pair, and assigning to an existing key updates its value. For example, `book[\"author\"] = \"Frank Herbert\"` adds a new entry.\n\nTo remove a pair, use `del` with a key, such as `del book[\"pages\"]`. After that, the dictionary no longer has that key or its value.\n\nA useful way to picture it is this:\n\n- read with a key: `book[\"title\"]`\n- add or update with assignment: `book[\"author\"] = \"Frank Herbert\"`\n- remove with `del`: `del book[\"pages\"]`",
+          "language": null
+        },
+        {
+          "id": "b3",
+          "type": "code",
+          "title": "A dictionary changing over time",
+          "content": "profile = {\n    \"name\": \"Mia\",\n    \"city\": \"Lima\",\n    \"score\": 12\n}\n\nprint(profile[\"name\"])   # Mia\n\nprofile[\"score\"] = 15    # update an existing value\nprofile[\"pet\"] = \"cat\"  # add a new key-value pair\n\ndel profile[\"city\"]      # remove one pair\n\nprint(profile)\n# {'name': 'Mia', 'score': 15, 'pet': 'cat'}",
+          "language": "Python"
+        },
+        {
+          "id": "b4",
+          "type": "check",
+          "title": "Which value is left?",
+          "content": "What does this print?\n\ninfo = {\"item\": \"notebook\", \"price\": 4}\ninfo[\"price\"] = 6\ninfo[\"color\"] = \"blue\"\ndel info[\"item\"]\nprint(info)\n\n→ It prints `{'price': 6, 'color': 'blue'}`. The `price` value was updated, `color` was added, and `item` was removed.",
+          "language": null
+        },
+        {
+          "id": "b5",
+          "type": "task",
+          "title": "Lab",
+          "content": "A small store dictionary already has a few details about one product. Update it so the price changes, add a category, and remove the stock count. Then print the product name and the final dictionary so the finished data shows the new key-value pair and no longer includes the removed one.",
+          "language": null
+        },
+        {
+          "id": "b6",
+          "type": "hint",
+          "title": "Need a hint?",
+          "content": "Square brackets with a key can do two different jobs here: reading a value and assigning one. Use `product[\"name\"]` when you want the current name, and use `product[\"some_key\"] = ...` when you want to add or change a pair. Removing is different: that uses `del` with the key.",
+          "language": null
+        }
+      ],
+      "starterCode": "product = {\n    \"name\": \"Water Bottle\",\n    \"price\": 12,\n    \"stock\": 30\n}\n\n# TODO: update the dictionary so the price is 15, add a category, remove stock, and print the name plus the final dictionary\n# Expected: the name prints first, then the dictionary shows name, price 15, and a new category key with no stock key\n",
+      "expectedAction": "Update the product dictionary by changing the price, adding a category entry, deleting the stock entry, and printing the product name and final dictionary.",
+      "validationNote": "Correct code should print `Water Bottle` first and then a dictionary containing `name`, `price: 15`, and a `category` key, with `stock` removed. A common mistake is printing the dictionary before making all the changes or trying to use a numeric index instead of a key."
+    },
+    {
+      "stepNumber": 5,
+      "stepTitle": "Iterating Through Dictionaries",
+      "stepGoal": "Students will be able to iterate through dictionaries, including their keys and values.",
+      "stepTopics": [
+        "iterating through dictionaries",
+        "iterating through keys",
+        "iterating through values"
+      ],
+      "blocks": [
+        {
+          "id": "b1",
+          "type": "explain",
+          "title": "Looping through a dictionary",
+          "content": "A dictionary can be used in a for loop, but it behaves a little differently from a list. When you write `for item in my_dict:`, Python gives you each key, one at a time. That means the loop variable is not the value unless you use the key to look the value up.\n\nIf `prices = {\"apple\": 1.5, \"banana\": 0.75}`, then a loop like `for fruit in prices:` will make `fruit` become `\"apple\"` and then `\"banana\"`. You can then get the matching value with `prices[fruit]`.\n\nThis is useful when you want both pieces of information: the key tells you what item you are looking at, and indexing into the dictionary gives you its value.",
+          "language": null
+        },
+        {
+          "id": "b2",
+          "type": "explain",
+          "title": "Keys, values, and pairs",
+          "content": "Dictionaries give you three common ways to iterate, depending on what you need.\n\n- `for key in data:` or `for key in data.keys()` loops through keys.\n- `for value in data.values()` loops through values only.\n- `for key, value in data.items()` loops through key-value pairs.\n\nThe `.keys()` version and looping over the dictionary directly both give keys, but `.keys()` makes your intention very clear. `.values()` is helpful when the names of the keys do not matter. `.items()` is often the most convenient choice when you want to print or process each key together with its matching value.",
+          "language": null
+        },
+        {
+          "id": "b3",
+          "type": "code",
+          "title": "Three ways to iterate",
+          "content": "temperatures = {\n    \"Monday\": 72,\n    \"Tuesday\": 68,\n    \"Wednesday\": 75\n}\n\nprint(\"Keys:\")\nfor day in temperatures:\n    print(day)\n\nprint(\"\\nValues:\")\nfor temp in temperatures.values():\n    print(temp)\n\nprint(\"\\nPairs:\")\nfor day, temp in temperatures.items():\n    print(day, temp)\n",
+          "language": "Python"
+        },
+        {
+          "id": "b4",
+          "type": "check",
+          "title": "Which loop gives both pieces?",
+          "content": "Suppose `scores = {\"Ana\": 9, \"Ben\": 7}`. Which loop lets you print each name and score without doing another lookup?\n\nA. `for name in scores:`\nB. `for score in scores.values():`\nC. `for name, score in scores.items():`\n\n→ C. `scores.items()` gives each key together with its matching value, so you can unpack both in the loop header.",
+          "language": null
+        },
+        {
+          "id": "b5",
+          "type": "task",
+          "title": "Lab",
+          "content": "A small dictionary of bookstore inventory is waiting in the editor. Print each book title with its number of copies, then print only the copy counts in a second loop. A correct solution shows that you can iterate through dictionary pairs when you need both parts, and through values when you only need the numbers.",
+          "language": null
+        },
+        {
+          "id": "b6",
+          "type": "hint",
+          "title": "Need a hint?",
+          "content": "One loop needs two variables because each pass should give you a title and its count together. The other loop only needs one variable because it should visit the numbers by themselves.",
+          "language": null
+        }
+      ],
+      "starterCode": "inventory = {\n    \"Python Basics\": 4,\n    \"Data Science 101\": 2,\n    \"Web Projects\": 5\n}\n\n# TODO: print each title with its copy count, then print only the copy counts in a second loop\n# Expected: the output shows three title-count lines followed by the three numbers on their own lines\n",
+      "expectedAction": "Write one loop that iterates through the dictionary's key-value pairs and a second loop that iterates through its values, printing the results.",
+      "validationNote": "Correct code should print all three book titles with their matching counts, then print the three counts again by themselves using a values-only loop. A common mistake is looping over the dictionary directly in both cases, which gives keys instead of values in the second loop."
+    },
+    {
+      "stepNumber": 6,
+      "stepTitle": "Checking for Dictionary Keys",
+      "stepGoal": "Students will be able to check whether keys exist in a dictionary.",
+      "stepTopics": [
+        "checking the existence of keys"
+      ],
+      "blocks": [
+        {
+          "id": "b1",
+          "type": "explain",
+          "title": "Testing whether a key is there",
+          "content": "A dictionary only works with keys that actually exist in it. If you try to read a missing key with square brackets, Python raises an error. To check first, use the `in` operator with the dictionary: `\"name\" in user`. This gives `True` if that key exists and `False` if it does not. The check is about keys, not values, so `\"Ada\" in user` would only be true if `\"Ada\"` were a key.",
+          "language": null
+        },
+        {
+          "id": "b2",
+          "type": "code",
+          "title": "Checking keys before using them",
+          "content": "profile = {\n    \"username\": \"pixelcat\",\n    \"level\": 7,\n    \"active\": True\n}\n\nprint(\"level\" in profile)     # True\nprint(\"email\" in profile)     # False\n\nif \"username\" in profile:\n    print(profile[\"username\"])  # pixelcat\n\nif \"email\" in profile:\n    print(profile[\"email\"])\nelse:\n    print(\"No email saved\")      # No email saved\n",
+          "language": "Python"
+        },
+        {
+          "id": "b3",
+          "type": "check",
+          "title": "Which check is correct?",
+          "content": "If this dictionary is stored in `book`:\n\n`book = {\"title\": \"Dune\", \"pages\": 412}`\n\nwhich expression correctly checks whether the key `author` exists: `\"author\" in book` or `\"author\" in book.values()`?\n\n→ `\"author\" in book` is correct, because `in` checks dictionary keys by default. `book.values()` would check the values instead, and `author` is meant to be a key.",
+          "language": null
+        },
+        {
+          "id": "b4",
+          "type": "task",
+          "title": "Lab",
+          "content": "A small contact record is already in the code. Add a check for whether the key `\"email\"` exists, and print a message that shows whether an email address is saved. A correct result prints that the email is missing.",
+          "language": null
+        },
+        {
+          "id": "b5",
+          "type": "hint",
+          "title": "Need a hint?",
+          "content": "Use a condition that asks whether the text `\"email\"` is in the dictionary. The message should depend on whether that condition is true or false.",
+          "language": null
+        }
+      ],
+      "starterCode": "contact = {\n    \"name\": \"Maya\",\n    \"phone\": \"555-0182\",\n    \"city\": \"Denver\"\n}\n\n# TODO: print a message based on whether the contact has an \"email\" key\n# Expected: output should say that no email is saved\n",
+      "expectedAction": "Write an if statement that checks whether \"email\" is a key in the contact dictionary and prints the appropriate message.",
+      "validationNote": "Correct code should use a key-existence check on the dictionary and print a message indicating that no email is saved. A common mistake is checking for an email value instead of checking whether the key itself exists."
+    },
+    {
+      "stepNumber": 7,
+      "stepTitle": "Using Dictionary Methods",
+      "stepGoal": "Students will be able to use the keys(), items(), and values() dictionary methods.",
+      "stepTopics": [
+        "methods",
+        "keys()",
+        "items()",
+        "values()"
+      ],
+      "blocks": [
+        {
+          "id": "b1",
+          "type": "explain",
+          "title": "Seeing the parts of a dictionary",
+          "content": "A dictionary stores data as key-value pairs, and Python gives you a few built-in methods to look at those parts. `keys()` gives you the keys, `values()` gives you the values, and `items()` gives you both together as pairs. These methods do not pull out just one entry by name; they give you a view of the whole dictionary. That makes them useful when you want to inspect what is in a dictionary or go through all of its data.",
+          "language": null
+        },
+        {
+          "id": "b2",
+          "type": "explain",
+          "title": "What each method returns",
+          "content": "These three methods are similar, but they answer different questions.\n\n- `profile.keys()` answers: what labels are in this dictionary?\n- `profile.values()` answers: what data is stored in it?\n- `profile.items()` answers: what key goes with what value?\n\nThe result is not a plain list. It is a dictionary view object, which Python can print for you and which you can loop through. For beginners, the most important part is choosing the method that matches what you need to see: names, values, or full pairs.",
+          "language": null
+        },
+        {
+          "id": "b3",
+          "type": "code",
+          "title": "Keys, values, and pairs in code",
+          "content": "book = {\n    \"title\": \"The Hobbit\",\n    \"author\": \"J.R.R. Tolkien\",\n    \"pages\": 310\n}\n\nprint(book.keys())\nprint(book.values())\nprint(book.items())\n",
+          "language": "Python"
+        },
+        {
+          "id": "b4",
+          "type": "check",
+          "title": "Which method fits this goal?",
+          "content": "You want to print both the name of each setting and its current value from this dictionary:\n\nsettings = {\"volume\": 8, \"brightness\": 70, \"theme\": \"dark\"}\n\nWhich method makes the most sense: `keys()`, `values()`, or `items()`?\n\n→ `items()` makes the most sense because it gives you each key together with its value as a pair. `keys()` gives only the setting names, and `values()` gives only the stored values.",
+          "language": null
+        },
+        {
+          "id": "b5",
+          "type": "task",
+          "title": "Lab",
+          "content": "A small dictionary of game stats is already set up. Print the dictionary's keys, then its values, then its key-value pairs so the output shows all three views of the same data. A correct result will display three printed lines: one for the keys, one for the values, and one for the items.",
+          "language": null
+        },
+        {
+          "id": "b6",
+          "type": "hint",
+          "title": "Not sure which method matches which result?",
+          "content": "Think about what should appear on each printed line. If the line should show only field names like `player` or `score`, use the method for keys. If the line should show both names and their matching values together, use the method for pairs.",
+          "language": null
+        }
+      ],
+      "starterCode": "stats = {\n    \"player\": \"Avery\",\n    \"score\": 1200,\n    \"level\": 5\n}\n\n# TODO: print the keys, the values, and the key-value pairs from this dictionary\n# Expected: three lines of output showing the dictionary's keys view, values view, and items view\n",
+      "expectedAction": "Print the `stats` dictionary using its `keys()`, `values()`, and `items()` methods.",
+      "validationNote": "Correct code should print three lines in this order: the keys view, the values view, and the items view for the `stats` dictionary. A common mistake is printing the whole dictionary repeatedly instead of calling the three dictionary methods."
+    }
+  ]
+}
