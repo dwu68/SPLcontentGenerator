@@ -31,6 +31,7 @@ export function buildPromptContext({
   lessonStructure = [],
   learnerLevel = 'beginner',
   outputLanguage = 'Python',
+  slideText = '',
 } = {}) {
   return {
     courseName:      courseName      ?? '',
@@ -43,5 +44,6 @@ export function buildPromptContext({
     totalSteps:      lessonStructure.length,
     learnerLevel:    learnerLevel,
     outputLanguage:  outputLanguage,
+    slideText:       slideText       ?? '',
   }
 }

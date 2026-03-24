@@ -2,6 +2,84 @@
 
 ---
 
+**ID** 20
+**Date:** 2026-03-23
+**Session scope:** Wire slideText into generate-content (Slice D) — complete the PPTX slides pipeline end-to-end
+
+---
+
+## What Was Completed This Session
+
+### Slides → generate-content wiring — Slice D
+
+**`src/App.jsx`**:
+- `generateAllLessonContent` call now passes `slideText` as a named argument.
+
+**`src/services/lessonContentService.js`**:
+- `generateAllLessonContent` accepts `slideText = ''` in its params destructure.
+- `callProvider` accepts and forwards `slideText` in the `POST /api/generate-content` JSON body.
+- Non-lesson steps are still skipped before `callProvider` is ever called (existing guard unchanged).
+
+**`server/index.js`** — `POST /api/generate-content` route:
+- Destructures `slideText` from `req.body`.
+- Passes `slideText` to `buildPromptContext`.
+
+**`server/lib/promptContext.js`**:
+- Accepts `slideText = ''`; exposes it on the returned context object.
+- This change is safe for the generate-structure route, which passes `slideText` separately and does not use `buildPromptContext`.
+
+**`server/prompts/generateContentPrompt.js`**:
+- Extracts `slideText` from context.
+- When `slideText` is non-empty: injects a `SLIDE CONTEXT` section between the SCOPE and RETURN FORMAT sections.
+- The section instructs the model to treat the slides as **primary reference material** — use the same terminology, examples, and teaching points; closely adapt slide bullets into lesson prose; faithfully follow slide content.
+- Single override rule: if slide context and the step goal conflict, **the step goal takes priority**.
+- When `slideText` is empty (no upload, or post-reload): the section is omitted entirely; prompt behavior is byte-for-byte identical to before this change.
+
+### Docs updated this session
+- `docs/product_overview.md` — updated session number to 20; corrected Screen 2 description (non-lesson rendering is live, not a known gap); added slide context to the content generation bullet; updated slides ingestion scope row to "Implemented through Slice D"; updated "next candidate slice" note.
+- `docs/todo.md` — Slice D marked ✅; resolved known issue row cleaned up; `starterCode` preferred future name corrected to `practiceContent`.
+- `docs/data_model.md` — `starterCode` comment updated to `practiceContent`.
+
+---
+
+## What Is Intentionally Not Done Yet
+
+| Item | Reason |
+|---|---|
+| `lessonFormat` forwarded to AI prompts | Separate slice — product/design discussion needed first |
+| `guided_tool_workflow` block model | No design yet — next session should start with discussion |
+| `slide_reference` block type | No design yet — worth discussing before implementation |
+| Real file upload (lab files, starter code) | Deferred |
+| `starterCode` renamed to `practiceContent` | Deferred — disruptive rename; do when lessonFormat is wired |
+
+---
+
+## Remaining Limitations
+
+| Item | Severity | Detail |
+|---|---|---|
+| `slideText` is session-only | Medium | Lost on page reload. Only `slideFileName` label is restored from localStorage. User must re-upload the PPTX to use slides in generation after a reload. |
+| Slide text is flat extracted text | Info | `<a:t>` XML extraction only. No heading vs body vs bullet structural signals. No SmartArt, speaker notes, or embedded objects. The model infers structure from content alone. |
+| No slide preview rendering | Info | The uploaded slides are not rendered or previewed anywhere in the UI. Only filename and slide count are shown. |
+| `lessonFormat` not forwarded to AI prompts | Low | Exists in state and localStorage but prompts do not use it. `code_lab` is the effective implicit assumption in all current prompts. |
+| `code_lab` internal value vs "Programming" UI label | Info | Should be reconciled when `lessonFormat` is first forwarded to prompts. |
+
+---
+
+## Next Session — Recommended Starting Point
+
+**Start with product/design discussion, not implementation.**
+
+The two questions worth resolving before writing any code:
+
+**1. How should `guided_tool_workflow` lessons generate blocks and content?**
+The current block model (`explain`, `code`, `check`, `task`, `hint`) and the current generate-content prompt are built around programming-focused, lab-style learning. A guided tool workflow step (e.g. "Use Claude Code to refactor a function") has a different instructional shape — it may need different block types, different starter content, and a different prompt strategy. This needs to be designed before Slice E touches `lessonFormat`.
+
+**2. Is a `slide_reference` block type the right direction for future slide integration?**
+The slides pipeline now provides `slideText` as raw context to the AI. A future direction could be a `slide_reference` block that lets the author pin specific slide content to a specific step — surfacing slide material directly in the rendered lesson rather than only using it as AI prompt context. This would be a meaningfully different architecture decision (block-type addition, upload pipeline change, possible UI for slide selection) and warrants explicit scoping before implementation begins.
+
+---
+
 **ID** 19
 **Date:** 2026-03-23
 **Session scope:** Wire slideText into generate-structure (Slice C)

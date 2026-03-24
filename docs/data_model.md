@@ -122,7 +122,7 @@ Produced by `generateAllLessonContent(lessonStructure)` in `lessonContentService
 
   // Supporting fields
   starterCode    : string     // initial code shown in the right panel (code editor)
-                              // NOTE: not yet renamed; future preferred name is `workingMaterial`
+                              // NOTE: not yet renamed; future preferred name is `practiceContent` (if generalized beyond code)
   expectedAction : string     // what the learner must do to complete the step
   validationNote : string     // guidance for the validator (not shown to the learner)
 

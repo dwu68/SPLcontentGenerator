@@ -36,6 +36,7 @@ export function buildGenerateContentPrompt(context) {
     stepTopics,
     learnerLevel,
     outputLanguage,
+    slideText,
   } = context
 
   return `You are writing the instructional content for ONE step of a self-paced coding lesson.
@@ -101,7 +102,22 @@ Do not:
 - explain the whole module
 
 If detail is missing, make the safest reasonable assumption based on the step goal and topics.
+${slideText ? `
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SLIDE CONTEXT
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
+The following text was extracted from the author's presentation slides for this module.
+Treat it as the primary reference material for this step's content.
+
+- Use the same terminology, examples, and teaching points as the slides.
+- Adapt slide bullets into natural lesson prose — closely following the slide content is expected and appropriate.
+- If the slide context and the step goal conflict, the step goal takes priority.
+
+<slides>
+${slideText}
+</slides>
+` : ''}
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 RETURN FORMAT
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━

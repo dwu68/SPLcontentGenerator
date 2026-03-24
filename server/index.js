@@ -223,6 +223,7 @@ app.post('/api/generate-content', async (req, res) => {
     lessonStructure = [],
     learnerLevel,
     outputLanguage,
+    slideText,
   } = req.body
 
   if (!courseName || !moduleName || !step?.title) {
@@ -243,6 +244,7 @@ app.post('/api/generate-content', async (req, res) => {
       lessonStructure,
       learnerLevel,
       outputLanguage,
+      slideText,
     })
     const completion = await openai.chat.completions.create({
       model: process.env.OPENAI_MODEL || 'gpt-4o-mini',
