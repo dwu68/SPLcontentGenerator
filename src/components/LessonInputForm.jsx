@@ -22,11 +22,16 @@ function LessonInputForm({
   lessonFormat,
   subtopics,
   slideFileName,
+  slideText,
+  slideCount,
+  isUploadingSlides,
+  slideUploadError,
   onCourseNameChange,
   onModuleNameChange,
   onLessonFormatChange,
   onSubtopicsChange,
-  onSlideFileChange,
+  onSlideUpload,
+  onSlideRemove,
   onSubmit,
   isGenerating,
   generationError,
@@ -36,16 +41,16 @@ function LessonInputForm({
   const isValid =
     courseName.trim().length > 0 &&
     moduleName.trim().length > 0 &&
-    subtopics.trim().length > 0
+    (subtopics.trim().length > 0 || slideText.trim().length > 0)
 
   const handleFileChange = (e) => {
     const file = e.target.files?.[0]
     if (!file) return
-    onSlideFileChange(file.name)
+    onSlideUpload(file)
   }
 
   const handleRemoveSlide = () => {
-    onSlideFileChange('')
+    onSlideRemove()
     if (fileInputRef.current) fileInputRef.current.value = ''
   }
 
@@ -115,9 +120,13 @@ function LessonInputForm({
       <div className="form-group">
         <label className="form-label">Slides</label>
         <p className="form-hint">Optional — upload a .pptx to use as source material.</p>
-        {slideFileName ? (
+        {isUploadingSlides ? (
+          <p className="slides-uploading">Uploading…</p>
+        ) : slideFileName ? (
           <div className="slides-selected">
-            <span className="slides-selected-name" title={slideFileName}>{slideFileName}</span>
+            <span className="slides-selected-name" title={slideFileName}>
+              {slideFileName}{slideCount > 0 ? ` — ${slideCount} slides` : ''}
+            </span>
             <button
               type="button"
               className="slides-remove-btn"
@@ -128,16 +137,21 @@ function LessonInputForm({
             </button>
           </div>
         ) : (
-          <label className="slides-upload-label">
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept=".pptx"
-              className="slides-file-input"
-              onChange={handleFileChange}
-            />
-            Choose .pptx file
-          </label>
+          <>
+            <label className="slides-upload-label">
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept=".pptx"
+                className="slides-file-input"
+                onChange={handleFileChange}
+              />
+              Choose .pptx file
+            </label>
+            {slideUploadError && (
+              <p className="slides-upload-error">{slideUploadError}</p>
+            )}
+          </>
         )}
       </div>
 

@@ -39,6 +39,10 @@ function App() {
   const [lessonFormat, setLessonFormat] = useState('code_lab')
   const [subtopics, setSubtopics] = useState('')
   const [slideFileName, setSlideFileName] = useState('')
+  const [slideText, setSlideText] = useState('')
+  const [slideCount, setSlideCount] = useState(0)
+  const [isUploadingSlides, setIsUploadingSlides] = useState(false)
+  const [slideUploadError, setSlideUploadError] = useState(null)
 
   // ── Lesson structure (Screen 1 output) ──────────────────────────────────
   const [lessonStructure, setLessonStructure] = useState([])
@@ -85,9 +89,43 @@ function App() {
     }
   }, [lessonStructure, titleValidationError])
 
+  // ── Slides upload handler ────────────────────────────────────────────────
+  const handleSlideUpload = async (file) => {
+    setSlideFileName(file.name)
+    setSlideText('')
+    setSlideCount(0)
+    setSlideUploadError(null)
+    setIsUploadingSlides(true)
+    const formData = new FormData()
+    formData.append('slides', file)
+    try {
+      const res = await fetch('/api/upload-slides', { method: 'POST', body: formData })
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}))
+        throw new Error(data.error || `Upload failed (${res.status})`)
+      }
+      const data = await res.json()
+      setSlideText(data.slideText)
+      setSlideCount(data.slideCount)
+    } catch (err) {
+      setSlideFileName('')
+      setSlideUploadError(err.message || 'Slide upload failed')
+    } finally {
+      setIsUploadingSlides(false)
+    }
+  }
+
+  const handleSlideRemove = () => {
+    setSlideFileName('')
+    setSlideText('')
+    setSlideCount(0)
+    setSlideUploadError(null)
+  }
+
   // ── Screen 1: submit form → generate structure ───────────────────────────
   const handleSubmit = async () => {
-    if (!courseName.trim() || !moduleName.trim() || !subtopics.trim()) return
+    const hasSlides = slideText.trim().length > 0
+    if (!courseName.trim() || !moduleName.trim() || (!subtopics.trim() && !hasSlides)) return
     if (lessonStructure.length > 0) {
       const ok = window.confirm(
         'Regenerate lesson structure?\n\nThis will replace all existing steps, including any edits you have made. This cannot be undone.'
@@ -98,7 +136,7 @@ function App() {
     setIsGenerating(true)
     try {
       // [AI HOOK] see src/services/lessonStructureService.js — callProvider()
-      const structure = await generateLessonStructure(courseName, moduleName, subtopics)
+      const structure = await generateLessonStructure(courseName, moduleName, subtopics, slideText)
       setLessonStructure(structure)
     } catch (err) {
       setGenerationError(err.message || 'Failed to generate lesson structure. Please try again.')
@@ -287,11 +325,16 @@ function App() {
               lessonFormat={lessonFormat}
               subtopics={subtopics}
               slideFileName={slideFileName}
+              slideText={slideText}
+              slideCount={slideCount}
+              isUploadingSlides={isUploadingSlides}
+              slideUploadError={slideUploadError}
               onCourseNameChange={setCourseName}
               onModuleNameChange={setModuleName}
               onLessonFormatChange={setLessonFormat}
               onSubtopicsChange={setSubtopics}
-              onSlideFileChange={setSlideFileName}
+              onSlideUpload={handleSlideUpload}
+              onSlideRemove={handleSlideRemove}
               onSubmit={handleSubmit}
               isGenerating={isGenerating}
               generationError={generationError}

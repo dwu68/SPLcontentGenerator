@@ -2,6 +2,215 @@
 
 ---
 
+**ID** 19
+**Date:** 2026-03-23
+**Session scope:** Wire slideText into generate-structure (Slice C)
+
+---
+
+## What Was Completed This Session
+
+### Slides → generate-structure wiring — Slice C
+
+**`server/prompts/generateStructurePrompt.js`** — major update:
+- Function signature now accepts optional `slideText` in addition to `subtopicsText`
+- Branches into three cases at runtime:
+  - **Slides only** (`slideText` present, `subtopicsText` empty): slides are sole source; prompt instructs the model to stay faithful to slide sequence, scope, and terminology; groups related slide content into coherent steps
+  - **Slides + subtopics** (`slideText` + `subtopicsText` both present): slides are primary source; author subtopics treated as guidance and overrides; model prefers author intent when conflicts arise
+  - **Subtopics only** (no `slideText`): original prompt unchanged — no behaviour change for existing users
+- JSON contract (`steps[].title`, `.goal`, `.coveredSubtopics`) is identical across all three cases
+
+**`server/index.js`** — `POST /api/generate-structure` route:
+- Destructures `slideText` from request body (alongside existing fields)
+- Validation relaxed: `courseName` and `moduleName` remain required; `subtopicsText` is now only required when `slideText` is absent; if neither is present, returns 400 with a clear message
+- Mock path updated: falls back to `subtopicsText || slideText` so mock mode still works when only slides are provided
+- `buildGenerateStructurePrompt` call now passes `slideText`
+
+**`src/services/lessonStructureService.js`** — `callProvider` and `generateLessonStructure`:
+- Both functions now accept an optional `slideText` parameter (fourth argument)
+- `slideText` is included in the `POST /api/generate-structure` JSON body
+
+**`src/App.jsx`**:
+- `handleSubmit` guard updated: subtopics required only when `slideText.trim().length === 0`
+- `generateLessonStructure` call now passes `slideText` as fourth argument
+- `slideText` now passed as a prop to `LessonInputForm` (for the form's own `isValid` check)
+
+**`src/components/LessonInputForm.jsx`**:
+- Accepts new `slideText` prop
+- `isValid` now: `courseName && moduleName && (subtopics || slideText)` — subtopics field no longer blocks the Generate button when slides have been successfully uploaded
+
+---
+
+## What Is Intentionally Not Done Yet
+
+| Item | Reason |
+|---|---|
+| Wire `slideText` into `generate-content` | Deferred — separate slice |
+| `lessonFormat` forwarded to AI prompts | Separate slice |
+| Real file upload (lab files, starter code) | Deferred |
+
+---
+
+## Remaining Limitations
+
+- `slideText` is session-only (cleared on page reload); user must re-upload. Only `slideFileName` label is restored from localStorage.
+- `generate-content` (Screen 2 block generation) does not yet receive `slideText` — step content is generated without slide context.
+- Slide text is plain extracted text (`<a:t>` nodes only); no structural cues (heading vs bullet vs body), no slide layout awareness.
+- The subtopics hint text ("One topic per line — each becomes a lesson step") is no longer always accurate when slides are the source, but is only shown when subtopics are present so it is not misleading.
+
+---
+
+**ID** 18
+**Date:** 2026-03-23
+**Session scope:** Slides backend upload + text extraction (Slice B)
+
+---
+
+## What Was Completed This Session
+
+### Slides backend upload + extraction — Slice B
+
+**New dependency installs:**
+- `multer` — multipart/form-data middleware for Express (in-memory storage)
+- `jszip` — pure-JS ZIP parser used to unpack the PPTX archive
+
+**`server/lib/extractSlideText.js`** (new file):
+- Accepts a `Buffer`; uses `jszip` to unzip the PPTX
+- Finds `ppt/slides/slide*.xml` entries, sorted numerically
+- Extracts all `<a:t>` text nodes per slide (titles, text boxes, bullet runs)
+- Returns `{ slideText: string, slideCount: number }`
+- Slides with no text content are silently skipped
+- Scope is normal slide text only — no SmartArt, speaker notes, or embedded objects
+
+**`server/index.js`** additions:
+- Imports `multer` and `extractSlideText`
+- `slidesUpload` multer instance: memory storage, 10 MB limit, `.pptx`-only filter (checks both MIME type and file extension)
+- `POST /api/upload-slides` route: receives `multipart/form-data` with `slides` field; calls `extractSlideText`; returns `{ slideText, slideCount, fileName }`
+
+**`src/App.jsx`** additions:
+- Four new state vars: `slideText` (string), `slideCount` (number), `isUploadingSlides` (boolean), `slideUploadError` (string|null)
+- `handleSlideUpload(file)` — POSTs real `File` object via `FormData` to `/api/upload-slides`; sets `slideText` and `slideCount` on success; clears `slideFileName` and sets `slideUploadError` on failure
+- `handleSlideRemove()` — clears all four slide-related state vars
+- New props passed to `LessonInputForm`: `slideCount`, `isUploadingSlides`, `slideUploadError`, `onSlideUpload`, `onSlideRemove`
+- Old `onSlideFileChange` prop removed entirely
+- `slideText` is **not** persisted to localStorage (file cannot be recovered from storage; user must re-upload on reload)
+
+**`src/components/LessonInputForm.jsx`** changes:
+- Props updated: `onSlideFileChange` replaced by `onSlideUpload` + `onSlideRemove`; added `slideCount`, `isUploadingSlides`, `slideUploadError`
+- `handleFileChange` now passes the real `File` object to `onSlideUpload` (previously passed only `file.name`)
+- `handleRemoveSlide` now calls `onSlideRemove()` (previously called `onSlideFileChange('')`)
+- Slides field renders three states:
+  - **Uploading**: "Uploading…" text while `isUploadingSlides` is true
+  - **Loaded**: filename + slide count (e.g. "deck.pptx — 24 slides") + × remove button
+  - **Empty**: file picker button + error message below if `slideUploadError` is set
+
+**`src/App.css`** additions:
+- `.slides-uploading` — muted small text for upload-in-progress state
+- `.slides-upload-error` — danger-coloured small text for upload error
+
+---
+
+## What Is Intentionally Not Done Yet
+
+| Item | Reason |
+|---|---|
+| Wire `slideText` into `generate-structure` | Slice C — approved next step |
+| Make subtopics optional when slides present | Slice C |
+| `lessonFormat` forwarded to AI prompts | Separate slice |
+| Real file upload (lab files, starter code) | Deferred |
+
+---
+
+## Limitations Still Present After Slice B
+
+- `slideText` is lost on page reload — user must re-upload. Only `slideFileName` is restored from localStorage (display label only, no text).
+- `<a:t>` extraction is sufficient for most standard decks but will miss text in SmartArt, speaker notes, tables rendered as drawings, or heavily custom XML namespaces.
+- No slide count is shown if the server returns `slideCount: 0` (edge case: deck with no parseable text nodes) — filename shows without a slide label, which is acceptable.
+- `generate-structure` and prompts are completely untouched — `slideText` sits in state, unused by AI until Slice C.
+
+---
+
+## Recommended Next Slice (Slice C)
+
+**Wire `slideText` into `generate-structure` — do not change anything else.**
+
+1. Pass `slideText` in the `POST /api/generate-structure` request body (in `lessonStructureService.js`).
+2. Update `buildGenerateStructurePrompt` to use slides as the primary source when `slideText` is present, and subtopics as fallback/supplement.
+3. Make subtopics optional in the `generate-structure` route validation when `slideText` is provided.
+4. Make subtopics optional in the Screen 1 `isValid` check when `slideFileName` is set.
+
+`generate-content` and content prompts stay untouched in Slice C.
+
+---
+
+**ID** 17
+**Date:** 2026-03-23
+**Session scope:** Screen 2 step-type-awareness; non-lesson step defaults; Slides upload UI (Slice A)
+
+---
+
+## What Was Completed This Session
+
+### 1. Screen 2 step-type-awareness
+
+`LessonAuthoringView.jsx` — major restructure (Screen 1 untouched):
+
+- `lessonStructure` is now passed as a prop and drives the sidebar (all step types visible).
+- `selectedStructureStep` (from `lessonStructure`) determines `stepType`; `selectedContent` (from `lessonContent`) is the lesson content entry, only present for lesson steps.
+- Lesson steps: existing block view + code panel, unchanged. Edit/Save/Cancel mode applies only to lesson steps.
+- Non-lesson steps: `NonLessonStepPanel` renders a read-only summary of the step's configured fields (description, URL, or file placeholder note). No Edit button, no code panel.
+- Sidebar dirty dot only appears for lesson steps (non-lesson steps have no `lessonContent` entry).
+
+`lessonContentService.js` — one-line fix: `if (step.stepType !== 'lesson') continue` — AI generation now skips non-lesson steps entirely.
+
+`App.jsx` — `setSelectedStepId` after generate now uses `lessonStructure[0]?.id` (not `content[0]?.id`) so the first step is selected correctly regardless of type.
+
+### 2. Default title for non-lesson steps
+
+`App.jsx` — `handleAddStep`: non-lesson steps now default to `title: 'Hands-on practice'` instead of `''`. This prevents empty-title validation from blocking generation.
+
+### 3. Slides upload UI — Slice A (frontend only)
+
+`App.jsx` — new `slideFileName` state (string, empty = no slides); restored from localStorage draft on mount; persisted in `handleSaveDraft`.
+
+`LessonInputForm.jsx` — new "Slides" field in Screen 1 left panel (between Lesson Format and Sub-topics):
+- A hidden `<input type="file" accept=".pptx">` triggered by a styled label button.
+- When a file is selected: filename row with a × remove button.
+- Remove clears both App state and the file input ref.
+- Accepts `.pptx` only (via `accept` attribute).
+
+`App.css` — new classes: `.slides-file-input`, `.slides-upload-label`, `.slides-selected`, `.slides-selected-name`, `.slides-remove-btn`.
+
+**No backend, no extraction, no prompt changes in this slice.**
+
+---
+
+## What Is Intentionally Not Done Yet
+
+| Item | Reason |
+|---|---|
+| Backend PPTX upload + extraction | Next slice (Slice B) |
+| Wire `slideText` into `generate-structure` | Slice C — after Slice B is confirmed |
+| Make subtopics optional when slides present | Slice B/C |
+| `lessonFormat` forwarded to AI prompts | Separate slice |
+| Real file upload (lab files, starter code) | Deferred |
+
+---
+
+## Recommended Next Slice (Slice B)
+
+**Backend PPTX upload and text extraction only — do not touch `generate-structure` yet.**
+
+1. `npm install multer jszip` (single `package.json`).
+2. New `server/lib/extractSlideText.js` — accepts a Buffer; uses `jszip` to unzip the PPTX; reads `ppt/slides/slide*.xml` in order; extracts `<a:t>` text nodes per slide; returns a structured string (slide-labelled blocks of text).
+3. New `POST /api/upload-slides` route in `server/index.js` — `multer` memory storage, 10 MB limit, `.pptx`-only; calls `extractSlideText`; returns `{ slideText, slideCount, fileName }`.
+4. `App.jsx` — add `slideText` state (empty string); call `POST /api/upload-slides` on file select in a new `handleSlideUpload` handler; store returned `slideText`; clear on remove. **Do not pass `slideText` to `generate-structure` yet.**
+5. `LessonInputForm.jsx` — show a loading state during upload; show slide count on success (e.g. "deck.pptx — 24 slides").
+
+`generate-structure` and the prompt builder stay completely untouched in Slice B.
+
+---
+
 **ID** 16
 **Date:** 2026-03-23
 **Session scope:** Product direction update; lessonFormat + stepType foundation; Add Step type picker; non-lesson step scaffolding

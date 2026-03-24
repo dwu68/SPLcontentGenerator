@@ -419,6 +419,16 @@ body {
 .slides-remove-btn:hover {
   color: var(--color-danger);
 }
+.slides-uploading {
+  font-size: 12px;
+  color: var(--color-text-muted);
+  margin: 4px 0 0;
+}
+.slides-upload-error {
+  font-size: 12px;
+  color: var(--color-danger);
+  margin: 4px 0 0;
+}
 
 /* =============================================================================
    Lesson Structure Preview (Screen 1 right pane)

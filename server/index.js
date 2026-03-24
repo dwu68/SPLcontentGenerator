@@ -21,10 +21,12 @@ import express from 'express'
 import fs from 'fs'
 import path from 'path'
 import { fileURLToPath } from 'url'
+import multer from 'multer'
 import OpenAI from 'openai'
 import { buildGenerateStructurePrompt } from './prompts/generateStructurePrompt.js'
 import { buildGenerateContentPrompt } from './prompts/generateContentPrompt.js'
 import { buildPromptContext } from './lib/promptContext.js'
+import { extractSlideText } from './lib/extractSlideText.js'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const PORT = process.env.PORT || 3001
@@ -144,18 +146,56 @@ function parseContentResponse(content) {
 const app = express()
 app.use(express.json())
 
+// ---------------------------------------------------------------------------
+// Multer — in-memory, .pptx only, 10 MB limit
+// ---------------------------------------------------------------------------
+
+const PPTX_MIME = 'application/vnd.openxmlformats-officedocument.presentationml.presentation'
+
+const slidesUpload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 10 * 1024 * 1024 },
+  fileFilter: (_req, file, cb) => {
+    if (file.mimetype === PPTX_MIME || file.originalname.toLowerCase().endsWith('.pptx')) {
+      cb(null, true)
+    } else {
+      cb(new Error('Only .pptx files are accepted'))
+    }
+  },
+})
+
+// POST /api/upload-slides
+app.post('/api/upload-slides', slidesUpload.single('slides'), async (req, res) => {
+  if (!req.file) return res.status(400).json({ error: 'No file received' })
+  try {
+    const { slideText, slideCount } = await extractSlideText(req.file.buffer)
+    return res.json({ slideText, slideCount, fileName: req.file.originalname })
+  } catch (err) {
+    console.error('[upload-slides]', err.message)
+    return res.status(500).json({ error: err.message })
+  }
+})
+
 // POST /api/generate-structure
 app.post('/api/generate-structure', async (req, res) => {
-  const { courseName, moduleName, subtopicsText } = req.body
+  const { courseName, moduleName, subtopicsText, slideText } = req.body
 
-  if (!courseName || !moduleName || !subtopicsText) {
+  const hasSlides = slideText && slideText.trim().length > 0
+  const hasSubtopics = subtopicsText && subtopicsText.trim().length > 0
+
+  if (!courseName || !moduleName) {
     return res.status(400).json({
-      error: 'Missing required fields: courseName, moduleName, subtopicsText',
+      error: 'Missing required fields: courseName, moduleName',
+    })
+  }
+  if (!hasSlides && !hasSubtopics) {
+    return res.status(400).json({
+      error: 'Provide either sub-topics or upload slides before generating.',
     })
   }
 
   if (USE_MOCK) {
-    return res.json(mockGenerateStructure(subtopicsText))
+    return res.json(mockGenerateStructure(subtopicsText || slideText))
   }
 
   try {
@@ -163,7 +203,7 @@ app.post('/api/generate-structure', async (req, res) => {
       model: process.env.OPENAI_MODEL || 'gpt-4o-mini',
       response_format: { type: 'json_object' },
       messages: [
-        { role: 'user', content: buildGenerateStructurePrompt({ courseName, moduleName, subtopicsText }) },
+        { role: 'user', content: buildGenerateStructurePrompt({ courseName, moduleName, subtopicsText, slideText }) },
       ],
     })
     const steps = parseProviderResponse(completion.choices[0].message.content)

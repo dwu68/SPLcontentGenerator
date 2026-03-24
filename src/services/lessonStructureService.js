@@ -36,13 +36,14 @@
  * @param {string} courseName
  * @param {string} moduleName
  * @param {string} subtopicsText  raw textarea value, newline-separated
+ * @param {string} [slideText]    extracted slide text (optional)
  * @returns {Promise<Array<{ title: string, goal: string, coveredSubtopics: string[] }>>}
  */
-async function callProvider(courseName, moduleName, subtopicsText) {
+async function callProvider(courseName, moduleName, subtopicsText, slideText) {
   const res = await fetch('/api/generate-structure', {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
-    body: JSON.stringify({ courseName, moduleName, subtopicsText }),
+    body: JSON.stringify({ courseName, moduleName, subtopicsText, slideText }),
   })
   if (!res.ok) {
     const body = await res.json().catch(() => ({}))
@@ -91,9 +92,10 @@ function normalizeStructure(rawSteps) {
  * @param {string} courseName
  * @param {string} moduleName
  * @param {string} subtopicsText  raw textarea value, newline-separated
+ * @param {string} [slideText]    extracted slide text (optional)
  * @returns {Promise<LessonStructure[]>}
  */
-export async function generateLessonStructure(courseName, moduleName, subtopicsText) {
-  const rawSteps = await callProvider(courseName, moduleName, subtopicsText)
+export async function generateLessonStructure(courseName, moduleName, subtopicsText, slideText) {
+  const rawSteps = await callProvider(courseName, moduleName, subtopicsText, slideText)
   return normalizeStructure(rawSteps)
 }

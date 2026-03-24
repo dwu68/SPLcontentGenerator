@@ -13,7 +13,7 @@ The tool is evolving beyond programming-only lessons. The intended final goal is
 
 Internal teams producing SPL lesson content — primarily data science educators and instructional designers who know their subject matter but need tooling to translate it into structured, consistent lesson formats.
 
-## Current State (as of 2026-03-23)
+## Current State (as of 2026-03-23, updated after Session 17)
 
 Both screens are live with real AI generation (GPT-5.4). Screen 1 generates a step-by-step lesson structure from subtopics; Screen 2 generates block-based lesson content for each lesson step.
 
@@ -31,6 +31,7 @@ Both screens are live with real AI generation (GPT-5.4). Screen 1 generates a st
 - **View / edit mode** (Screen 2): view mode renders blocks as readable prose; edit mode opens `BlockEditor` per block
 - **Check block answer reveal**: question and answer separated by `\n→ `; "Show answer" toggle in view mode
 - **Explain block bullet lists**: `\n\n`-separated chunks where all lines start with `- ` render as `<ul>/<li>`
+- **Slides upload UI** (Screen 1 left panel): a "Slides" field accepts a single `.pptx` file; selected filename is stored in state and persisted in the draft; file can be removed/replaced. Backend extraction and structure-generation wiring are not yet implemented.
 - **Save Draft**: persists all state to `localStorage` (key: `spl_lesson_draft`); new generation clears stale draft
 - **Export JSON**: `POST /api/export` writes a timestamped file to `output/` *(de-prioritized — see scope note below)*
 
@@ -42,7 +43,7 @@ Both screens are live with real AI generation (GPT-5.4). Screen 1 generates a st
 | Export JSON / output folder | **De-prioritized** — built but not actively maintained |
 | Backend persistence | **Deferred to another team** — localStorage only for now |
 | Database / upload pipeline | **Not in scope** for current work |
-| PPT / slides ingestion | **Placeholder only** — UI structure deferred |
+| PPT / slides ingestion | **Implemented through Slice C** — `.pptx` upload UI (Slice A), backend extraction (Slice B), and generate-structure wiring (Slice C) are all done; generate-content wiring is deferred |
 | Real file upload (lab files, starter code) | **Placeholder** — disabled inputs; not implemented |
 
 ---

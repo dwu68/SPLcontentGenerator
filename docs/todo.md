@@ -47,10 +47,13 @@ Work done in this phase establishes the module format and per-step type model.
 - ✅ **Add `stepType` to all steps** — AI-generated steps default to `'lesson'`; manually added steps can be `'lesson'`, `'downloadable_lab_files'`, `'starter_code_file'`, or `'external_lab_link'`
 - ✅ **Add Step type picker** — clicking "Add Step" shows an inline type picker with four options; step type badge shown on each card header
 - ✅ **Non-lesson step fields in Screen 1** — minimal type-specific fields per step type; file upload inputs are disabled placeholders
-- 🔲 **Screen 2 step-type-awareness** — non-lesson steps should render their configured content (description, link, file reference), not the lesson block view
-- 🔲 **Exclude non-lesson steps from AI generation** — `handleGenerate` currently calls `generateAllLessonContent` for every step; should skip non-lesson step types
+- ✅ **Screen 2 step-type-awareness** — non-lesson steps render their configured content (description, link, file reference); lesson block view is unchanged
+- ✅ **Exclude non-lesson steps from AI generation** — `generateAllLessonContent` skips steps where `stepType !== 'lesson'`
+- ✅ **Default title for non-lesson steps** — new non-lesson steps default to "Hands-on practice"
+- ✅ **Slides upload UI (Slice A)** — `.pptx`-only file input in Screen 1 left panel; `slideFileName` stored in App state and persisted in localStorage draft; file can be removed/replaced; no backend wiring yet
+- ✅ **Slides backend upload + extraction (Slice B)** — `POST /api/upload-slides` endpoint; `multer` in-memory upload; `jszip` + `<a:t>` XML extraction; returns `{ slideText, slideCount }` to frontend; `slideText` stored in App state; subtopics made optional when slides are present
+- ✅ **Wire slides into generate-structure (Slice C)** — pass `slideText` in `POST /api/generate-structure` body; update `buildGenerateStructurePrompt` to use slides as primary source when present
 - 🔲 **Pass `lessonFormat` to AI generation** — `lessonFormat` is in state but not yet forwarded to `POST /api/generate-structure` or `POST /api/generate-content`; prompts should use it to adjust generation style
-- 🔲 **Reference materials area on Screen 1** — slides upload placeholder + optional guidance textarea (module-level grounding for AI generation)
 - 🔲 **Per-lesson-step optional guidance field** — a free-text guidance field on individual `lesson` step cards in Screen 1
 
 ---
