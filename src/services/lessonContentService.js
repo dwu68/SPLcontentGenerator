@@ -126,6 +126,7 @@ export async function generateAllLessonContent({
 }) {
   const results = []
   for (const step of lessonStructure) {
+    if (step.stepType !== 'lesson') continue
     const raw = await callProvider({ courseName, moduleName, step, lessonStructure, learnerLevel, outputLanguage })
     results.push(normalizeContent(raw, step))
   }

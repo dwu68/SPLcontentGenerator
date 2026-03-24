@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useRef } from 'react'
 
 /**
  * LessonInputForm — left panel on Screen 1.
@@ -21,18 +21,33 @@ function LessonInputForm({
   moduleName,
   lessonFormat,
   subtopics,
+  slideFileName,
   onCourseNameChange,
   onModuleNameChange,
   onLessonFormatChange,
   onSubtopicsChange,
+  onSlideFileChange,
   onSubmit,
   isGenerating,
   generationError,
 }) {
+  const fileInputRef = useRef(null)
+
   const isValid =
     courseName.trim().length > 0 &&
     moduleName.trim().length > 0 &&
     subtopics.trim().length > 0
+
+  const handleFileChange = (e) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    onSlideFileChange(file.name)
+  }
+
+  const handleRemoveSlide = () => {
+    onSlideFileChange('')
+    if (fileInputRef.current) fileInputRef.current.value = ''
+  }
 
   const handleKeyDown = (e) => {
     // Allow Ctrl/Cmd+Enter to submit
@@ -95,6 +110,35 @@ function LessonInputForm({
             </option>
           ))}
         </select>
+      </div>
+
+      <div className="form-group">
+        <label className="form-label">Slides</label>
+        <p className="form-hint">Optional — upload a .pptx to use as source material.</p>
+        {slideFileName ? (
+          <div className="slides-selected">
+            <span className="slides-selected-name" title={slideFileName}>{slideFileName}</span>
+            <button
+              type="button"
+              className="slides-remove-btn"
+              onClick={handleRemoveSlide}
+              aria-label="Remove slide file"
+            >
+              ×
+            </button>
+          </div>
+        ) : (
+          <label className="slides-upload-label">
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept=".pptx"
+              className="slides-file-input"
+              onChange={handleFileChange}
+            />
+            Choose .pptx file
+          </label>
+        )}
       </div>
 
       <div className="form-group">

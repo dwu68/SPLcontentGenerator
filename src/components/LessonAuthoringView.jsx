@@ -10,22 +10,24 @@ import BlockEditor from './BlockEditor'
  *   View mode (default) — lesson content renders as readable prose blocks.
  *     No nested textareas; page scrolls naturally.
  *   Edit mode — triggered by the "Edit" button in the instruction panel header.
- *     InstructionPanelEditor (textareas) and editable CodeEditorPanel are shown.
+ *     Only applies to `lesson` steps; non-lesson steps are always read-only.
  *     "Save" keeps edits and exits edit mode.
  *     "Cancel" restores the snapshot taken on edit entry and exits edit mode.
  *     Switching steps while editing silently cancels (restores snapshot).
  *
  * Layout:
- *   [Step Sidebar] | [Instruction Panel] | [Code Panel]
+ *   [Step Sidebar] | [Instruction Panel] | [Code Panel (lesson steps only)]
  *
  * Props:
- *   lessonContent    LessonContent[]
+ *   lessonStructure  Step[]            — full step list (all types); drives the sidebar
+ *   lessonContent    LessonContent[]   — block-based content; only lesson steps have entries
  *   selectedStepId   string | null
  *   onSelectStep     fn(id: string)
  *   onUpdateContent  fn(stepId: string, fields: Partial<LessonContent>)
  *   dirtyStepIds     Set<string>
  */
 function LessonAuthoringView({
+  lessonStructure,
   lessonContent,
   selectedStepId,
   onSelectStep,
@@ -35,12 +37,17 @@ function LessonAuthoringView({
   const [isEditing, setIsEditing] = useState(false)
   const [editSnapshot, setEditSnapshot] = useState(null)
 
-  const selectedStep = lessonContent.find((s) => s.id === selectedStepId) ?? null
+  // Step metadata (all types) — drives sidebar and stepType branching
+  const selectedStructureStep = lessonStructure.find((s) => s.id === selectedStepId) ?? null
+  // Lesson content entry — only present for lesson steps
+  const selectedContent = lessonContent.find((s) => s.id === selectedStepId) ?? null
 
-  // Enter edit mode — snapshot the current step so Cancel can restore it
+  const isLessonStep = selectedStructureStep?.stepType === 'lesson'
+
+  // Enter edit mode — snapshot the current lesson content so Cancel can restore it
   const handleEdit = () => {
-    if (!selectedStep) return
-    setEditSnapshot({ ...selectedStep })
+    if (!selectedContent) return
+    setEditSnapshot({ ...selectedContent })
     setIsEditing(true)
   }
 
@@ -75,7 +82,7 @@ function LessonAuthoringView({
       <aside className="step-sidebar">
         <div className="step-sidebar-header">Lesson Steps</div>
         <nav className="step-sidebar-list" aria-label="Lesson steps">
-          {lessonContent.map((step) => (
+          {lessonStructure.map((step) => (
             <button
               key={step.id}
               className={`step-nav-btn ${step.id === selectedStepId ? 'active' : ''}`}
@@ -95,67 +102,177 @@ function LessonAuthoringView({
 
       {/* ── Main Editor Area ─────────────────────────────────────────────── */}
       <main className="authoring-main">
-        {selectedStep ? (
-          <>
-            {/* Instruction Panel */}
-            <section className="panel panel-instruction" aria-label="Instruction panel">
-              <div className="panel-header">
-                <span className="panel-title">Instructions</span>
-                <div className="panel-header-actions">
-                  {isEditing ? (
-                    <>
-                      <button className="btn btn-sm btn-success" onClick={handleSave}>
-                        Save
-                      </button>
-                      <button className="btn btn-sm btn-secondary" onClick={handleCancel}>
-                        Cancel
-                      </button>
-                    </>
-                  ) : (
-                    <button className="btn btn-sm btn-secondary" onClick={handleEdit}>
-                      Edit
-                    </button>
-                  )}
-                </div>
-              </div>
-              <div className="panel-body">
-                {isEditing ? (
-                  selectedStep.blocks?.length > 0 ? (
-                    <BlockEditor
-                      blocks={selectedStep.blocks}
-                      onUpdate={(newBlocks) => onUpdateContent(selectedStep.id, { blocks: newBlocks })}
-                    />
-                  ) : (
-                    <InstructionPanelEditor
-                      step={selectedStep}
-                      onUpdate={(fields) => onUpdateContent(selectedStep.id, fields)}
-                    />
-                  )
-                ) : (
-                  <LessonStepView step={selectedStep} />
-                )}
-              </div>
-            </section>
-
-            {/* Code Panel */}
-            <section className="panel panel-code" aria-label="Code editor panel">
-              <div className="panel-header panel-header-code">
-                <span className="panel-title panel-title-code">Lab</span>
-                <span className="panel-step-tag panel-step-tag-code">starter_code.py</span>
-              </div>
-              <div className="panel-body-code">
-                <CodeEditorPanel
-                  step={selectedStep}
-                  onUpdate={(fields) => onUpdateContent(selectedStep.id, fields)}
-                  readOnly={!isEditing}
-                />
-              </div>
-            </section>
-          </>
+        {selectedStructureStep ? (
+          isLessonStep ? (
+            <LessonStepPanels
+              selectedContent={selectedContent}
+              isEditing={isEditing}
+              onEdit={handleEdit}
+              onSave={handleSave}
+              onCancel={handleCancel}
+              onUpdateContent={onUpdateContent}
+            />
+          ) : (
+            <NonLessonStepPanel step={selectedStructureStep} />
+          )
         ) : (
           <NoStepSelected />
         )}
       </main>
+    </div>
+  )
+}
+
+// ── Lesson step: instruction panel + code panel ──────────────────────────────
+
+function LessonStepPanels({ selectedContent, isEditing, onEdit, onSave, onCancel, onUpdateContent }) {
+  return (
+    <>
+      {/* Instruction Panel */}
+      <section className="panel panel-instruction" aria-label="Instruction panel">
+        <div className="panel-header">
+          <span className="panel-title">Instructions</span>
+          <div className="panel-header-actions">
+            {isEditing ? (
+              <>
+                <button className="btn btn-sm btn-success" onClick={onSave}>
+                  Save
+                </button>
+                <button className="btn btn-sm btn-secondary" onClick={onCancel}>
+                  Cancel
+                </button>
+              </>
+            ) : (
+              <button className="btn btn-sm btn-secondary" onClick={onEdit}>
+                Edit
+              </button>
+            )}
+          </div>
+        </div>
+        <div className="panel-body">
+          {selectedContent ? (
+            isEditing ? (
+              selectedContent.blocks?.length > 0 ? (
+                <BlockEditor
+                  blocks={selectedContent.blocks}
+                  onUpdate={(newBlocks) => onUpdateContent(selectedContent.id, { blocks: newBlocks })}
+                />
+              ) : (
+                <InstructionPanelEditor
+                  step={selectedContent}
+                  onUpdate={(fields) => onUpdateContent(selectedContent.id, fields)}
+                />
+              )
+            ) : (
+              <LessonStepView step={selectedContent} />
+            )
+          ) : (
+            <div className="panel-empty-msg">No content generated for this step yet.</div>
+          )}
+        </div>
+      </section>
+
+      {/* Code Panel */}
+      <section className="panel panel-code" aria-label="Code editor panel">
+        <div className="panel-header panel-header-code">
+          <span className="panel-title panel-title-code">Lab</span>
+          <span className="panel-step-tag panel-step-tag-code">starter_code.py</span>
+        </div>
+        <div className="panel-body-code">
+          {selectedContent && (
+            <CodeEditorPanel
+              step={selectedContent}
+              onUpdate={(fields) => onUpdateContent(selectedContent.id, fields)}
+              readOnly={!isEditing}
+            />
+          )}
+        </div>
+      </section>
+    </>
+  )
+}
+
+// ── Non-lesson step: read-only summary view ──────────────────────────────────
+
+const STEP_TYPE_LABELS = {
+  downloadable_lab_files: 'Lab Files',
+  starter_code_file:      'Starter Code',
+  external_lab_link:      'External Lab',
+}
+
+function NonLessonStepPanel({ step }) {
+  const typeLabel = STEP_TYPE_LABELS[step.stepType] ?? step.stepType
+
+  return (
+    <section className="panel panel-instruction" aria-label="Step details panel">
+      <div className="panel-header">
+        <span className="panel-title">{typeLabel}</span>
+        <span className={`step-type-badge step-type-badge--${step.stepType}`}>{typeLabel}</span>
+      </div>
+      <div className="panel-body">
+        <NonLessonStepView step={step} />
+      </div>
+    </section>
+  )
+}
+
+function NonLessonStepView({ step }) {
+  return (
+    <div className="non-lesson-step-view">
+      <h2 className="non-lesson-step-title">{step.title}</h2>
+
+      {step.description !== undefined && (
+        <div className="non-lesson-step-field">
+          <div className="non-lesson-step-label">Description</div>
+          <div className="non-lesson-step-value">
+            {step.description?.trim() || <span className="non-lesson-step-empty">No description</span>}
+          </div>
+        </div>
+      )}
+
+      {step.stepType === 'external_lab_link' && (
+        <div className="non-lesson-step-field">
+          <div className="non-lesson-step-label">Lab Link</div>
+          <div className="non-lesson-step-value">
+            {step.externalLabLink?.trim() ? (
+              <a
+                href={step.externalLabLink}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="non-lesson-step-link"
+              >
+                {step.externalLabLink}
+              </a>
+            ) : (
+              <span className="non-lesson-step-empty">No URL set</span>
+            )}
+          </div>
+        </div>
+      )}
+
+      {step.stepType === 'downloadable_lab_files' && (
+        <div className="non-lesson-step-field">
+          <div className="non-lesson-step-label">Lab Files</div>
+          <div className="non-lesson-step-placeholder">File upload — coming soon</div>
+        </div>
+      )}
+
+      {step.stepType === 'starter_code_file' && (
+        <>
+          <div className="non-lesson-step-field">
+            <div className="non-lesson-step-label">Starter Code File</div>
+            <div className="non-lesson-step-placeholder">File upload — coming soon</div>
+          </div>
+          <div className="non-lesson-step-field">
+            <div className="non-lesson-step-label">Problem Statement</div>
+            <div className="non-lesson-step-placeholder">File upload — coming soon</div>
+          </div>
+        </>
+      )}
+
+      <p className="non-lesson-step-hint">
+        Edit this step's fields in the Structure Builder.
+      </p>
     </div>
   )
 }

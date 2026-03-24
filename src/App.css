@@ -365,6 +365,61 @@ body {
   margin: 24px 0;
 }
 
+/* ── Slides upload area ──────────────────────────────────────────────────────── */
+.slides-file-input {
+  display: none;
+}
+
+.slides-upload-label {
+  display: inline-block;
+  padding: 6px 12px;
+  font-size: 12.5px;
+  font-weight: 500;
+  color: var(--color-secondary-fg);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: background 0.1s, border-color 0.1s;
+}
+.slides-upload-label:hover {
+  background: var(--color-surface-raised);
+  border-color: var(--color-border-focus);
+}
+
+.slides-selected {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px;
+  background: var(--color-surface-raised);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+}
+
+.slides-selected-name {
+  flex: 1;
+  font-size: 12.5px;
+  color: var(--color-text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.slides-remove-btn {
+  flex-shrink: 0;
+  background: none;
+  border: none;
+  font-size: 16px;
+  line-height: 1;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  padding: 0 2px;
+}
+.slides-remove-btn:hover {
+  color: var(--color-danger);
+}
+
 /* =============================================================================
    Lesson Structure Preview (Screen 1 right pane)
    ============================================================================= */
@@ -1192,6 +1247,77 @@ body {
   padding: 40px;
   text-align: center;
   background: var(--color-bg);
+}
+
+/* =============================================================================
+   Non-lesson step view (Screen 2 read-only summary)
+   ============================================================================= */
+.non-lesson-step-view {
+  padding: 28px 32px 40px;
+  max-width: 680px;
+}
+
+.non-lesson-step-title {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--color-text);
+  margin: 0 0 24px;
+  line-height: 1.3;
+}
+
+.non-lesson-step-field {
+  margin-bottom: 18px;
+}
+
+.non-lesson-step-label {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--color-text-muted);
+  margin-bottom: 5px;
+}
+
+.non-lesson-step-value {
+  font-size: 14px;
+  color: var(--color-text);
+  line-height: 1.5;
+}
+
+.non-lesson-step-empty {
+  color: var(--color-text-muted);
+  font-style: italic;
+}
+
+.non-lesson-step-link {
+  color: var(--color-primary);
+  text-decoration: underline;
+  word-break: break-all;
+  font-size: 14px;
+}
+
+.non-lesson-step-placeholder {
+  font-size: 13px;
+  color: var(--color-text-muted);
+  font-style: italic;
+  padding: 8px 12px;
+  background: var(--color-surface-raised);
+  border: 1px dashed var(--color-border-strong);
+  border-radius: var(--radius-sm);
+}
+
+.non-lesson-step-hint {
+  margin-top: 32px;
+  font-size: 12px;
+  color: var(--color-text-muted);
+  font-style: italic;
+}
+
+.panel-empty-msg {
+  padding: 28px 32px;
+  font-size: 13px;
+  color: var(--color-text-muted);
+  font-style: italic;
 }
 
 /* =============================================================================

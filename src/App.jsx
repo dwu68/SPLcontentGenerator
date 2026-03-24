@@ -38,6 +38,7 @@ function App() {
   const [moduleName, setModuleName] = useState('')
   const [lessonFormat, setLessonFormat] = useState('code_lab')
   const [subtopics, setSubtopics] = useState('')
+  const [slideFileName, setSlideFileName] = useState('')
 
   // ── Lesson structure (Screen 1 output) ──────────────────────────────────
   const [lessonStructure, setLessonStructure] = useState([])
@@ -65,6 +66,7 @@ function App() {
       if (data.moduleName) setModuleName(data.moduleName)
       if (data.lessonFormat) setLessonFormat(data.lessonFormat)
       if (data.subtopics) setSubtopics(data.subtopics)
+      if (data.slideFileName) setSlideFileName(data.slideFileName)
       if (data.lessonStructure?.length) setLessonStructure(data.lessonStructure)
       if (data.lessonContent?.length) {
         setLessonContent(data.lessonContent)
@@ -115,11 +117,12 @@ function App() {
   const handleAddStep = (stepType = 'lesson') => {
     setLessonStructure((prev) => {
       const next = prev.length + 1
+      const defaultTitle = stepType === 'lesson' ? '' : 'Hands-on practice'
       const base = {
         id: `step-new-${Date.now()}`,
         stepNumber: next,
         stepType,
-        title: '',
+        title: defaultTitle,
       }
       const typeFields = {
         lesson:                 { goal: '', coveredSubtopics: [] },
@@ -171,7 +174,7 @@ function App() {
     try {
       const content = await generateAllLessonContent({ courseName, moduleName, lessonStructure })
       setLessonContent(content)
-      setSelectedStepId(content[0]?.id || null)
+      setSelectedStepId(lessonStructure[0]?.id || null)
       setDirtyStepIds(new Set())
       setSaveStatus('unsaved')
       // Clear any stale localStorage draft so a page reload won't restore old content
@@ -210,6 +213,7 @@ function App() {
         moduleName,
         lessonFormat,
         subtopics,
+        slideFileName,
         lessonStructure,
         lessonContent,
         selectedStepId,
@@ -282,10 +286,12 @@ function App() {
               moduleName={moduleName}
               lessonFormat={lessonFormat}
               subtopics={subtopics}
+              slideFileName={slideFileName}
               onCourseNameChange={setCourseName}
               onModuleNameChange={setModuleName}
               onLessonFormatChange={setLessonFormat}
               onSubtopicsChange={setSubtopics}
+              onSlideFileChange={setSlideFileName}
               onSubmit={handleSubmit}
               isGenerating={isGenerating}
               generationError={generationError}
@@ -307,6 +313,7 @@ function App() {
         </div>
       ) : (
         <LessonAuthoringView
+          lessonStructure={lessonStructure}
           lessonContent={lessonContent}
           selectedStepId={selectedStepId}
           onSelectStep={setSelectedStepId}
