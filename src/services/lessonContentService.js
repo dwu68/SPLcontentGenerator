@@ -51,11 +51,11 @@ const CONTENT_FIELDS = [
  * @param {string}   [params.outputLanguage]
  * @returns {Promise<object>}
  */
-async function callProvider({ courseName, moduleName, step, lessonStructure, learnerLevel, outputLanguage, slideText }) {
+async function callProvider({ courseName, moduleName, step, lessonStructure, lessonFormat, learnerLevel, outputLanguage, slideText }) {
   const res = await fetch('/api/generate-content', {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
-    body: JSON.stringify({ courseName, moduleName, step, lessonStructure, learnerLevel, outputLanguage, slideText }),
+    body: JSON.stringify({ courseName, moduleName, step, lessonStructure, lessonFormat, learnerLevel, outputLanguage, slideText }),
   })
   if (!res.ok) {
     const body = await res.json().catch(() => ({}))
@@ -121,6 +121,7 @@ export async function generateAllLessonContent({
   courseName,
   moduleName,
   lessonStructure,
+  lessonFormat = 'code_lab',
   learnerLevel = 'beginner',
   outputLanguage = 'Python',
   slideText = '',
@@ -128,7 +129,7 @@ export async function generateAllLessonContent({
   const results = []
   for (const step of lessonStructure) {
     if (step.stepType !== 'lesson') continue
-    const raw = await callProvider({ courseName, moduleName, step, lessonStructure, learnerLevel, outputLanguage, slideText })
+    const raw = await callProvider({ courseName, moduleName, step, lessonStructure, lessonFormat, learnerLevel, outputLanguage, slideText })
     results.push(normalizeContent(raw, step))
   }
   return results

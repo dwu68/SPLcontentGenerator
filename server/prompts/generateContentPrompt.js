@@ -3,22 +3,12 @@
  *
  * Prompt builder for Screen 2 — full lesson content generation for a single step.
  *
- * Returns a prompt that asks the model to produce one JSON object:
+ * Branches on context.lessonFormat:
+ *   'guided_tool_workflow' → buildGuidedToolWorkflowContentPrompt (slide + slide-explain)
+ *   'code_lab' (default)   → buildCodeLabContentPrompt (explain/code/check/task/hint)
  *
- * {
- *   "blocks": [
- *     {
- *       "id": "b1",
- *       "type": "explain" | "code" | "check" | "task" | "hint",
- *       "title": string | null,
- *       "content": string,
- *       "language": string | null
- *     }
- *   ],
- *   "starterCode": string,
- *   "expectedAction": string,
- *   "validationNote": string
- * }
+ * Both return one JSON object:
+ *   { "blocks": [...], "starterCode": string, "expectedAction": string, "validationNote": string }
  */
 
 /**
@@ -28,6 +18,146 @@
  * @returns {string}
  */
 export function buildGenerateContentPrompt(context) {
+  if (context.lessonFormat === 'guided_tool_workflow') {
+    return buildGuidedToolWorkflowContentPrompt(context)
+  }
+  return buildCodeLabContentPrompt(context)
+}
+
+// ---------------------------------------------------------------------------
+// guided_tool_workflow prompt
+// ---------------------------------------------------------------------------
+
+function buildGuidedToolWorkflowContentPrompt(context) {
+  const {
+    courseName,
+    moduleName,
+    stepTitle,
+    stepGoal,
+    stepTopics,
+    slideText,
+  } = context
+
+  return `You are writing the instructional content for ONE step of a guided tool workflow lesson.
+
+This is a slide-first format. The slide is the primary teaching object.
+This is NOT a coding lab. Do not produce code examples, task blocks, check blocks, or hint blocks.
+
+Course: ${courseName}
+Module: ${moduleName}
+Step title: ${stepTitle}
+Step learning goal: ${stepGoal}
+Step topics: ${stepTopics.join(', ')}
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+STEP SHAPE
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Every step has exactly two blocks, in this order:
+
+1. A "slide" block — declares which slide or consecutive slide range covers this step.
+2. A "slide-explain" block — a learner-facing explanation of those slides.
+
+The slide-explain block is required. Never omit it.
+Never include any other block type.
+${slideText ? `
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SLIDE DECK
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+The following text was extracted from the author's slides. Each slide is labelled [Slide N].
+
+Use this to:
+- Identify which slide number(s) cover this step's content.
+- Anchor the slide-explain content closely to those slides.
+- Use the same terminology and examples the slides use.
+
+<slides>
+${slideText}
+</slides>
+` : `
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+NO SLIDES UPLOADED
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+No slide text is available for this session.
+Set slideRef to "?" — the author will fill in the correct slide number manually.
+Write the slide-explain based on the step title and goal alone.
+`}
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SLIDE BLOCK RULES
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+- Set "slideRef" to the single slide number or tight consecutive range that covers this step.
+  Examples: "3" for one slide, "3-5" for a range.
+- Only use a range when consecutive slides form one coherent teaching unit for this step.
+- Do not span non-consecutive slides in one slideRef.
+- Set "content" to null — slide display is handled by the UI using the slideRef.
+- "title" may be null.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SLIDE-EXPLAIN BLOCK RULES
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+The slide-explain block is the learner-facing teaching layer for this step.
+
+Write it for a solo learner — no instructor, no live feedback, no spoken walkthrough.
+Write like a skilled course author, not like a slide transcript or summary.
+
+Rules:
+- Stay anchored to the content on the referenced slide(s). Do not introduce topics from other slides.
+- Expand the slide content so a learner can understand it without an instructor explaining it.
+- Use the same terminology the slides use.
+- Where helpful, you may reference the official documentation for the tool being taught.
+  Inline documentation references should feel natural, not like a link dump.
+- Write natural prose. Do not bullet-list every slide point verbatim.
+- Usually 3–8 sentences. Longer if the slide content genuinely requires more depth.
+- Do not use filler phrases like "In this step you will learn..." or "As shown above...".
+- Start with the idea itself.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+RETURN FORMAT
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Return exactly ONE valid JSON object:
+
+{
+  "blocks": [
+    {
+      "id": "b1",
+      "type": "slide",
+      "title": null,
+      "slideRef": string,
+      "content": null
+    },
+    {
+      "id": "b2",
+      "type": "slide-explain",
+      "title": string | null,
+      "content": string
+    }
+  ],
+  "starterCode": "",
+  "expectedAction": "",
+  "validationNote": ""
+}
+
+Rules:
+- "blocks" must contain exactly two entries in the order shown: slide then slide-explain.
+- "slideRef" must be a string (e.g. "3" or "3-5"). Never null or a number.
+- "starterCode", "expectedAction", and "validationNote" must be empty strings.
+- Do not return markdown.
+- Do not wrap the JSON in code fences.
+- Do not include commentary before or after the JSON.
+- Do not include extra keys.
+- Ensure the JSON is valid and parseable.`
+}
+
+// ---------------------------------------------------------------------------
+// code_lab prompt (original — unchanged)
+// ---------------------------------------------------------------------------
+
+function buildCodeLabContentPrompt(context) {
   const {
     courseName,
     moduleName,

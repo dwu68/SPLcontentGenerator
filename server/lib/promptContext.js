@@ -20,6 +20,7 @@
  * @param {string}   params.moduleName
  * @param {object}   [params.step]            — a single LessonStructure step
  * @param {object[]} [params.lessonStructure] — full structure array (all steps)
+ * @param {string}   [params.lessonFormat]    — 'code_lab' | 'guided_tool_workflow' | 'concept_application'
  * @param {string}   [params.learnerLevel]    — e.g. "beginner", "intermediate"
  * @param {string}   [params.outputLanguage]  — e.g. "Python", "JavaScript"
  * @returns {PromptContext}
@@ -29,6 +30,7 @@ export function buildPromptContext({
   moduleName,
   step = null,
   lessonStructure = [],
+  lessonFormat = 'code_lab',
   learnerLevel = 'beginner',
   outputLanguage = 'Python',
   slideText = '',
@@ -42,6 +44,7 @@ export function buildPromptContext({
     stepTopics:      Array.isArray(step?.coveredSubtopics) ? step.coveredSubtopics : [],
     lessonStructure: lessonStructure,
     totalSteps:      lessonStructure.length,
+    lessonFormat:    lessonFormat    ?? 'code_lab',
     learnerLevel:    learnerLevel,
     outputLanguage:  outputLanguage,
     slideText:       slideText       ?? '',

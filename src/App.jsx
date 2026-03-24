@@ -210,7 +210,7 @@ function App() {
     setGenerationError(null)
     setIsGenerating(true)
     try {
-      const content = await generateAllLessonContent({ courseName, moduleName, lessonStructure, slideText })
+      const content = await generateAllLessonContent({ courseName, moduleName, lessonStructure, lessonFormat, slideText })
       setLessonContent(content)
       setSelectedStepId(lessonStructure[0]?.id || null)
       setDirtyStepIds(new Set())

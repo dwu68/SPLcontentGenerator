@@ -362,8 +362,11 @@ function BlocksView({ step }) {
 /**
  * Block — renders one block by type.
  *
- * Types: explain | code | check | task | hint
+ * Types: explain | code | check | task | hint | slide | slide-explain
  * All types support an optional `title` field rendered as a small label above the content.
+ *
+ * content is guarded to '' before any string operations — slide blocks intentionally
+ * carry null content (their display is driven by slideRef, not content).
  */
 function CheckBlock({ title, content, segments }) {
   const [revealed, setRevealed] = useState(false)
@@ -416,7 +419,9 @@ function CheckBlock({ title, content, segments }) {
 }
 
 function Block({ block }) {
-  const { type, title, content } = block
+  const { type, title, content, slideRef } = block
+  // Guard against null/undefined content — slide blocks intentionally have null content.
+  const safeContent = content ?? ''
 
   // Render double-newline-separated content.
   // Each chunk is classified as:
@@ -424,7 +429,7 @@ function Block({ block }) {
   //   code        — any line starts with whitespace, OR multi-line starting
   //                 with a lowercase letter (unindented AI code snippet) → <pre>
   //   prose       — everything else → <p>
-  const segments = content
+  const segments = safeContent
     .split('\n\n')
     .filter(Boolean)
     .map((chunk, i) => {
@@ -445,10 +450,32 @@ function Block({ block }) {
         : <p key={i}>{chunk}</p>
     })
 
-  const lines = content
+  const lines = safeContent
     .split('\n')
     .filter(Boolean)
     .map((line, i) => <p key={i}>{line}</p>)
+
+  if (type === 'slide') {
+    return (
+      <div className="block block-slide">
+        {title && <div className="block-heading">{title}</div>}
+        <div className="block-slide-ref">
+          <span className="block-slide-ref-label">Slide</span>
+          <span className="block-slide-ref-value">{slideRef || '?'}</span>
+        </div>
+        {safeContent && <div className="block-body">{segments}</div>}
+      </div>
+    )
+  }
+
+  if (type === 'slide-explain') {
+    return (
+      <div className="block block-slide-explain">
+        {title && <div className="block-heading">{title}</div>}
+        <div className="block-body">{segments}</div>
+      </div>
+    )
+  }
 
   if (type === 'explain') {
     return (
@@ -478,7 +505,7 @@ function Block({ block }) {
   }
 
   if (type === 'check') {
-    return <CheckBlock title={title} content={content} segments={segments} />
+    return <CheckBlock title={title} content={safeContent} segments={segments} />
   }
 
   if (type === 'hint') {
@@ -496,7 +523,7 @@ function Block({ block }) {
   return (
     <div className="block">
       {title && <div className="block-heading">{title}</div>}
-      <div>{content}</div>
+      <div>{safeContent}</div>
     </div>
   )
 }

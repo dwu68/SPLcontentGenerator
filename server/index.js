@@ -65,7 +65,30 @@ function mockGenerateStructure(subtopicsText) {
 // Returns the same raw shape the content route expects: { concept, … }
 // ---------------------------------------------------------------------------
 
-function mockGenerateContent(step) {
+function mockGenerateContent(step, lessonFormat) {
+  if (lessonFormat === 'guided_tool_workflow') {
+    return {
+      blocks: [
+        {
+          id: 'b1',
+          type: 'slide',
+          title: null,
+          slideRef: '1',
+          content: null,
+        },
+        {
+          id: 'b2',
+          type: 'slide-explain',
+          title: null,
+          content: `This step covers "${step.title}". The slide above introduces the key concept — review it carefully before continuing. As a solo learner, take note of the main term or workflow pattern shown on the slide. The explanation below expands on what the slide is showing and why it matters in practice.`,
+        },
+      ],
+      starterCode: '',
+      expectedAction: '',
+      validationNote: '',
+    }
+  }
+
   const topic = step.title
   const topicLower = topic.toLowerCase()
   return {
@@ -221,6 +244,7 @@ app.post('/api/generate-content', async (req, res) => {
     moduleName,
     step,
     lessonStructure = [],
+    lessonFormat,
     learnerLevel,
     outputLanguage,
     slideText,
@@ -233,7 +257,7 @@ app.post('/api/generate-content', async (req, res) => {
   }
 
   if (USE_MOCK) {
-    return res.json(mockGenerateContent(step))
+    return res.json(mockGenerateContent(step, lessonFormat))
   }
 
   try {
@@ -242,6 +266,7 @@ app.post('/api/generate-content', async (req, res) => {
       moduleName,
       step,
       lessonStructure,
+      lessonFormat,
       learnerLevel,
       outputLanguage,
       slideText,
