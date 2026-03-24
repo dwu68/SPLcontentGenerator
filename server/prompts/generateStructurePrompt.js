@@ -59,10 +59,29 @@ Return only valid JSON, no explanation.`
   if (hasSlides && !hasSubtopics) {
     return `${header}
 
-The following text was extracted from the course slides. Use it as your sole source material.
+The following text was extracted from the course slides. Each slide is labelled [Slide N].
+Use the slides as your sole source material.
 Derive lesson step titles, goals, and covered subtopics directly from the slide content.
 Stay faithful to the sequence, scope, and terminology of the slides.
-Group related slide content into coherent lesson steps — one step per distinct teaching point.
+
+SLIDE COVERAGE (required):
+Instructional slides must each be covered by exactly one step.
+Instructional slides include: concept explanations, examples, step-by-step workflows, diagrams, comparisons, and any slide with teaching content.
+
+Non-instructional slides may be skipped.
+Non-instructional slides include: title/cover slides, agenda/outline slides, section divider slides, and closing/thank-you/Q&A slides.
+
+If there is any ambiguity about whether a slide is instructional, include it rather than skipping it.
+If a nominally non-instructional slide (e.g. an agenda) contains any meaningful teaching content, treat it as instructional and include it.
+
+For slides that are instructional but thin or hard to interpret: still create a step.
+A placeholder-quality step with a reasonable title, best-effort goal, and inferred topics is better than a missing step.
+
+SLIDE GROUPING:
+Default is one slide = one step.
+Only group consecutive slides into a single step when they clearly form one atomic teaching unit — for example, a before/after pair or a tight 2–3 slide sequence on a single concept.
+If there is any uncertainty about whether slides belong together, do not group them.
+Do not group slides just because they share a theme. Prefer splitting over grouping.
 
 Slide content:
 ${slideText}
@@ -74,9 +93,22 @@ ${footer}`
   if (hasSlides && hasSubtopics) {
     return `${header}
 
-The following text was extracted from the course slides. Use it as your primary source material.
-The author has also provided explicit sub-topics below — treat these as guidance and overrides.
+The following text was extracted from the course slides. Each slide is labelled [Slide N].
+Use the slides as your primary source material.
+The author has also provided explicit sub-topics — treat these as guidance and overrides.
 If a sub-topic conflicts with or extends the slides, prefer the author's intent.
+
+SLIDE COVERAGE (required):
+Every [Slide N] label in the slide content below must be covered by exactly one step.
+No slide may be skipped or omitted — not even slides that are thin, unclear, or hard to interpret.
+If a slide is unclear, still create a step for it using your best inference from whatever is on the slide.
+A placeholder-quality step with a reasonable title, best-effort goal, and inferred topics is better than a missing step.
+
+SLIDE GROUPING:
+Default is one slide = one step.
+Only group consecutive slides into a single step when they clearly form one atomic teaching unit — for example, a before/after pair or a tight 2–3 slide sequence on a single concept.
+If there is any uncertainty about whether slides belong together, do not group them.
+Do not group slides just because they share a theme. Prefer splitting over grouping.
 
 Slide content:
 ${slideText}

@@ -4,8 +4,10 @@
  * Prompt builder for Screen 2 — full lesson content generation for a single step.
  *
  * Branches on context.lessonFormat:
- *   'guided_tool_workflow' → buildGuidedToolWorkflowContentPrompt (slide + slide-explain)
- *   'code_lab' (default)   → buildCodeLabContentPrompt (explain/code/check/task/hint)
+ *   'guided_tool_workflow' → buildGuidedToolWorkflowContentPrompt
+ *                             blocks: slide + slide-explain + explain
+ *   'code_lab' (default)   → buildCodeLabContentPrompt
+ *                             blocks: explain/code/check/task/hint
  *
  * Both return one JSON object:
  *   { "blocks": [...], "starterCode": string, "expectedAction": string, "validationNote": string }
@@ -53,13 +55,13 @@ Step topics: ${stepTopics.join(', ')}
 STEP SHAPE
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-Every step has exactly two blocks, in this order:
+Every step has exactly three blocks, always in this order:
 
-1. A "slide" block — declares which slide or consecutive slide range covers this step.
-2. A "slide-explain" block — a learner-facing explanation of those slides.
+1. "slide"         — declares which slide or consecutive range covers this step
+2. "slide-explain" — explains the referenced slide content for the learner
+3. "explain"       — teaches the underlying concept at the step level
 
-The slide-explain block is required. Never omit it.
-Never include any other block type.
+All three are required. Never omit any of them. Never include any other block type.
 ${slideText ? `
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 SLIDE DECK
@@ -69,7 +71,7 @@ The following text was extracted from the author's slides. Each slide is labelle
 
 Use this to:
 - Identify which slide number(s) cover this step's content.
-- Anchor the slide-explain content closely to those slides.
+- Anchor the slide-explain block to those slides.
 - Use the same terminology and examples the slides use.
 
 <slides>
@@ -82,7 +84,7 @@ NO SLIDES UPLOADED
 
 No slide text is available for this session.
 Set slideRef to "?" — the author will fill in the correct slide number manually.
-Write the slide-explain based on the step title and goal alone.
+Write slide-explain and explain based on the step title and goal alone.
 `}
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 SLIDE BLOCK RULES
@@ -92,28 +94,50 @@ SLIDE BLOCK RULES
   Examples: "3" for one slide, "3-5" for a range.
 - Only use a range when consecutive slides form one coherent teaching unit for this step.
 - Do not span non-consecutive slides in one slideRef.
-- Set "content" to null — slide display is handled by the UI using the slideRef.
+- Set "content" to "" — slide display is handled by the UI from the slideRef.
 - "title" may be null.
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 SLIDE-EXPLAIN BLOCK RULES
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-The slide-explain block is the learner-facing teaching layer for this step.
+Primary purpose: help the learner understand what is on the referenced slide.
 
-Write it for a solo learner — no instructor, no live feedback, no spoken walkthrough.
-Write like a skilled course author, not like a slide transcript or summary.
+Write for a solo learner — no instructor, no live walkthrough.
+Write like a course author explaining the slide to someone reading alone.
 
-Rules:
-- Stay anchored to the content on the referenced slide(s). Do not introduce topics from other slides.
-- Expand the slide content so a learner can understand it without an instructor explaining it.
+Content rules:
+- Draw primarily from the referenced slide content.
+- Expand on what the slide shows so the learner can absorb it without an instructor.
 - Use the same terminology the slides use.
-- Where helpful, you may reference the official documentation for the tool being taught.
-  Inline documentation references should feel natural, not like a link dump.
-- Write natural prose. Do not bullet-list every slide point verbatim.
-- Usually 3–8 sentences. Longer if the slide content genuinely requires more depth.
-- Do not use filler phrases like "In this step you will learn..." or "As shown above...".
+- Some overlap with the explain block is fine — approach from the slide angle here.
+- Where naturally helpful, reference official documentation for the tool being taught.
+
+Formatting rules:
+- Prefer structured prose over one long dense paragraph.
+- Use short paragraphs (2–4 sentences each) when the content has distinct points.
+- Use a bullet list when presenting takeaways, comparisons, steps, or a set of items.
+- Bullet list format: each item on its own line starting with "- ", with a blank line above and below the list.
+- Do not use filler phrases like "In this step..." or "As shown above...".
 - Start with the idea itself.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+EXPLAIN BLOCK RULES
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Primary purpose: teach the underlying concept at the step level, grounded in the step goal and topics.
+
+This block is not anchored to the slide. It is anchored to:
+- the step learning goal: "${stepGoal}"
+- the step topics: ${stepTopics.join(', ')}
+
+Content rules:
+- Teach the concept fully for a solo learner.
+- Go deeper than the slide if the topic warrants it.
+- May reference official documentation where helpful.
+- Some overlap with slide-explain is acceptable — approach from the concept angle here.
+- Usually 3–8 sentences. More if the concept genuinely requires it.
+- Do not use filler phrases. Start with the idea itself.
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 RETURN FORMAT
@@ -128,11 +152,17 @@ Return exactly ONE valid JSON object:
       "type": "slide",
       "title": null,
       "slideRef": string,
-      "content": null
+      "content": ""
     },
     {
       "id": "b2",
       "type": "slide-explain",
+      "title": string | null,
+      "content": string
+    },
+    {
+      "id": "b3",
+      "type": "explain",
       "title": string | null,
       "content": string
     }
@@ -143,8 +173,9 @@ Return exactly ONE valid JSON object:
 }
 
 Rules:
-- "blocks" must contain exactly two entries in the order shown: slide then slide-explain.
+- "blocks" must contain exactly three entries in the order shown: slide, slide-explain, explain.
 - "slideRef" must be a string (e.g. "3" or "3-5"). Never null or a number.
+- slide "content" must be an empty string "".
 - "starterCode", "expectedAction", and "validationNote" must be empty strings.
 - Do not return markdown.
 - Do not wrap the JSON in code fences.
