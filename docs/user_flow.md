@@ -11,113 +11,139 @@ On load, the app checks `localStorage` for a saved draft under the key `spl_less
 - **If a draft exists:** restores all state — form values, lesson structure, lesson content, selected step, and which screen was active. The user resumes where they left off.
 - **If no draft:** starts on Screen 1 with an empty form.
 
+**Caveat:** A draft saved while on Screen 2 will reopen Screen 2 on reload. This can be unexpected if the user intended to start fresh. The draft can be cleared by triggering a new generation (which removes the stale draft from localStorage automatically).
+
 ---
 
-## Screen 1 — Lesson Structure Builder
+## Screen 1 — Module Structure Builder
 
 ### Layout
 
 Two columns:
-- **Left (fixed 360px):** `LessonInputForm` — the input form
+- **Left (fixed 360px):** `LessonInputForm` — module setup inputs
 - **Right (flex):** `LessonStructurePreview` — the editable step list
 
 ### Step-by-step flow
 
-**1. Fill in the form**
+**1. Fill in the module setup form**
 
-The user fills in three fields:
+The user fills in four fields:
 - Course Name (text input)
 - Module Name (text input)
+- Lesson Format (dropdown): **Programming** | Guided Tool Workflow | Concept & Application
 - Sub-topics (textarea, one topic per line)
 
-The "Generate Structure Preview" button is disabled until all three fields have content. Keyboard shortcut: ⌘+Enter (or Ctrl+Enter) submits the form.
+The "Generate Structure Preview" button is disabled until Course Name, Module Name, and Sub-topics all have content. Lesson Format has a default (`Programming`) and does not block generation. Keyboard shortcut: ⌘+Enter (or Ctrl+Enter) submits the form.
 
 **2. Generate the structure**
 
 Clicking "Generate Structure Preview" calls `generateLessonStructure()` in `lessonStructureService.js`, which sends `POST /api/generate-structure` to the Express backend. The backend calls OpenAI (or returns mock data if `USE_MOCK=true`). While the request is in flight, `isGenerating` is `true` — the button is disabled and a loading indicator is shown. If the request fails, `generationError` is set and an error message is displayed.
 
-On success, the response is normalized into one `LessonStructure` step per returned item. Each step gets:
+On success, the response is normalized into a `LessonStructure` step per returned item. Each step gets:
 - A unique `id`
 - A `stepNumber` (1-based)
-- A `title`
-- A `goal` string
-- A `coveredSubtopics` array
+- `stepType: 'lesson'`
+- A `title`, `goal`, and `coveredSubtopics` array
 
 The right panel updates immediately to show the editable step cards.
 
 **3. Edit the structure (inline)**
 
-The step cards are always editable — no mode switch required. Each card has:
+The step cards are always editable — no mode switch required. Each card header shows:
 
 | Element | Behavior |
 |---|---|
 | Step number badge | Display only. Updates automatically after reorder or delete. |
-| Title input | Large text field in the card header. Edit directly. |
+| Step type badge | Color-coded pill showing the step type (e.g. LESSON, LAB FILES, EXTERNAL LAB). |
+| Title input | Large text field. Edit directly. |
 | ↑ button | Swaps this step with the one above. Disabled on the first step. |
 | ↓ button | Swaps this step with the one below. Disabled on the last step. |
 | × button | Deletes this step. Steps below renumber automatically. Turns red on hover. |
-| Goal field | Short text input describing the learning outcome. |
-| Topics field | Comma-separated text input. Parsed into an array; displayed as-is while typing. |
+
+The card body varies by step type:
+
+**`lesson` steps:**
+- Goal field (text input): learning outcome
+- Topics field (text input, comma-separated): parsed into an array; displayed as-is while typing
+
+**`downloadable_lab_files` steps:**
+- Description (text input)
+- Files: disabled placeholder input ("File upload — coming soon")
+
+**`starter_code_file` steps:**
+- Description (text input)
+- Starter Code: disabled placeholder input
+- Problem Statement: disabled placeholder input (optional)
+
+**`external_lab_link` steps:**
+- Description (text input)
+- Lab Link: URL input
 
 **4. Add a step**
 
-A dashed "+ Add Step" button below the card list appends a blank step at the end.
+Clicking "Add Step" toggles an inline type picker showing four options:
+
+| Option | Creates |
+|---|---|
+| Lesson | A blank `lesson` step (can be opened in Screen 2 for AI-generated content) |
+| Lab Files | A `downloadable_lab_files` step |
+| Starter Code | A `starter_code_file` step |
+| External Lab | An `external_lab_link` step |
+
+Clicking a type option creates the step and closes the picker. Clicking "Add Step" again while the picker is open collapses it without adding a step.
 
 **5. Re-generate**
 
-The user can change the sub-topics in the form and click "Generate Structure Preview" again. This **replaces** the entire structure. Any manual edits to step cards are lost.
+The user can change the sub-topics in the form and click "Generate Structure Preview" again. A confirmation prompt is shown when a structure already exists. Confirming **replaces** the entire structure. Any manual edits to step cards are lost.
 
 **6. Proceed to Screen 2**
 
-Clicking "✨ Generate Lesson Content →" calls `generateLessonContent()` in `mockGeneration.js`, which produces one `LessonContent` object per structure step. The app navigates to Screen 2 and auto-selects the first step.
+Clicking "✨ Generate Lesson Content →" calls `generateAllLessonContent()` in `lessonContentService.js`, which makes one `POST /api/generate-content` call per step. A confirmation prompt is shown if lesson content already exists in Screen 2. The app navigates to Screen 2 and auto-selects the first step.
+
+**Note:** Currently, AI content is generated for all steps regardless of step type. Non-lesson step types will be excluded from generation in a future slice.
 
 ---
 
-## Screen 2 — Lesson Authoring View
+## Screen 2 — Step Authoring View
 
 ### Layout
 
 Three columns:
 - **Left sidebar (224px):** step list navigation
-- **Center panel (flex):** Instruction Panel editor
-- **Right panel (flex):** Starter Code editor (dark theme)
+- **Center panel (flex):** instruction panel (view/edit)
+- **Right panel (flex):** code editor panel (dark theme)
 
 The header shows a breadcrumb (`Course Name › Module Name`), the SaveStatus indicator, a Save Draft button, and a "← Back to Builder" button.
 
 ### View mode vs Edit mode
 
-Screen 2 opens in **view mode** by default. The instruction panel renders lesson content as readable prose — no textareas, no nested scroll areas. The starter code is shown in a read-only dark block. The overall page scrolls naturally.
+Screen 2 opens in **view mode** by default. The instruction panel renders lesson content as readable blocks — no textareas, no nested scroll areas. The page scrolls naturally.
 
-Clicking the **Edit** button (top-right of the instruction panel) enters **edit mode** for the currently selected step. Clicking **Save** keeps changes and returns to view mode. Clicking **Cancel** discards in-progress edits and returns to view mode. Switching to a different step while in edit mode automatically cancels in-progress edits (same behavior as Cancel).
+Clicking the **Edit** button (top-right of the instruction panel) enters **edit mode** for the currently selected step. Clicking **Save** keeps changes and returns to view mode. Clicking **Cancel** discards in-progress edits and returns to view mode. Switching to a different step while in edit mode automatically cancels in-progress edits.
 
 ### Step-by-step flow
 
 **1. Select a step**
 
-Click any step in the left sidebar to load its content into the view panel. The active step is highlighted with a blue background and a filled blue number badge. Steps with unsaved changes show a small amber dot.
+Click any step in the left sidebar to load its content into the view panel. The active step is highlighted with a blue background. Steps with unsaved changes show a small amber dot.
 
-**2. Edit instruction content (center panel)**
+**2. View / edit lesson content**
 
-Click **Edit** in the panel header to enter edit mode. Seven fields, all editable textareas or inputs:
-- **Title** — single-line text input (also controls the step's name in the sidebar)
-- **Explanation** — multi-line textarea for the teaching narrative: why the concept matters, how it works, rules, common mistakes
-- **Code Example** — short textarea for an annotated 4–8 line snippet illustrating the concept; distinct from the full starter code
-- **Task** — multi-line textarea with the specific numbered actions the learner must complete; action-focused only
-- **Hint** — textarea for a nudge shown when the learner is stuck
-- **Expected Action** — textarea describing what the learner must do to complete the step (used by future validation)
-- **Validation Note** — textarea with guidance for the validator (not shown to the learner)
-
-Each keystroke immediately updates that step's `LessonContent` entry in app state and marks the step as having unsaved changes.
+For `lesson` steps with AI-generated content, the instruction panel shows blocks in sequence. In edit mode, each block becomes an editable card (`BlockEditor`) with title, type label, content textarea, and a delete button. New blocks can be added via type buttons at the bottom of the editor (EXPLAIN, CODE, CHECK, TASK, HINT).
 
 **3. Edit starter code (right panel)**
 
-A dark-themed monospace `<textarea>` labelled `starter_code.py`. The Tab key inserts 4 spaces instead of moving focus. All other text editing is standard. Changes update app state immediately.
+A dark-themed monospace `<textarea>` for the step's starter code. The Tab key inserts 4 spaces. Changes update app state immediately. The panel is read-only in view mode.
 
-**4. Switch steps**
+**4. Non-lesson steps in Screen 2**
 
-Clicking a different step in the sidebar loads its content into both panels. Edits to the previous step are already in app state — nothing is lost by switching.
+Non-lesson steps (`downloadable_lab_files`, `starter_code_file`, `external_lab_link`) currently render using the same view as lesson steps. **This is a known gap** — per-type Screen 2 rendering is the next implementation slice.
 
-**5. Save Draft**
+**5. Switch steps**
+
+Clicking a different step in the sidebar loads its content. Edits to the previous step are already in app state — nothing is lost by switching.
+
+**6. Save Draft**
 
 Clicking "Save Draft" in the header:
 1. Sets save status to "Saving…" (blue pulsing dot)
@@ -126,9 +152,9 @@ Clicking "Save Draft" in the header:
 
 The Save Draft button is disabled when status is already "Saved" or "Saving…".
 
-**6. Return to Screen 1**
+**7. Return to Screen 1**
 
-Clicking "← Back to Builder" returns to Screen 1. The lesson structure and all authoring content remain in app state. Unsaved content changes are not lost (they are in app state, just not yet persisted to localStorage).
+Clicking "← Back to Builder" returns to Screen 1. The lesson structure and all authoring content remain in app state.
 
 ---
 
@@ -150,13 +176,14 @@ Any edit to any field in Screen 2 sets status to `unsaved`. Save Draft sets it t
 
 ```
 App load
-  └── localStorage has draft? → restore all state
+  └── localStorage has draft? → restore all state (including screen)
   └── no draft → Screen 1, empty form
 
 Screen 1
-  ├── Fill form → Submit → lessonStructure populated → editable cards appear
+  ├── Fill form → Submit → lessonStructure populated → editable step cards appear
   ├── Edit cards → lessonStructure updated in place (immediate)
-  └── Generate → lessonContent generated → navigate to Screen 2
+  ├── Add Step → type picker → choose type → new step appended
+  └── Generate Lesson Content → lessonContent generated → navigate to Screen 2
 
 Screen 2
   ├── Select step → selectedStepId updated → panels re-render

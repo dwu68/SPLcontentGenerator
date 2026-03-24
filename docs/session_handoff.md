@@ -1,5 +1,152 @@
 # Session Handoff — SPL Content Generator
 
+---
+
+**ID** 16
+**Date:** 2026-03-23
+**Session scope:** Product direction update; lessonFormat + stepType foundation; Add Step type picker; non-lesson step scaffolding
+
+---
+
+## Product Direction Change (effective this session)
+
+The product goal has been updated. This tool is no longer scoped to programming-only lessons. The new direction:
+
+**Goal:** A flexible internal authoring interface for structured self-paced technical modules, supporting:
+- Programming (`code_lab`)
+- Guided Tool Workflow (`guided_tool_workflow`)
+- Concept & Application (`concept_application`)
+
+**Scope decisions (firm):**
+- Monaco / CodeMirror — **out of scope**
+- Export JSON / output folder — **de-prioritized** (built, but not maintained going forward)
+- Backend persistence — **deferred to another team**; localStorage only for now
+- Database / upload pipeline — **not in scope**
+- PPT / slides ingestion — UI placeholder deferred; not implemented
+
+The 2-screen workflow (Screen 1 defines steps, Screen 2 authors content) remains unchanged.
+
+---
+
+## What Was Completed This Session
+
+### 1. `lessonFormat` added to module state
+
+`App.jsx`: new `lessonFormat` state, default `'code_lab'`. Persisted in localStorage draft under the `lessonFormat` key. Restored on mount.
+
+`LessonInputForm.jsx`: new Lesson Format dropdown (Course Name → Module Name → **Lesson Format** → Sub-topics). Three options defined in `LESSON_FORMAT_OPTIONS`:
+
+| UI label | Internal value |
+|---|---|
+| Programming | `code_lab` |
+| Guided Tool Workflow | `guided_tool_workflow` |
+| Concept & Application | `concept_application` |
+
+### 2. `stepType` added to all steps
+
+`lessonStructureService.js` — `normalizeStructure()`: every AI-generated step now includes `stepType: 'lesson'`.
+
+`App.jsx` — `handleAddStep(stepType)`: signature changed from no-args to accept a `stepType` parameter. Creates type-appropriate step shapes:
+
+| stepType | Additional fields added |
+|---|---|
+| `lesson` | `goal: ''`, `coveredSubtopics: []` |
+| `downloadable_lab_files` | `description: ''` |
+| `starter_code_file` | `description: ''` |
+| `external_lab_link` | `description: ''`, `externalLabLink: ''` |
+
+### 3. Add Step type picker (Screen 1)
+
+`LessonStructurePreview.jsx` — major update:
+- "Add Step" button now toggles an inline `StepTypePicker` component showing four options: Lesson / Lab Files / Starter Code / External Lab
+- Clicking a type creates the step and closes the picker
+- `StepBuilderCard` split into: common header (step number badge + **step type badge** + title + controls) + four type-specific body components:
+  - `LessonStepFields` — Goal + Topics (unchanged behavior, `topicsStr`/`lastSentCanonicalRef` logic preserved)
+  - `DownloadableLabFilesFields` — Description + disabled file upload placeholder
+  - `StarterCodeFileFields` — Description + two disabled file upload placeholders
+  - `ExternalLabLinkFields` — Description + URL input
+
+`App.css` — new classes: `.add-step-area`, `.step-type-picker`, `.step-type-picker-label`, `.step-type-picker-options`, `.step-type-picker-btn`, `.step-type-badge` (with four color variants), `.step-field-input--placeholder`.
+
+### 4. UI label fix
+
+`LessonInputForm.jsx`: field label column width widened from `52px` to `88px` so multi-word labels (Starter Code, Problem Statement) display correctly.
+
+### 5. Lesson format label
+
+The UI-facing label for `code_lab` was changed from "Code Lab" to "Programming". The internal value (`code_lab`) is unchanged.
+
+---
+
+## Current Architecture State
+
+```
+App.jsx
+  screen / courseName / moduleName / lessonFormat / subtopics
+  lessonStructure: Step[]          ← each step has stepType
+  lessonContent:   LessonContent[] ← block-based; only for lesson steps today
+  selectedStepId / dirtyStepIds / saveStatus / isGenerating / ...
+
+Screen 1
+  LessonInputForm          ← courseName, moduleName, lessonFormat, subtopics, generate button
+  LessonStructurePreview   ← step cards (type-aware header + body) + Add Step picker
+
+Screen 2
+  LessonAuthoringView      ← sidebar + instruction panel (blocks view/edit) + code panel
+    BlockEditor            ← edit mode for block-based lesson steps
+    InstructionPanelEditor ← flat-field fallback (legacy)
+    CodeEditorPanel        ← starterCode textarea
+
+Services
+  lessonStructureService.js  ← POST /api/generate-structure
+  lessonContentService.js    ← POST /api/generate-content (one call per step)
+
+Server
+  server/index.js            ← Express proxy; holds API key
+  server/prompts/            ← prompt builders (structure + content)
+  server/lib/promptContext.js
+```
+
+---
+
+## What Is Intentionally Not Done Yet
+
+| Item | Reason |
+|---|---|
+| Screen 2 rendering for non-lesson step types | Next slice — non-lesson steps currently open the lesson panel, which shows an empty state |
+| Filtering non-lesson steps from AI generation | Next slice — `generateAllLessonContent` still runs for all steps |
+| Forwarding `lessonFormat` to AI prompts | After Screen 2 non-lesson fix — value is in state, not yet sent to backend |
+| Real file upload (lab files, starter code) | Deferred — disabled placeholder inputs only |
+| Reference materials area (slides, module guidance) | Deferred |
+| Backend persistence | Deferred to another team |
+| Export JSON workflow | De-prioritized |
+| Monaco / CodeMirror | Out of scope |
+| `starterCode` → `workingMaterial` rename | Deferred — would touch generation, normalization, and Screen 2 rendering |
+
+---
+
+## Known Caveats
+
+- **localStorage draft can reopen Screen 2 unexpectedly.** A saved draft with `"screen": "authoring"` restores Screen 2 on reload. If the user has moved to a new lesson without saving, the old Screen 2 state will reappear. Fix: trigger a new generation (which clears the draft) or wait for backend persistence to replace localStorage.
+- **`code_lab` vs "Programming" mismatch.** The internal value is still `code_lab`. The UI shows "Programming". These should be reconciled when `lessonFormat` is first forwarded to AI prompts.
+- **`starterCode` field name.** Not yet renamed. The preferred future name for lesson step working material is `workingMaterial`. The `starter_code_file` step type still uses `starterCodeFile` / `starterCodeText` (these are fine as-is for that type).
+- **Non-lesson steps in Screen 2.** Opening a non-lesson step in Screen 2 renders the lesson block view, which will be empty or confusing. This is the most important gap to address next.
+
+---
+
+## Recommended Next Slice
+
+**Make Screen 2 step-type-aware for non-lesson steps.**
+
+The safest approach:
+1. In `LessonAuthoringView`, read `step.stepType` from `lessonContent` (or fall back to `lessonStructure` if the step has no `lessonContent` entry).
+2. Branch the render: if `stepType === 'lesson'`, render current block view + code panel. For other types, render a simple read/edit view of the step's configured fields (description, URL, file reference note).
+3. Simultaneously, filter `generateAllLessonContent` in `App.jsx` to skip non-lesson steps so they never get a `lessonContent` entry.
+
+This slice keeps Screen 1 unchanged, does not touch AI prompts, and gives non-lesson steps a coherent Screen 2 experience.
+
+---
+
 **ID** 15
 **Date:** 2026-03-19
 **Session scope:** Prompt fixes, export feature, stale-draft bug, bullet list rendering

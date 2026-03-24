@@ -2,61 +2,75 @@
 
 ## What It Is
 
-An internal authoring tool for creating self-paced learning (SPL) lesson content in the style of Codecademy. It is designed to help course authors (data scientists, instructional designers, curriculum developers) rapidly structure and draft interactive coding lessons without writing raw content in JSON or a CMS.
+An internal authoring tool for creating structured self-paced technical learning (SPL) content. It is designed to help course authors — data scientists, instructional designers, curriculum developers — rapidly structure and draft interactive modules without writing raw content in JSON or a CMS.
+
+The tool is evolving beyond programming-only lessons. The intended final goal is a flexible internal authoring interface for multiple module types:
+- **Programming** (`code_lab`) — coding exercises with starter code and a working editor
+- **Guided Tool Workflow** (`guided_tool_workflow`) — step-by-step workflows using tools like Claude Code or GitHub Copilot
+- **Concept & Application** (`concept_application`) — AWS Cloud Practitioner-style conceptual and applied learning
 
 ## Who Uses It
 
 Internal teams producing SPL lesson content — primarily data science educators and instructional designers who know their subject matter but need tooling to translate it into structured, consistent lesson formats.
 
-## Current State (as of 2026-03-19)
+## Current State (as of 2026-03-23)
 
-Both screens are fully live with real AI generation (GPT-5.4). Screen 1 generates a step-by-step lesson structure; Screen 2 generates full lesson content for each step.
+Both screens are live with real AI generation (GPT-5.4). Screen 1 generates a step-by-step lesson structure from subtopics; Screen 2 generates block-based lesson content for each lesson step.
 
-Screen 2 uses a **block-based content model**: the AI returns an ordered `blocks[]` array (`explain`, `code`, `check`, `task`, `hint` types) plus `starterCode`, `expectedAction`, and `validationNote`. Blocks render as readable prose in view mode and are editable as individual cards in edit mode (`BlockEditor`).
+### What is live and working
 
-The check block supports a **reveal/hide answer** mechanic: the AI separates the question from the answer with `\n→ `, and the UI shows a "Show answer" toggle.
+- **Module setup** (Screen 1 left panel): Course Name, Module Name, Lesson Format dropdown (Programming / Guided Tool Workflow / Concept & Application), Sub-topics textarea
+- **Structure generation**: subtopics → AI-generated `lesson` steps via `POST /api/generate-structure`
+- **Step management** (Screen 1 right panel): always-editable step cards; reorder (↑/↓), delete (×), add (type picker)
+- **Step type support** (Screen 1): steps carry a `stepType` field. All AI-generated steps are `lesson`. Manually added steps can be one of four types:
+  - `lesson` — AI-generated block content in Screen 2
+  - `downloadable_lab_files` — description + file upload placeholder
+  - `starter_code_file` — description + file upload placeholder(s)
+  - `external_lab_link` — description + URL input
+- **Content generation** (Screen 2): block-based model for lesson steps — `blocks[]` array (`explain`, `code`, `check`, `task`, `hint` types) plus `starterCode`, `expectedAction`, `validationNote`
+- **View / edit mode** (Screen 2): view mode renders blocks as readable prose; edit mode opens `BlockEditor` per block
+- **Check block answer reveal**: question and answer separated by `\n→ `; "Show answer" toggle in view mode
+- **Explain block bullet lists**: `\n\n`-separated chunks where all lines start with `- ` render as `<ul>/<li>`
+- **Save Draft**: persists all state to `localStorage` (key: `spl_lesson_draft`); new generation clears stale draft
+- **Export JSON**: `POST /api/export` writes a timestamped file to `output/` *(de-prioritized — see scope note below)*
 
-Explain blocks support **bullet lists**: when the AI outputs a `\n\n`-separated chunk where every line starts with `- `, the renderer produces a proper `<ul>/<li>` list rather than a flat paragraph.
+### Scope decisions (current)
 
-**Export:** an Export JSON button in the Screen 2 header calls `POST /api/export` on the backend, which writes a timestamped JSON file to the `output/` folder at the project root. The export includes all steps with their blocks, starterCode, expectedAction, validationNote, stepGoal, stepTopics, and metadata.
-
-Persistence is still `localStorage` only (Save Draft). After a new generation, the previous draft is cleared from localStorage so a reload will not restore stale content.
+| Area | Status |
+|---|---|
+| Monaco / CodeMirror | **Not in scope** for current work |
+| Export JSON / output folder | **De-prioritized** — built but not actively maintained |
+| Backend persistence | **Deferred to another team** — localStorage only for now |
+| Database / upload pipeline | **Not in scope** for current work |
+| PPT / slides ingestion | **Placeholder only** — UI structure deferred |
+| Real file upload (lab files, starter code) | **Placeholder** — disabled inputs; not implemented |
 
 ---
 
 ## The Two Screens
 
-### Screen 1 — Lesson Structure Builder
+### Screen 1 — Module Structure Builder
 
-The author enters a course name, module name, and list of sub-topics. The app generates an editable lesson structure from those sub-topics — steps may be grouped or split as the AI sees fit. Cards are always editable inline — no separate edit mode. The author can add, delete, and reorder steps before clicking **"Generate Lesson Content →"** to proceed.
+The author fills in module-level details (course name, module name, lesson format) and a list of subtopics. Clicking **Generate Structure Preview** sends those subtopics to the AI and builds an editable list of `lesson` steps. The author can then add, delete, reorder steps, and manually add non-lesson steps (lab files, starter code, external links) before proceeding.
 
-### Screen 2 — Lesson Authoring View
+### Screen 2 — Step Authoring View
 
-For each step, the author edits the full lesson content: explanation (teaching narrative), code example (short annotated snippet), task instructions, hint, expected action, validation note, and starter code. A step sidebar tracks unsaved changes. **Save Draft** persists everything to `localStorage`.
+For each step, Screen 2 shows the generated or configured content. For `lesson` steps: block-based view with editable block cards. For non-lesson steps: Screen 2 currently still renders the lesson view (this is a known gap — per-type Screen 2 rendering is the next slice to implement).
 
 → See [user_flow.md](user_flow.md) for the complete step-by-step interaction detail.
 
 ---
 
-## What Is Mocked / Placeholder
-
-| Feature | Current state |
-|---|---|
-| Lesson structure generation | Live: `lessonStructureService.js` → `POST /api/generate-structure` → OpenAI (or mock if `USE_MOCK=true`) |
-| Lesson content generation | Live: `lessonContentService.js` → `POST /api/generate-content` → OpenAI (or mock if `USE_MOCK=true`). Block-based schema verified with GPT-5.4. |
-| learnerLevel / outputLanguage | Hardcoded to `'beginner'` / `'Python'` — no UI control yet. Passed as defaults in `generateAllLessonContent()` and exported in the JSON. |
-
----
-
 ## What Is Not Built Yet
 
-See [todo.md](todo.md) for the full prioritized backlog. Next items: delete dead code files, then backend persistence to replace localStorage.
+See [todo.md](todo.md) for the full prioritized backlog. The immediate next slice is Screen 2 step-type-awareness for non-lesson steps.
 
 ---
 
 ## Design Principles
 
-- **Authoring-first**: the structure is always editable — no separate view/edit modes
+- **Authoring-first**: the structure is always editable — no separate view/edit modes on Screen 1
 - **No-surprise saves**: changes are held in app state; nothing persists until Save Draft is clicked
 - **Integration-ready**: AI and persistence hooks are isolated and clearly marked in code
 - **Minimal dependencies**: no icon libraries, no UI component libraries — plain React + CSS
+- **Incremental expansion**: step types and lesson formats are added as foundations; Screen 2 rendering follows as a separate slice

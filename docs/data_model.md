@@ -11,15 +11,18 @@ All state lives in `App.jsx`. There is no external store, context, or reducer. T
 
 screen            : 'builder' | 'authoring'
 
-// Form inputs (Screen 1 left panel)
+// Module-level inputs (Screen 1 left panel)
 courseName        : string
 moduleName        : string
+lessonFormat      : 'code_lab' | 'guided_tool_workflow' | 'concept_application'
+                    // UI labels: 'Programming' | 'Guided Tool Workflow' | 'Concept & Application'
+                    // Default: 'code_lab'
 subtopics         : string   // raw textarea value, newline-separated
 
-// Lesson structure (Screen 1 right panel)
-lessonStructure   : LessonStructure[]
+// Module structure (Screen 1 right panel)
+lessonStructure   : Step[]
 
-// Lesson content (Screen 2)
+// Step content (Screen 2) — populated only for lesson steps
 lessonContent     : LessonContent[]
 selectedStepId    : string | null
 
@@ -35,28 +38,68 @@ titleValidationError : string | null  // set when generate is blocked by empty s
 
 ---
 
-## LessonStructure
+## Step (LessonStructure)
 
-Produced by `generateLessonStructure()`. Represents a single step in the lesson outline.
+Each entry in `lessonStructure[]` is a step. All steps share a common base; type-specific fields are present depending on `stepType`.
+
+### Common base fields (all step types)
 
 ```ts
 {
-  id               : string   // e.g. "step-1747382400000-0"
-  stepNumber       : number   // 1-based; auto-managed by App handlers
-  title            : string   // the step title
-  goal             : string   // learning goal ("Students will be able to…")
+  id         : string   // e.g. "step-1747382400000-0" or "step-new-{timestamp}"
+  stepNumber : number   // 1-based; auto-managed by App handlers
+  stepType   : 'lesson' | 'downloadable_lab_files' | 'starter_code_file' | 'external_lab_link'
+  title      : string
+}
+```
+
+### lesson step (additional fields)
+
+```ts
+{
+  goal             : string   // learning outcome ("Students will be able to…")
   coveredSubtopics : string[] // list of topic strings
 }
 ```
 
+All AI-generated steps are `lesson` steps. Manually added `lesson` steps are blank and can have content generated in Screen 2.
+
+### downloadable_lab_files step (additional fields)
+
+```ts
+{
+  description : string   // brief description of what the files contain
+  // files[] — not yet implemented; upload is a placeholder in Screen 1
+}
+```
+
+### starter_code_file step (additional fields)
+
+```ts
+{
+  description : string   // what the learner should do with the file
+  // starterCodeFile, starterCodeText — not yet implemented; upload is a placeholder
+  // problemStatementFile (optional) — not yet implemented
+}
+```
+
+### external_lab_link step (additional fields)
+
+```ts
+{
+  description    : string   // brief description of the external lab
+  externalLabLink: string   // URL to the external lab platform
+}
+```
+
 **How IDs are generated:**
-`step-${Date.now()}-${index}` on initial generation.
+`step-${Date.now()}-${index}` on AI generation.
 `step-new-${Date.now()}` when a step is added manually via "Add Step".
 
-**Who can modify it:**
-All mutations go through four handlers in `App.jsx`:
+**Who can modify lessonStructure:**
+All mutations go through handlers in `App.jsx`:
 - `handleUpdateStep(id, fields)` — merge partial fields into a step
-- `handleAddStep()` — append a blank step, renumber all
+- `handleAddStep(stepType)` — append a blank step of the given type, renumber all
 - `handleDeleteStep(id)` — remove by id, renumber all
 - `handleMoveStep(id, 'up' | 'down')` — swap adjacent steps, renumber all
 
@@ -64,25 +107,47 @@ All mutations go through four handlers in `App.jsx`:
 
 ## LessonContent
 
-Produced by `generateLessonContent(lessonStructure)`. Represents the authored content for a single step. IDs match the corresponding `LessonStructure` entry.
+Produced by `generateAllLessonContent(lessonStructure)` in `lessonContentService.js`. Currently only populated for `lesson` steps. IDs match the corresponding `lessonStructure` entry.
+
+**Note:** The runtime schema is block-based. The `LessonContent` object carries `blocks[]` as the primary content. The flat fields (`concept`, `codeExample`, `instructions`) are a legacy fallback — new content is generated in the block-based format only.
 
 ```ts
 {
-  id           : string   // same id as the LessonStructure step
-  stepNumber   : number   // same as LessonStructure step
-  title        : string   // step title; edits in Screen 2 are mirrored back to lessonStructure
-  concept      : string   // teaching narrative: why it matters, how it works, rules, common mistakes (UI label: "Explanation")
-  codeExample  : string   // short annotated snippet (4–8 lines) illustrating the concept; distinct from starterCode
-  instructions : string   // the specific task the learner must complete; action-focused only (UI label: "Task")
-  hint             : string   // optional nudge shown when the learner is stuck
-  starterCode      : string   // initial code shown in the code editor
-  expectedAction   : string   // what the learner must do to complete the step; used by future validation
-  validationNote   : string   // guidance for the validator (not shown to the learner)
+  id             : string     // same id as the Step
+  stepNumber     : number     // same as Step
+  title          : string     // step title; edits in Screen 2 mirror back to lessonStructure
+
+  // Block-based content (current schema)
+  blocks         : Block[]    // ordered content blocks; primary content model
+
+  // Supporting fields
+  starterCode    : string     // initial code shown in the right panel (code editor)
+                              // NOTE: not yet renamed; future preferred name is `workingMaterial`
+  expectedAction : string     // what the learner must do to complete the step
+  validationNote : string     // guidance for the validator (not shown to the learner)
+
+  // Legacy flat fields (fallback only — present on older saved drafts)
+  concept        : string     // teaching narrative (UI label: "Explanation")
+  codeExample    : string     // short annotated snippet
+  instructions   : string     // task steps (UI label: "Task")
+  hint           : string     // optional nudge for learners who are stuck
 }
 ```
 
-**Who can modify it:**
-`handleUpdateContent(stepId, fields)` in `App.jsx` — merges partial fields into the matching entry. Called on every keystroke from `InstructionPanelEditor` and `CodeEditorPanel`.
+### Block shape
+
+```ts
+{
+  id       : string
+  type     : 'explain' | 'code' | 'check' | 'task' | 'hint'
+  title    : string   // optional label shown above the block
+  content  : string
+  language : string   // code blocks only (e.g. 'python')
+}
+```
+
+**Who can modify LessonContent:**
+`handleUpdateContent(stepId, fields)` in `App.jsx` — merges partial fields into the matching entry. Called from `BlockEditor`, `InstructionPanelEditor`, and `CodeEditorPanel`.
 
 ---
 
@@ -90,31 +155,30 @@ Produced by `generateLessonContent(lessonStructure)`. Represents the authored co
 
 ```
 subtopics (raw string)
-  │  split('\n'), filter empty
+  │  split('\n'), filter empty → sent to POST /api/generate-structure
   ▼
-LessonStructure[]          ← user can add/edit/delete/reorder steps here
-  │  generateLessonContent()
+lessonStructure[]   — stepType: 'lesson' for all AI-generated steps
+  │  user may add non-lesson steps manually (no AI call for those)
+  │  generateAllLessonContent() — skips non-lesson steps (planned; currently all steps are lesson)
   ▼
-LessonContent[]            ← user authors content per step here
+lessonContent[]     — one entry per lesson step; block-based schema
 ```
 
-The two arrays share the same `id` values. `LessonContent` is a **full replacement** each time "Generate Lesson Content" is clicked — there is no merge or diff. Manual edits made in Screen 2 are lost if the user returns to Screen 1 and re-generates.
+The two arrays share the same `id` values. `lessonContent` is a **full replacement** each time "Generate Lesson Content →" is clicked — there is no merge or diff. Manual edits made in Screen 2 are lost if the user returns to Screen 1 and re-generates.
 
 ---
 
 ## coveredSubtopics — Local State Note
 
-In `StepBuilderCard` (inside `LessonStructurePreview.jsx`), the `coveredSubtopics` array is edited via a local `topicsStr` state variable (a comma-separated string). This prevents the array→string→array round-trip from resetting the cursor while the user types.
+In `LessonStepFields` (inside `LessonStructurePreview.jsx`), the `coveredSubtopics` array is edited via a local `topicsStr` state variable (a comma-separated string). This prevents the array→string→array round-trip from resetting the cursor while the user types.
 
 ```
-LessonStructure.coveredSubtopics : string[]   ← canonical (in App state)
-StepBuilderCard.topicsStr        : string     ← local, comma-separated
+Step.coveredSubtopics : string[]   ← canonical (in App state)
+LessonStepFields.topicsStr : string  ← local, comma-separated
   - initialized from coveredSubtopics.join(', ')
-  - resets via useEffect when step.id changes
+  - resets via lastSentCanonicalRef guard when external changes arrive
   - on change: parses to array → calls onUpdate → updates App state
 ```
-
-**Fixed (Phase 1):** `topicsStr` now uses a `lastSentCanonicalRef` guard that prevents user-typed round-trips from resetting the input while still syncing external changes. The previous limitation (reset only on `step.id` change) no longer applies.
 
 ---
 
@@ -133,18 +197,21 @@ StepBuilderCard.topicsStr        : string     ← local, comma-separated
   "screen": "builder | authoring",
   "courseName": "...",
   "moduleName": "...",
+  "lessonFormat": "code_lab | guided_tool_workflow | concept_application",
   "subtopics": "...",
-  "lessonStructure": [ "...LessonStructure[]" ],
-  "lessonContent":   [ "...LessonContent[]"  ],
+  "lessonStructure": [ "...Step[]" ],
+  "lessonContent":   [ "...LessonContent[]" ],
   "selectedStepId":  "step-..."
 }
 ```
 
 `dirtyStepIds` and `saveStatus` are **not** persisted — they are transient UI state and reset to `new Set()` / `'saved'` after a successful save.
 
+**Caveat:** A saved draft that includes Screen 2 (`"screen": "authoring"`) will reopen Screen 2 on page reload. This can surface unexpected state (e.g. a draft from a previous lesson) if the user has started a new session. Draft restore logic should be reviewed when backend persistence is added.
+
 ---
 
-## Future: Backend Persistence
+## Backend Persistence (deferred — another team)
 
 The localStorage payload is the natural body for a backend API call. The swap in `handleSaveDraft()` is one line:
 
@@ -156,21 +223,4 @@ localStorage.setItem(STORAGE_KEY, JSON.stringify(data))
 await fetch('/api/lessons', { method: 'POST', body: JSON.stringify(data) })
 ```
 
-No state shape changes are required. `expectedAction` and `validationNote` are now live fields in `LessonContent` and are included in the payload automatically.
-
----
-
-## Future: JSON Export Shape
-
-```json
-{
-  "meta": {
-    "courseName": "...",
-    "moduleName": "..."
-  },
-  "lessonStructure": [ "...LessonStructure[]" ],
-  "lessonContent":   [ "...LessonContent[]"  ]
-}
-```
-
-The data is already in this shape in App state at all times. No structural changes are needed to add an export button.
+No state shape changes are required for the swap. `lessonFormat` and `stepType` are already in the payload.

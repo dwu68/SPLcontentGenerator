@@ -1,87 +1,95 @@
 # Todo — SPL Content Generator
 
-Backlog in priority order. Items marked ✅ are complete. Items marked 🔲 are not started.
+Backlog in priority order. Items marked ✅ are complete. Items marked 🔲 are not started. Items marked ~~strikethrough~~ are de-prioritized or out of scope.
 
 ---
 
 ## Phase 0 — Repo Hygiene & Cleanup
 
 - ✅ Create `.gitignore` — exclude `node_modules/`, `dist/`, `.DS_Store`, `*.local`
-- ✅ **Delete `src/components/LessonStructureEditor.jsx`** — dead code, not imported anywhere; superseded when the edit-mode toggle was removed in Session 2
+- ✅ Delete `src/components/LessonStructureEditor.jsx` — dead code
+- 🔲 Delete `src/utils/mockGeneration.js` — dead code; nothing imports it; mock behavior is server-side
 
 ---
 
 ## Phase 1 — Data Model & UI Stabilization
 
-Tighten up the current implementation before adding new capabilities.
-
-- ✅ **Add `expectedAction` and `validationNote` to `LessonContent`** — fields added to `generateLessonContent()` in `mockGeneration.js` and exposed as editable textareas in `InstructionPanelEditor`
-- ✅ **Add empty-title validation on Screen 1** — warn (or block) if any step has a blank title before "Generate Lesson Content →" is clicked
-- ✅ **Add re-generation confirmation on Screen 1** — clicking "Generate Structure Preview" when a structure already exists silently replaces all edits; show a confirmation prompt
-- ✅ **Add re-generation confirmation on Screen 2** — navigating back to Screen 1 and clicking "Generate Lesson Content →" silently discards all Screen 2 edits; show a confirmation prompt
-- ✅ **Fix `coveredSubtopics` local state drift** — `StepBuilderCard.topicsStr` resets only on `step.id` change; make it also respond to `coveredSubtopics` content changes so future bulk-edit or undo won't break it
-- ✅ **Add `codeExample` field to `LessonContent`** — short annotated snippet (4–8 lines) illustrating the concept; separate from the full `starterCode` block; relabeled `concept` → "Explanation" and `instructions` → "Task" in the UI
-- ✅ **Screen 2 view/edit mode** — default is a readable lesson page (prose blocks, natural scroll, no nested textareas); Edit/Save/Cancel controls in the instruction panel header; Cancel restores a snapshot; switching steps while editing silently cancels
+- ✅ Add `expectedAction` and `validationNote` to `LessonContent`
+- ✅ Add empty-title validation on Screen 1
+- ✅ Add re-generation confirmation on Screen 1
+- ✅ Add re-generation confirmation on Screen 2
+- ✅ Fix `coveredSubtopics` local state drift
+- ✅ Add `codeExample` field to `LessonContent`
+- ✅ Screen 2 view/edit mode
 
 ---
 
 ## Phase 2 — AI Integration
 
-**Prerequisite:** OpenAI API key. Add to `.env` (see `.env.example`).
-
 - ✅ Scaffold Screen 1 service layer (`src/services/lessonStructureService.js`)
 - ✅ Add Express backend proxy (`server/index.js`) with `POST /api/generate-structure`
 - ✅ Wire Vite dev proxy (`/api` → `http://localhost:3001`)
 - ✅ Add mock fallback behind server-side `USE_MOCK` env flag
-- ✅ **Test and verify the real OpenAI path end-to-end**
-  - Verified with `gpt-5.4`; response shape `[{ title, goal, coveredSubtopics }]` matched `normalizeStructure()` contract exactly
-  - Real AI content confirmed (not mock boilerplate); no code changes required
-  - `USE_MOCK=true` path confirmed working (validated in Session 7)
-- ✅ **Server-side prompt infrastructure** — all prompt text isolated in `server/prompts/`; `server/index.js` imports builders, no inline prompt strings; `server/lib/promptContext.js` normalizes inputs
-- ✅ **Screen 2: wire real AI content generation**
-  - `POST /api/generate-content` added to `server/index.js` (one call per step; mock + real paths)
-  - `src/services/lessonContentService.js` created (same three-layer pattern as Screen 1)
-  - `App.jsx` updated to import and `await` `generateAllLessonContent`
-- ✅ **Verify Screen 2 real AI generation end-to-end** — confirmed live with GPT-5.4; block-based schema (`blocks[]`, `starterCode`, `expectedAction`, `validationNote`) working correctly; multiple live generations completed across sessions
-- ✅ Add `isGenerating` boolean to `App.jsx` state
-- ✅ Disable "Generate" buttons and show a loading indicator while generation is in progress
-- ✅ Add error state: surface AI generation failures with a clear message
+- ✅ Test and verify the real OpenAI path end-to-end (verified with `gpt-5.4`)
+- ✅ Server-side prompt infrastructure (`server/prompts/`, `server/lib/promptContext.js`)
+- ✅ Screen 2: wire real AI content generation (`POST /api/generate-content`, `lessonContentService.js`)
+- ✅ Verify Screen 2 real AI generation end-to-end
+- ✅ Add `isGenerating` boolean and loading indicator
+- ✅ Add error state for AI generation failures
 
 ---
 
-## Phase 3 — Export & Persistence
+## Phase 3 — Multi-Format & Step Type Foundation
 
-- ✅ **Add JSON export** — "Export JSON" button in Screen 2 header; calls `POST /api/export`; backend writes `output/{slug-course}-{slug-module}-MMDD-HHMM.json`; `output/` folder created automatically; payload includes all steps with blocks, starterCode, expectedAction, validationNote, stepGoal, stepTopics, and metadata
-- 🔲 Replace `localStorage.setItem` in `handleSaveDraft()` with a backend API call — hook is marked `// [PERSIST HOOK]` in `App.jsx`
-- 🔲 Load draft from backend API on mount (alongside or replacing the localStorage restore)
-- 🔲 Support named / multiple drafts — currently only one draft slot exists in `localStorage`
+Work done in this phase establishes the module format and per-step type model.
+
+- ✅ **Add `lessonFormat` to module state** — `'code_lab' | 'guided_tool_workflow' | 'concept_application'`; UI dropdown shows "Programming / Guided Tool Workflow / Concept & Application"; persisted in localStorage draft
+- ✅ **Add `stepType` to all steps** — AI-generated steps default to `'lesson'`; manually added steps can be `'lesson'`, `'downloadable_lab_files'`, `'starter_code_file'`, or `'external_lab_link'`
+- ✅ **Add Step type picker** — clicking "Add Step" shows an inline type picker with four options; step type badge shown on each card header
+- ✅ **Non-lesson step fields in Screen 1** — minimal type-specific fields per step type; file upload inputs are disabled placeholders
+- 🔲 **Screen 2 step-type-awareness** — non-lesson steps should render their configured content (description, link, file reference), not the lesson block view
+- 🔲 **Exclude non-lesson steps from AI generation** — `handleGenerate` currently calls `generateAllLessonContent` for every step; should skip non-lesson step types
+- 🔲 **Pass `lessonFormat` to AI generation** — `lessonFormat` is in state but not yet forwarded to `POST /api/generate-structure` or `POST /api/generate-content`; prompts should use it to adjust generation style
+- 🔲 **Reference materials area on Screen 1** — slides upload placeholder + optional guidance textarea (module-level grounding for AI generation)
+- 🔲 **Per-lesson-step optional guidance field** — a free-text guidance field on individual `lesson` step cards in Screen 1
 
 ---
 
-## Phase 4 — Screen Improvements
+## Phase 4 — Persistence (Deferred — Another Team)
+
+Backend persistence is out of scope for the current implementation team. The localStorage hook is marked `[PERSIST HOOK]` in `App.jsx`.
+
+- ~~Replace `localStorage.setItem` in `handleSaveDraft()` with a backend API call~~
+- ~~Load draft from backend API on mount~~
+- ~~Support named / multiple drafts~~
+
+These items will be picked up by the team handling backend integration.
+
+---
+
+## Phase 5 — Screen Improvements
 
 - 🔲 Drag-and-drop step reordering on Screen 1 (alternative to ↑/↓ buttons)
-- 🔲 Replace code textarea with Monaco or CodeMirror for syntax highlighting and language selection
+- ~~Replace code textarea with Monaco or CodeMirror~~ — **out of scope**
 - 🔲 Copy-to-clipboard on individual instruction fields
-- 🔲 Support multiple code files per step (currently one `starterCode` string per step)
 - 🔲 Undo / redo for Screen 2 content edits
 
 ---
 
-## Phase 5 — Multi-Lesson Management
+## Phase 6 — Multi-Module Management
 
-- 🔲 Lesson list screen — browse, name, duplicate, and delete lessons
-- 🔲 Multiple named draft slots (localStorage or backend)
-- 🔲 Lesson slug / unique identifier (currently only course + module name)
+- 🔲 Module list screen — browse, name, duplicate, and delete modules
+- 🔲 Multiple named draft slots (requires backend)
+- 🔲 Module slug / unique identifier
 
 ---
 
-## Phase 6 — Polish & Accessibility
+## Phase 7 — Polish & Accessibility
 
-- 🔲 `aria-live` region to announce step position after ↑/↓ reorder
-- 🔲 Keyboard navigation in the step sidebar (arrow keys between steps)
-- 🔲 Responsive / mobile layout (currently desktop-width only)
-- 🔲 Dark mode (CSS variables are in place; a dark color scheme variant is needed)
+- 🔲 `aria-live` region for step reorder announcements
+- 🔲 Keyboard navigation in the step sidebar
+- 🔲 Responsive / mobile layout
+- 🔲 Dark mode
 - 🔲 Duplicate step title warning
 
 ---
@@ -90,12 +98,14 @@ Tighten up the current implementation before adding new capabilities.
 
 | Item | Severity | Detail |
 |---|---|---|
-| ~~`coveredSubtopics` local state can drift~~ | ~~Low~~ | Fixed — `lastSentCanonicalRef` prevents user-typed round-trips from resetting the input while still syncing external changes |
-| All state in one `App.jsx` | Low | Fine for two screens; a third screen would warrant extracting contexts |
-| ~~Generation errors use fixed messages~~ | ~~Low~~ | Fixed — `handleSubmit` catch block now uses `err.message`; server returns specific error text for 400/500 responses |
-| `isGenerating` loading state invisible during mock use | Info | Mock path (`USE_MOCK=true`) is synchronous on the server — label flashes one tick; becomes visible on the real OpenAI path due to network latency |
+| Non-lesson steps render as lesson view in Screen 2 | Medium | `LessonAuthoringView` does not yet branch by `stepType`. Non-lesson steps open in Screen 2 showing an empty lesson panel. Next implementation slice. |
+| `lessonFormat` not yet forwarded to AI generation | Low | `lessonFormat` is in state and persisted but not yet passed to `POST /api/generate-structure` or `POST /api/generate-content`. Prompts ignore it for now. |
+| AI generation runs for all steps regardless of type | Low | `generateAllLessonContent` is called for every step; non-lesson steps will fail or produce nonsense content if navigated to. Next slice will filter to `lesson` steps only. |
+| localStorage can restore stale Screen 2 state | Low | A saved draft with `"screen": "authoring"` will reopen Screen 2 on reload. Can surface old lesson content unexpectedly. Clear by triggering a new generation. |
+| `code_lab` internal value vs "Programming" UI label | Info | The stored/internal value is still `code_lab`. The UI shows "Programming". These should be reconciled when the value is first used meaningfully (e.g. passed to AI prompts). |
+| `starterCode` field not yet renamed | Info | The field is called `starterCode` in `LessonContent`. The intended future name for lesson steps is `workingMaterial`. Rename deferred to avoid disrupting the current generation flow. |
 | `src/utils/mockGeneration.js` is dead code | Low | No file imports it — mock behavior is server-side. Safe to delete. |
-| `src/components/LessonStructureEditor.jsx` is dead code | Low | Dead since Session 2 — never imported. Safe to delete. |
-| `lessonContentService.js` JSDoc and `CONTENT_FIELDS` describe old flat schema | Low | Runtime behavior is correct (normalization handles both schemas). The comments reference `concept`, `codeExample`, `instructions` etc. — these should be updated to reflect the current block-based schema. |
-| check block reveal/hide only works on newly generated content | Info | The `→ ` separator rule was added to the prompt in Session 13. Existing saved drafts generated before this session will not have the separator and will render as flat text with no reveal button. Regenerate to get the new format. |
-| Bullet list rendering only applies to `\n\n`-separated chunks | Info | Bullet lists embedded inside a prose sentence (no surrounding blank lines) will still render as a flat paragraph. The prompt now instructs the model to separate lists with blank lines; regenerate to get proper rendering. |
+| `lessonContentService.js` JSDoc and `CONTENT_FIELDS` describe old flat schema | Low | Runtime behavior is correct. Comments reference flat fields (`concept`, `codeExample`, etc.) instead of the current block-based schema. Should be updated. |
+| Check block reveal/hide only works on newly generated content | Info | The `→ ` separator rule was added to the prompt in Session 13. Existing saved drafts will not have the separator. Regenerate to get the new format. |
+| Bullet list rendering only applies to `\n\n`-separated chunks | Info | Bullets embedded inside prose without surrounding blank lines render as flat paragraphs. Regenerate to get proper rendering. |
+| All state in one `App.jsx` | Low | Fine for two screens; a third screen would warrant extracting contexts. |

@@ -739,7 +739,7 @@ body {
   text-transform: uppercase;
   letter-spacing: 0.06em;
   color: var(--color-text-muted);
-  width: 52px;
+  width: 88px;
   flex-shrink: 0;
   /* Visually align with the input text */
   padding-top: 1px;
