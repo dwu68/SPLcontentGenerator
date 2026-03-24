@@ -12,20 +12,26 @@ import React from 'react'
  *                                                LessonAuthoringView as:
  *                                                (newBlocks) => onUpdateContent(step.id, { blocks: newBlocks })
  *
- * Block shape:
+ * Block shape (code_lab):
  *   { id, type, title?, content, language? }
  *   type: 'explain' | 'code' | 'check' | 'task' | 'hint'
+ *
+ * Block shape (guided_tool_workflow):
+ *   slide:        { id, type: 'slide', title?, slideRef, content? }
+ *   slide-explain: { id, type: 'slide-explain', title?, content }
  */
 
 const TYPE_LABELS = {
-  explain: 'EXPLAIN',
-  code:    'CODE',
-  check:   'CHECK',
-  task:    'TASK',
-  hint:    'HINT',
+  explain:       'EXPLAIN',
+  code:          'CODE',
+  check:         'CHECK',
+  task:          'TASK',
+  hint:          'HINT',
+  slide:         'SLIDE',
+  'slide-explain': 'SLIDE EXPLAIN',
 }
 
-const ADD_TYPES = ['explain', 'code', 'check', 'task', 'hint']
+const ADD_TYPES = ['explain', 'code', 'check', 'task', 'hint', 'slide', 'slide-explain']
 
 // ---------------------------------------------------------------------------
 // BlockEditor
@@ -46,7 +52,8 @@ function BlockEditor({ blocks, onUpdate }) {
       type,
       title: '',
       content: '',
-      ...(type === 'code' ? { language: 'python' } : {}),
+      ...(type === 'code'  ? { language: 'python' } : {}),
+      ...(type === 'slide' ? { slideRef: '' }        : {}),
     }
     onUpdate([...blocks, newBlock])
   }
@@ -86,9 +93,11 @@ function BlockEditor({ blocks, onUpdate }) {
 
 function BlockCard({ block, onChange, onDelete }) {
   const { type, title = '', content = '', language = '' } = block
+  const slideRef = block.slideRef ?? ''
   const label = TYPE_LABELS[type] ?? type.toUpperCase()
-  const isCode = type === 'code'
-  const isHint = type === 'hint'
+  const isCode  = type === 'code'
+  const isHint  = type === 'hint'
+  const isSlide = type === 'slide'
 
   return (
     <div className={`block-editor-card block-editor-card--${type}`}>
@@ -122,6 +131,20 @@ function BlockCard({ block, onChange, onDelete }) {
           />
         </div>
 
+        {/* Slide reference — slide blocks only */}
+        {isSlide && (
+          <div className="block-editor-field">
+            <label className="block-editor-field-label">Slide reference</label>
+            <input
+              type="text"
+              className="block-editor-lang-input"
+              value={slideRef}
+              onChange={(e) => onChange({ slideRef: e.target.value })}
+              placeholder="e.g. 3 or 3-5"
+            />
+          </div>
+        )}
+
         {/* Language — code blocks only */}
         {isCode && (
           <div className="block-editor-field">
@@ -136,9 +159,11 @@ function BlockCard({ block, onChange, onDelete }) {
           </div>
         )}
 
-        {/* Content — all types */}
+        {/* Content — all types (optional caption/notes for slide blocks) */}
         <div className="block-editor-field">
-          <label className="block-editor-field-label">Content</label>
+          <label className="block-editor-field-label">
+            {isSlide ? 'Caption / notes (optional)' : 'Content'}
+          </label>
           <textarea
             className={isCode ? 'block-editor-code-textarea' : 'field-textarea'}
             value={content}
@@ -158,23 +183,27 @@ function BlockCard({ block, onChange, onDelete }) {
 
 function contentRows(type) {
   switch (type) {
-    case 'code':    return 6
-    case 'explain': return 5
-    case 'check':   return 4
-    case 'task':    return 4
-    case 'hint':    return 3
-    default:        return 4
+    case 'code':          return 6
+    case 'explain':       return 5
+    case 'slide-explain': return 6
+    case 'check':         return 4
+    case 'task':          return 4
+    case 'hint':          return 3
+    case 'slide':         return 2
+    default:              return 4
   }
 }
 
 function contentPlaceholder(type) {
   switch (type) {
-    case 'explain': return 'Teach the concept: why it matters, how it works, the key rules…'
-    case 'code':    return 'Short annotated snippet (4–10 lines)…'
-    case 'check':   return 'Ask the learner a quick question or reflection prompt…'
-    case 'task':    return 'Numbered steps the learner must complete…'
-    case 'hint':    return 'A nudge for learners who are stuck…'
-    default:        return ''
+    case 'explain':       return 'Teach the concept: why it matters, how it works, the key rules…'
+    case 'code':          return 'Short annotated snippet (4–10 lines)…'
+    case 'check':         return 'Ask the learner a quick question or reflection prompt…'
+    case 'task':          return 'Numbered steps the learner must complete…'
+    case 'hint':          return 'A nudge for learners who are stuck…'
+    case 'slide':         return 'Optional caption or authoring note for this slide reference…'
+    case 'slide-explain': return 'Expand and explain the slide content for a solo learner…'
+    default:              return ''
   }
 }
 

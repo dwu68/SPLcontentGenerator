@@ -136,15 +136,34 @@ Produced by `generateAllLessonContent(lessonStructure)` in `lessonContentService
 
 ### Block shape
 
+All blocks share a common base:
+
 ```ts
 {
-  id       : string
-  type     : 'explain' | 'code' | 'check' | 'task' | 'hint'
-  title    : string   // optional label shown above the block
-  content  : string
-  language : string   // code blocks only (e.g. 'python')
+  id      : string
+  type    : 'explain' | 'code' | 'check' | 'task' | 'hint'   // code_lab types
+           | 'slide' | 'slide-explain'                         // guided_tool_workflow types
+  title   : string    // optional label shown above the block
+  content : string
 }
 ```
+
+Type-specific additional fields:
+
+```ts
+// code blocks only
+language : string   // e.g. 'python' — required for type 'code', absent on all others
+
+// slide blocks only
+slideRef : string   // slide number or range, e.g. "3" or "3-5" — required for type 'slide'
+                    // content is optional on slide blocks (caption / authoring note)
+```
+
+**`slide` block** (`guided_tool_workflow` format):
+References one slide or a tight consecutive range from the uploaded deck. The `slideRef` value drives display — a rendered slide panel will use it to look up extracted slide text (or a future image). `content` is optional and used for authoring captions or notes.
+
+**`slide-explain` block** (`guided_tool_workflow` format):
+Learner-facing prose that expands and explains the step's `slide` block. Must stay anchored to the referenced slide content. One per step, always paired with its `slide` block.
 
 **Who can modify LessonContent:**
 `handleUpdateContent(stepId, fields)` in `App.jsx` — merges partial fields into the matching entry. Called from `BlockEditor`, `InstructionPanelEditor`, and `CodeEditorPanel`.
