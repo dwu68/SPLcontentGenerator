@@ -71,6 +71,7 @@ function normalizeStructure(rawSteps) {
   return rawSteps.map((step, index) => ({
     id: `step-${now}-${index}`,
     stepNumber: index + 1,
+    stepType: 'lesson',
     title: typeof step.title === 'string' ? step.title : '',
     goal: typeof step.goal === 'string' ? step.goal : '',
     coveredSubtopics: Array.isArray(step.coveredSubtopics) ? step.coveredSubtopics : [],

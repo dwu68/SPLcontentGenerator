@@ -10,12 +10,20 @@ import React from 'react'
  *   isGenerating    boolean — true while generation is in flight
  *   generationError string | null — error message from the last failed generation
  */
+const LESSON_FORMAT_OPTIONS = [
+  { value: 'code_lab',              label: 'Programming' },
+  { value: 'guided_tool_workflow',  label: 'Guided Tool Workflow' },
+  { value: 'concept_application',   label: 'Concept & Application' },
+]
+
 function LessonInputForm({
   courseName,
   moduleName,
+  lessonFormat,
   subtopics,
   onCourseNameChange,
   onModuleNameChange,
+  onLessonFormatChange,
   onSubtopicsChange,
   onSubmit,
   isGenerating,
@@ -69,6 +77,24 @@ function LessonInputForm({
           onChange={(e) => onModuleNameChange(e.target.value)}
           autoComplete="off"
         />
+      </div>
+
+      <div className="form-group">
+        <label className="form-label" htmlFor="lesson-format">
+          Lesson Format
+        </label>
+        <select
+          id="lesson-format"
+          className="form-input"
+          value={lessonFormat}
+          onChange={(e) => onLessonFormatChange(e.target.value)}
+        >
+          {LESSON_FORMAT_OPTIONS.map((opt) => (
+            <option key={opt.value} value={opt.value}>
+              {opt.label}
+            </option>
+          ))}
+        </select>
       </div>
 
       <div className="form-group">

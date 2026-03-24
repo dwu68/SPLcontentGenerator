@@ -10,7 +10,7 @@ import React, { useState, useEffect, useRef } from 'react'
  * Props:
  *   structure     LessonStructure[]
  *   onUpdateStep  fn(id, fields)
- *   onAddStep     fn()
+ *   onAddStep     fn(stepType: string)
  *   onDeleteStep  fn(id)
  *   onMoveStep    fn(id, 'up' | 'down')
  *   onGenerate    fn()
@@ -29,7 +29,13 @@ function LessonStructurePreview({
   generationError,
   titleValidationError,
 }) {
+  const [showTypePicker, setShowTypePicker] = useState(false)
   const isEmpty = structure.length === 0
+
+  const handlePickType = (stepType) => {
+    onAddStep(stepType)
+    setShowTypePicker(false)
+  }
 
   return (
     <div className="structure-preview">
@@ -65,10 +71,22 @@ function LessonStructurePreview({
             ))}
           </div>
 
-          {/* Add step */}
-          <button className="add-step-btn" onClick={onAddStep}>
-            <span>+</span> Add Step
-          </button>
+          {/* Add step + type picker */}
+          <div className="add-step-area">
+            {showTypePicker && (
+              <StepTypePicker onPick={handlePickType} onCancel={() => setShowTypePicker(false)} />
+            )}
+            <button
+              className="add-step-btn"
+              onClick={() => setShowTypePicker((v) => !v)}
+            >
+              {showTypePicker ? (
+                <>× Cancel</>
+              ) : (
+                <><span>+</span> Add Step</>
+              )}
+            </button>
+          </div>
 
           {/* Generate footer */}
           <div className="structure-footer">
@@ -92,6 +110,35 @@ function LessonStructurePreview({
   )
 }
 
+/* ── Step type picker ────────────────────────────────────────────────────────── */
+
+const STEP_TYPE_OPTIONS = [
+  { value: 'lesson',                 label: 'Lesson',          description: 'AI-generated lesson content' },
+  { value: 'downloadable_lab_files', label: 'Lab Files',       description: 'Downloadable files for a lab' },
+  { value: 'starter_code_file',      label: 'Starter Code',    description: 'Starter code file for learners' },
+  { value: 'external_lab_link',      label: 'External Lab',    description: 'Link to an external lab platform' },
+]
+
+function StepTypePicker({ onPick, onCancel }) {
+  return (
+    <div className="step-type-picker">
+      <div className="step-type-picker-label">Choose step type</div>
+      <div className="step-type-picker-options">
+        {STEP_TYPE_OPTIONS.map((opt) => (
+          <button
+            key={opt.value}
+            className="step-type-picker-btn"
+            onClick={() => onPick(opt.value)}
+            title={opt.description}
+          >
+            {opt.label}
+          </button>
+        ))}
+      </div>
+    </div>
+  )
+}
+
 /* ── Empty state ─────────────────────────────────────────────────────────────── */
 
 function EmptyState() {
@@ -107,54 +154,31 @@ function EmptyState() {
   )
 }
 
+/* ── Step type metadata ──────────────────────────────────────────────────────── */
+
+const STEP_TYPE_LABELS = {
+  lesson:                 'Lesson',
+  downloadable_lab_files: 'Lab Files',
+  starter_code_file:      'Starter Code',
+  external_lab_link:      'External Lab',
+}
+
 /* ── Step builder card ───────────────────────────────────────────────────────── */
 
-/**
- * StepBuilderCard — single editable step row.
- *
- * Uses local state for the topics string so the user can type freely
- * (e.g. mid-comma) without the array conversion disrupting the cursor.
- * Syncs back to parent on every change.
- *
- * Local state resets when step.id changes (new generation) or when coveredSubtopics
- * is changed externally (e.g. future undo / bulk-edit). Changes that originate from
- * the user typing in this card do not reset the input, preserving cursor position.
- */
 function StepBuilderCard({ step, isFirst, isLast, onUpdate, onDelete, onMoveUp, onMoveDown }) {
-  const [topicsStr, setTopicsStr] = useState(
-    () => step.coveredSubtopics?.join(', ') ?? ''
-  )
-
-  // Tracks the canonical form of the last value we sent up via onUpdate.
-  // Lets the effect distinguish user-typed changes (which round-trip through props
-  // but should not reset the input) from external changes (which should).
-  const lastSentCanonicalRef = useRef(step.coveredSubtopics?.join(', ') ?? '')
-
-  useEffect(() => {
-    const canonical = step.coveredSubtopics?.join(', ') ?? ''
-    if (canonical !== lastSentCanonicalRef.current) {
-      setTopicsStr(canonical)
-      lastSentCanonicalRef.current = canonical
-    }
-  }, [step.id, step.coveredSubtopics])
-
-  const handleTopicsChange = (value) => {
-    setTopicsStr(value)
-    const parsed = value
-      .split(',')
-      .map((t) => t.trim())
-      .filter(Boolean)
-    lastSentCanonicalRef.current = parsed.join(', ')
-    onUpdate({ coveredSubtopics: parsed })
-  }
+  const typeLabel = STEP_TYPE_LABELS[step.stepType] ?? step.stepType
 
   return (
     <div className="step-builder-card">
-      {/* ── Card header: number + title input + reorder/delete controls ─── */}
+      {/* ── Card header: number + type badge + title input + controls ─── */}
       <div className="step-builder-card-header">
         <div className="step-number-badge" aria-label={`Step ${step.stepNumber}`}>
           {step.stepNumber}
         </div>
+
+        <span className={`step-type-badge step-type-badge--${step.stepType}`}>
+          {typeLabel}
+        </span>
 
         <input
           type="text"
@@ -196,43 +220,192 @@ function StepBuilderCard({ step, isFirst, isLast, onUpdate, onDelete, onMoveUp, 
         </div>
       </div>
 
-      {/* ── Card body: goal + topics ──────────────────────────────────────── */}
+      {/* ── Card body: fields vary by step type ──────────────────────────── */}
       <div className="step-builder-card-body">
-        <div className="step-field-row">
-          <label
-            className="step-field-label"
-            htmlFor={`goal-${step.id}`}
-          >
-            Goal
-          </label>
-          <input
-            id={`goal-${step.id}`}
-            type="text"
-            className="step-field-input"
-            value={step.goal}
-            onChange={(e) => onUpdate({ goal: e.target.value })}
-            placeholder="Students will be able to…"
-          />
-        </div>
-
-        <div className="step-field-row">
-          <label
-            className="step-field-label"
-            htmlFor={`topics-${step.id}`}
-          >
-            Topics
-          </label>
-          <input
-            id={`topics-${step.id}`}
-            type="text"
-            className="step-field-input"
-            value={topicsStr}
-            onChange={(e) => handleTopicsChange(e.target.value)}
-            placeholder="keyword one, keyword two, …"
-          />
-        </div>
+        {step.stepType === 'lesson' && (
+          <LessonStepFields step={step} onUpdate={onUpdate} />
+        )}
+        {step.stepType === 'downloadable_lab_files' && (
+          <DownloadableLabFilesFields step={step} onUpdate={onUpdate} />
+        )}
+        {step.stepType === 'starter_code_file' && (
+          <StarterCodeFileFields step={step} onUpdate={onUpdate} />
+        )}
+        {step.stepType === 'external_lab_link' && (
+          <ExternalLabLinkFields step={step} onUpdate={onUpdate} />
+        )}
       </div>
     </div>
+  )
+}
+
+/* ── Lesson step fields (unchanged behavior) ─────────────────────────────────── */
+
+function LessonStepFields({ step, onUpdate }) {
+  const [topicsStr, setTopicsStr] = useState(
+    () => step.coveredSubtopics?.join(', ') ?? ''
+  )
+
+  const lastSentCanonicalRef = useRef(step.coveredSubtopics?.join(', ') ?? '')
+
+  useEffect(() => {
+    const canonical = step.coveredSubtopics?.join(', ') ?? ''
+    if (canonical !== lastSentCanonicalRef.current) {
+      setTopicsStr(canonical)
+      lastSentCanonicalRef.current = canonical
+    }
+  }, [step.id, step.coveredSubtopics])
+
+  const handleTopicsChange = (value) => {
+    setTopicsStr(value)
+    const parsed = value
+      .split(',')
+      .map((t) => t.trim())
+      .filter(Boolean)
+    lastSentCanonicalRef.current = parsed.join(', ')
+    onUpdate({ coveredSubtopics: parsed })
+  }
+
+  return (
+    <>
+      <div className="step-field-row">
+        <label className="step-field-label" htmlFor={`goal-${step.id}`}>
+          Goal
+        </label>
+        <input
+          id={`goal-${step.id}`}
+          type="text"
+          className="step-field-input"
+          value={step.goal}
+          onChange={(e) => onUpdate({ goal: e.target.value })}
+          placeholder="Students will be able to…"
+        />
+      </div>
+
+      <div className="step-field-row">
+        <label className="step-field-label" htmlFor={`topics-${step.id}`}>
+          Topics
+        </label>
+        <input
+          id={`topics-${step.id}`}
+          type="text"
+          className="step-field-input"
+          value={topicsStr}
+          onChange={(e) => handleTopicsChange(e.target.value)}
+          placeholder="keyword one, keyword two, …"
+        />
+      </div>
+    </>
+  )
+}
+
+/* ── Downloadable lab files fields ───────────────────────────────────────────── */
+
+function DownloadableLabFilesFields({ step, onUpdate }) {
+  return (
+    <>
+      <div className="step-field-row">
+        <label className="step-field-label" htmlFor={`desc-${step.id}`}>
+          Description
+        </label>
+        <input
+          id={`desc-${step.id}`}
+          type="text"
+          className="step-field-input"
+          value={step.description ?? ''}
+          onChange={(e) => onUpdate({ description: e.target.value })}
+          placeholder="What do these files contain?"
+        />
+      </div>
+
+      <div className="step-field-row">
+        <label className="step-field-label">Files</label>
+        <input
+          type="text"
+          className="step-field-input step-field-input--placeholder"
+          disabled
+          placeholder="File upload — coming soon"
+        />
+      </div>
+    </>
+  )
+}
+
+/* ── Starter code file fields ────────────────────────────────────────────────── */
+
+function StarterCodeFileFields({ step, onUpdate }) {
+  return (
+    <>
+      <div className="step-field-row">
+        <label className="step-field-label" htmlFor={`desc-${step.id}`}>
+          Description
+        </label>
+        <input
+          id={`desc-${step.id}`}
+          type="text"
+          className="step-field-input"
+          value={step.description ?? ''}
+          onChange={(e) => onUpdate({ description: e.target.value })}
+          placeholder="What should the learner do with this file?"
+        />
+      </div>
+
+      <div className="step-field-row">
+        <label className="step-field-label">Starter Code</label>
+        <input
+          type="text"
+          className="step-field-input step-field-input--placeholder"
+          disabled
+          placeholder="File upload — coming soon"
+        />
+      </div>
+
+      <div className="step-field-row">
+        <label className="step-field-label">Problem Statement</label>
+        <input
+          type="text"
+          className="step-field-input step-field-input--placeholder"
+          disabled
+          placeholder="File upload — coming soon (optional)"
+        />
+      </div>
+    </>
+  )
+}
+
+/* ── External lab link fields ────────────────────────────────────────────────── */
+
+function ExternalLabLinkFields({ step, onUpdate }) {
+  return (
+    <>
+      <div className="step-field-row">
+        <label className="step-field-label" htmlFor={`desc-${step.id}`}>
+          Description
+        </label>
+        <input
+          id={`desc-${step.id}`}
+          type="text"
+          className="step-field-input"
+          value={step.description ?? ''}
+          onChange={(e) => onUpdate({ description: e.target.value })}
+          placeholder="Brief description of the external lab"
+        />
+      </div>
+
+      <div className="step-field-row">
+        <label className="step-field-label" htmlFor={`link-${step.id}`}>
+          Lab Link
+        </label>
+        <input
+          id={`link-${step.id}`}
+          type="url"
+          className="step-field-input"
+          value={step.externalLabLink ?? ''}
+          onChange={(e) => onUpdate({ externalLabLink: e.target.value })}
+          placeholder="https://…"
+        />
+      </div>
+    </>
   )
 }
 

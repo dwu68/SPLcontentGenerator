@@ -1,0 +1,183 @@
+{
+  "courseName": "Intro to Python",
+  "moduleName": "Perform Input/Output console operations",
+  "learnerLevel": "beginner",
+  "outputLanguage": "Python",
+  "exportedAt": "2026-03-19T16:57:14.947Z",
+  "steps": [
+    {
+      "stepNumber": 1,
+      "stepTitle": "Use print() and input()",
+      "stepGoal": "Students will be able to use the print() function to display output and the input() function to receive user input in the console.",
+      "stepTopics": [
+        "The print() function",
+        "The input() function",
+        "Displaying text in the console",
+        "Receiving user input from the console"
+      ],
+      "blocks": [
+        {
+          "id": "b1",
+          "type": "explain",
+          "title": "Showing text with print()",
+          "content": "The `print()` function sends output to the console so the person running your program can see something happen. If you give it a string like `print(\"Hello\")`, Python displays that text exactly as written, without the quotation marks. This is the basic way to show messages, results, and prompts in a console program. When your code reaches a `print()` call, Python writes that value to the screen and then moves on to the next line of code.",
+          "language": null
+        },
+        {
+          "id": "b2",
+          "type": "explain",
+          "title": "Reading input with input()",
+          "content": "The `input()` function waits for the user to type into the console and press Enter. Whatever the user types is returned to your program, so you usually store it in a variable such as `name = input(\"What is your name? \")`. The text inside `input()` is shown in the console first, which makes it useful as a prompt. A common pattern is: ask with `input()`, store the answer, then display something with `print()`. That means `print()` sends information out, while `input()` brings information in.",
+          "language": null
+        },
+        {
+          "id": "b3",
+          "type": "code",
+          "title": "Output and input working together",
+          "content": "print(\"Welcome to the console!\")\nname = input(\"What is your name? \")\nprint(\"Nice to meet you,\")\nprint(name)",
+          "language": "Python"
+        },
+        {
+          "id": "b4",
+          "type": "check",
+          "title": "Which line waits for the user?",
+          "content": "Look at this code:\n\nprint(\"Starting...\")\ncity = input(\"Enter your city: \")\nprint(city)\n\nWhich line pauses and waits for the user to type something?\n\n→ `city = input(\"Enter your city: \")` pauses the program. `input()` is the function that receives user input from the console.",
+          "language": null
+        },
+        {
+          "id": "b5",
+          "type": "task",
+          "title": "Lab",
+          "content": "Make the program greet the user in the console. It should display a short prompt asking for the user's name, receive that input, and then print a greeting that includes the name they entered. A correct result shows both console output and user input working together.",
+          "language": null
+        },
+        {
+          "id": "b6",
+          "type": "hint",
+          "title": "Need a hint?",
+          "content": "Store the result of `input()` in a variable, then use `print()` with that variable in your greeting. The prompt text belongs inside `input()`, not inside a separate variable.",
+          "language": null
+        }
+      ],
+      "starterCode": "# TODO: ask for the user's name and print a greeting that uses it\n# Expected: the console asks for a name, then prints a greeting with the entered name\n",
+      "expectedAction": "Write code that uses input() to read the user's name and print() to display a greeting with that name.",
+      "validationNote": "Correct code should prompt for a name, store the typed value, and print a greeting that includes that value. A common mistake is calling input() without saving the result, so the entered name cannot be printed afterward."
+    },
+    {
+      "stepNumber": 2,
+      "stepTitle": "Control Output with sep= and end=",
+      "stepGoal": "Students will be able to customize console output formatting by using the sep= and end= keyword parameters with print().",
+      "stepTopics": [
+        "The sep= keyword parameter",
+        "The end= keyword parameter",
+        "Formatting printed output",
+        "Custom separators and line endings"
+      ],
+      "blocks": [
+        {
+          "id": "b1",
+          "type": "explain",
+          "title": "Changing the separator between values",
+          "content": "When `print()` receives more than one value, it places a space between them by default. That separator can be changed with the `sep=` keyword parameter. For example, `print(\"red\", \"green\", \"blue\")` shows `red green blue`, but `print(\"red\", \"green\", \"blue\", sep=\"-\")` shows `red-green-blue`. The values are still separate arguments to `print()`; `sep=` only controls what gets inserted between them in the output. This is useful when you want commas, slashes, arrows, or any other custom separator without building one long string yourself.",
+          "language": null
+        },
+        {
+          "id": "b2",
+          "type": "explain",
+          "title": "Changing where print ends",
+          "content": "By default, each call to `print()` ends with a newline, which moves the cursor to the next line. The `end=` keyword parameter lets you replace that newline with something else. If you write `print(\"Loading\", end=\"...\")`, the next printed output will continue on the same line after the dots. This means `sep=` controls what appears between values in one `print()` call, while `end=` controls what appears at the end of that call. Together, they give you more control over formatting printed output.",
+          "language": null
+        },
+        {
+          "id": "b3",
+          "type": "code",
+          "title": "sep= and end= together",
+          "content": "day = \"Mon\"\nmonth = \"Apr\"\ndate = 22\n\nprint(day, month, date, sep=\"/\")     # Mon/Apr/22\nprint(\"Status\", end=\": \")\nprint(\"ready\")                        # Status: ready\n\nprint(\"A\", \"B\", \"C\", sep=\" -> \", end=\"!\")  # A -> B -> C!",
+          "language": "Python"
+        },
+        {
+          "id": "b4",
+          "type": "check",
+          "title": "Which output appears?",
+          "content": "What does this code print?\n\nprint(\"x\", \"y\", sep=\"-\", end=\" \")\nprint(\"z\")\n\n→ It prints `x-y z`. The first `print()` puts `-` between `x` and `y`, then ends with a space instead of a newline, so `z` appears on the same line.",
+          "language": null
+        },
+        {
+          "id": "b5",
+          "type": "task",
+          "title": "Lab",
+          "content": "Create a short console display for a sandwich order. Print the bread, filling, and sauce on one line using a custom separator, then print the word `ready` on the same line after an arrow. A correct result should appear as one neatly formatted line of output.",
+          "language": null
+        },
+        {
+          "id": "b6",
+          "type": "hint",
+          "title": "Need a hint?",
+          "content": "Use one `print()` call for the sandwich parts, and think about what should appear between those parts. Then make the line continue instead of ending right away so the next `print()` can add `ready` on the same line.",
+          "language": null
+        }
+      ],
+      "starterCode": "bread = \"wheat\"\nfilling = \"turkey\"\nsauce = \"mustard\"\n\n# TODO: print the order on one line using a custom separator and a custom line ending\n# Expected: wheat | turkey | mustard -> ready\n",
+      "expectedAction": "Print the three sandwich values with a custom separator and use a custom end value so a second print adds ready on the same line.",
+      "validationNote": "Correct code should output exactly one line: `wheat | turkey | mustard -> ready`. A common mistake is using normal `print()` behavior so `ready` appears on the next line instead of continuing the same line."
+    },
+    {
+      "stepNumber": 3,
+      "stepTitle": "Convert Input with int() and float()",
+      "stepGoal": "Students will be able to convert console input into numeric data types by using the int() and float() functions.",
+      "stepTopics": [
+        "The int() function",
+        "The float() function",
+        "Converting strings to integers",
+        "Converting strings to floating-point numbers"
+      ],
+      "blocks": [
+        {
+          "id": "b1",
+          "type": "explain",
+          "title": "Why input needs conversion",
+          "content": "When you read from the console with `input()`, Python gives you a string, even if the user types digits. That means `\"7\"` is text, not a number. If you try to do math with that text, Python will not treat it like an integer or decimal value. To work with numeric input, you convert the string into a number after reading it. For whole numbers, use `int()`. For numbers that may include a decimal point, use `float()`.",
+          "language": null
+        },
+        {
+          "id": "b2",
+          "type": "explain",
+          "title": "Choosing between int() and float()",
+          "content": "`int()` converts a string like `\"12\"` into the integer `12`. Integers are whole numbers with no decimal part. `float()` converts a string like `\"12.5\"` into the floating-point number `12.5`. Floating-point numbers can store decimals.\n\nA simple way to think about it:\n\n- Use `int()` for values like age, number of pets, or count of books.\n- Use `float()` for values like price, height, or temperature when decimals may appear.\n\nThe conversion happens at the moment you wrap the string: `int(input(\"Age: \"))` or `float(input(\"Price: \"))`. After that, the value is numeric, so you can add, subtract, multiply, or divide it.",
+          "language": null
+        },
+        {
+          "id": "b3",
+          "type": "code",
+          "title": "Converting console input to numbers",
+          "content": "age_text = input(\"How old are you? \")\nage = int(age_text)\n\nprice_text = input(\"Enter the price: \")\nprice = float(price_text)\n\nprint(age + 1)\nprint(price * 2)\n",
+          "language": "Python"
+        },
+        {
+          "id": "b4",
+          "type": "check",
+          "title": "Which line can do math?",
+          "content": "A user types `8` at the prompt. Which variable can be safely used in `+ 2` to get the numeric result `10`?\n\n`count_text = input(\"Count: \")`\n`count_number = int(count_text)`\n\n→ `count_number` can, because `int()` converted the string from `input()` into an integer. `count_text` is still a string.",
+          "language": null
+        },
+        {
+          "id": "b5",
+          "type": "task",
+          "title": "Lab",
+          "content": "Build a tiny checkout calculation from console input. Read the number of tickets as a whole number and the ticket price as a decimal number, convert them to the correct numeric types, and print the total cost. A correct result prints a numeric total such as `37.5`, not combined text like `33.54.0`.",
+          "language": null
+        },
+        {
+          "id": "b6",
+          "type": "hint",
+          "title": "Need a hint?",
+          "content": "One input represents a count, so it should become a whole number. The other represents money with decimals, so it should become a floating-point number before you multiply them.",
+          "language": null
+        }
+      ],
+      "starterCode": "tickets_input = input(\"How many tickets? \")\nprice_input = input(\"Price per ticket: \")\n\n# TODO: convert both inputs to the right numeric types and print the total cost\n# Expected: the program prints one numeric total based on the entered ticket count and price\n",
+      "expectedAction": "Convert the ticket count with int(), convert the ticket price with float(), and print their product as the total cost.",
+      "validationNote": "Correct code should treat the first input as an integer and the second as a floating-point number, then print the multiplied total. A common mistake is using the raw input strings directly, which either fails for multiplication with a float or produces text behavior instead of numeric calculation."
+    }
+  ]
+}

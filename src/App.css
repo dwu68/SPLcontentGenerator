@@ -774,6 +774,95 @@ body {
   margin-bottom: 16px;
 }
 
+/* ── Add Step area (wraps type picker + button) ─────────────────────────────── */
+.add-step-area {
+  display: flex;
+  flex-direction: column;
+}
+
+/* ── Step type picker ────────────────────────────────────────────────────────── */
+.step-type-picker {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: 12px 14px;
+  margin-top: 8px;
+  margin-bottom: 6px;
+}
+
+.step-type-picker-label {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--color-text-muted);
+  margin-bottom: 8px;
+}
+
+.step-type-picker-options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.step-type-picker-btn {
+  padding: 5px 12px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-bg);
+  color: var(--color-text-secondary);
+  font-family: var(--font-sans);
+  font-size: 12.5px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: border-color 0.12s, color 0.12s, background 0.12s;
+}
+
+.step-type-picker-btn:hover {
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+  background: var(--color-primary-subtle);
+}
+
+/* ── Step type badge (card header) ──────────────────────────────────────────── */
+.step-type-badge {
+  flex-shrink: 0;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  padding: 2px 6px;
+  border-radius: var(--radius-xs);
+  white-space: nowrap;
+}
+
+.step-type-badge--lesson {
+  background: #eff6ff;
+  color: #1d4ed8;
+}
+
+.step-type-badge--downloadable_lab_files {
+  background: #fef9c3;
+  color: #854d0e;
+}
+
+.step-type-badge--starter_code_file {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.step-type-badge--external_lab_link {
+  background: #f3e8ff;
+  color: #6b21a8;
+}
+
+/* ── Placeholder (disabled) inputs for file upload stubs ────────────────────── */
+.step-field-input--placeholder {
+  opacity: 0.5;
+  cursor: not-allowed;
+  font-style: italic;
+}
+
 /* =============================================================================
    Screen 2 — Authoring Layout
    ============================================================================= */

@@ -36,6 +36,7 @@ function App() {
   // ── Form inputs ──────────────────────────────────────────────────────────
   const [courseName, setCourseName] = useState('')
   const [moduleName, setModuleName] = useState('')
+  const [lessonFormat, setLessonFormat] = useState('code_lab')
   const [subtopics, setSubtopics] = useState('')
 
   // ── Lesson structure (Screen 1 output) ──────────────────────────────────
@@ -62,6 +63,7 @@ function App() {
       const data = JSON.parse(raw)
       if (data.courseName) setCourseName(data.courseName)
       if (data.moduleName) setModuleName(data.moduleName)
+      if (data.lessonFormat) setLessonFormat(data.lessonFormat)
       if (data.subtopics) setSubtopics(data.subtopics)
       if (data.lessonStructure?.length) setLessonStructure(data.lessonStructure)
       if (data.lessonContent?.length) {
@@ -110,19 +112,22 @@ function App() {
     )
   }
 
-  const handleAddStep = () => {
+  const handleAddStep = (stepType = 'lesson') => {
     setLessonStructure((prev) => {
       const next = prev.length + 1
-      return [
-        ...prev,
-        {
-          id: `step-new-${Date.now()}`,
-          stepNumber: next,
-          title: '',
-          goal: '',
-          coveredSubtopics: [],
-        },
-      ]
+      const base = {
+        id: `step-new-${Date.now()}`,
+        stepNumber: next,
+        stepType,
+        title: '',
+      }
+      const typeFields = {
+        lesson:                 { goal: '', coveredSubtopics: [] },
+        downloadable_lab_files: { description: '' },
+        starter_code_file:      { description: '' },
+        external_lab_link:      { description: '', externalLabLink: '' },
+      }
+      return [...prev, { ...base, ...(typeFields[stepType] ?? {}) }]
     })
   }
 
@@ -203,6 +208,7 @@ function App() {
         screen,
         courseName,
         moduleName,
+        lessonFormat,
         subtopics,
         lessonStructure,
         lessonContent,
@@ -274,9 +280,11 @@ function App() {
             <LessonInputForm
               courseName={courseName}
               moduleName={moduleName}
+              lessonFormat={lessonFormat}
               subtopics={subtopics}
               onCourseNameChange={setCourseName}
               onModuleNameChange={setModuleName}
+              onLessonFormatChange={setLessonFormat}
               onSubtopicsChange={setSubtopics}
               onSubmit={handleSubmit}
               isGenerating={isGenerating}
