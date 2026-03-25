@@ -126,10 +126,15 @@ function LessonAuthoringView({
 // ── Lesson step: instruction panel + code panel ──────────────────────────────
 
 function LessonStepPanels({ selectedContent, isEditing, onEdit, onSave, onCancel, onUpdateContent }) {
+  const hasLabContent = Boolean(selectedContent?.starterCode?.trim())
+
   return (
     <>
-      {/* Instruction Panel */}
-      <section className="panel panel-instruction" aria-label="Instruction panel">
+      {/* Instruction Panel — expands to full width when no lab panel is shown */}
+      <section
+        className={`panel panel-instruction${hasLabContent ? '' : ' panel-instruction--full'}`}
+        aria-label="Instruction panel"
+      >
         <div className="panel-header">
           <span className="panel-title">Instructions</span>
           <div className="panel-header-actions">
@@ -172,22 +177,24 @@ function LessonStepPanels({ selectedContent, isEditing, onEdit, onSave, onCancel
         </div>
       </section>
 
-      {/* Code Panel */}
-      <section className="panel panel-code" aria-label="Code editor panel">
-        <div className="panel-header panel-header-code">
-          <span className="panel-title panel-title-code">Lab</span>
-          <span className="panel-step-tag panel-step-tag-code">starter_code.py</span>
-        </div>
-        <div className="panel-body-code">
-          {selectedContent && (
-            <CodeEditorPanel
-              step={selectedContent}
-              onUpdate={(fields) => onUpdateContent(selectedContent.id, fields)}
-              readOnly={!isEditing}
-            />
-          )}
-        </div>
-      </section>
+      {/* Code Panel — only shown when step has lab content */}
+      {hasLabContent && (
+        <section className="panel panel-code" aria-label="Code editor panel">
+          <div className="panel-header panel-header-code">
+            <span className="panel-title panel-title-code">Lab</span>
+            <span className="panel-step-tag panel-step-tag-code">starter_code.py</span>
+          </div>
+          <div className="panel-body-code">
+            {selectedContent && (
+              <CodeEditorPanel
+                step={selectedContent}
+                onUpdate={(fields) => onUpdateContent(selectedContent.id, fields)}
+                readOnly={!isEditing}
+              />
+            )}
+          </div>
+        </section>
+      )}
     </>
   )
 }

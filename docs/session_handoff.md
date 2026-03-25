@@ -2,6 +2,115 @@
 
 ---
 
+**ID** 21
+**Date:** 2026-03-24
+**Session scope:** `guided_tool_workflow` content model, prompt, slide coverage rules, Screen 2 crash fix, conditional lab panel
+
+---
+
+## What Was Completed This Session
+
+### Slice 1 — Content model: new block types
+
+**`src/components/BlockEditor.jsx`**:
+- Added `slide` and `slide-explain` to `TYPE_LABELS` and `ADD_TYPES`
+- `handleAdd` initializes `slide` blocks with `slideRef: ''` and `content: ''`
+- `BlockCard` renders a "Slide reference" text input for `slide` blocks; relabels content field as "Caption / notes (optional)"
+- Added `contentRows` and `contentPlaceholder` cases for both new types
+
+**`docs/data_model.md`**: Block shape section updated to document new types and `slideRef` field.
+
+### Slice 2 — `lessonFormat` forwarded to generate-content
+
+**`server/lib/promptContext.js`**: Added `lessonFormat = 'code_lab'` to params and returned context.
+
+**`server/index.js`**:
+- `POST /api/generate-content` route now destructures and forwards `lessonFormat`
+- Mock (`mockGenerateContent`) branches on `lessonFormat`; `guided_tool_workflow` mock returns three-block shape
+
+**`server/prompts/generateContentPrompt.js`**:
+- `buildGenerateContentPrompt` dispatches on `context.lessonFormat`
+- New `buildGuidedToolWorkflowContentPrompt`: generates exactly three blocks (`slide`, `slide-explain`, `explain`) in that order; slide-explain is AI-required; explain is step-goal-grounded; both formatted to avoid walls of text
+- Original prompt renamed `buildCodeLabContentPrompt` — zero behavior change for `code_lab`
+
+**`src/services/lessonContentService.js`**: `callProvider` and `generateAllLessonContent` accept and forward `lessonFormat`.
+
+**`src/App.jsx`**: `generateAllLessonContent` call now passes `lessonFormat`.
+
+### Bug fix — Screen 2 crash on null block content
+
+**`src/components/LessonAuthoringView.jsx`**:
+- Root cause: `segments` and `lines` were computed unconditionally by calling `.split` on `content` before any type dispatch. `slide` blocks have `content: ""` (previously `null`), crashing the renderer.
+- Fix: `const safeContent = content ?? ''` guards all `.split` calls; `safeContent` passed to `CheckBlock` as well.
+- Added `slide` render branch: shows a styled slide reference panel with `slideRef` label; renders `safeContent` only if non-empty.
+- Added `slide-explain` render branch: prose segments, same as `explain`.
+
+### Prompt refinements — three-block contract
+
+Iteratively refined `buildGuidedToolWorkflowContentPrompt`:
+- Updated from two blocks (slide + slide-explain) to three (slide + slide-explain + explain)
+- `slide.content` changed from `null` to `""` (safer for the renderer; avoids null-coercion in future paths)
+- `slide-explain` formatting rules: short paragraphs and/or bullet points; not a wall of text
+- `explain` block rules: step-goal-grounded, not slide-anchored; some overlap with slide-explain is acceptable
+- Distinction framed as primary purpose, not hard no-overlap constraint
+
+### Slide coverage rules in generate-structure
+
+**`server/prompts/generateStructurePrompt.js`** — Cases 1 and 2 (slides-based branches) updated:
+- **`SLIDE COVERAGE`** section added: instructional slides must each produce a step; non-instructional slides (title, agenda, dividers, closing) may be skipped; if ambiguous, include rather than skip; placeholder-quality steps preferred over missing steps
+- **`SLIDE GROUPING`** section added: default one slide = one step; group only when consecutive slides clearly form one atomic teaching unit; prefer splitting over grouping when uncertain
+- Case 3 (subtopics only) unchanged
+
+### Conditional lab panel — Screen 2
+
+**`src/components/LessonAuthoringView.jsx`**:
+- `hasLabContent = Boolean(selectedContent?.starterCode?.trim())` — content-driven
+- Code panel wrapped in `{hasLabContent && ...}` — not rendered when empty
+- `panel-instruction--full` class applied to instruction panel when no lab panel
+
+**`src/App.css`**: `.panel-instruction--full { border-right: none; }` — removes divider border when full-width.
+
+---
+
+## What Is Intentionally Not Done Yet
+
+| Item | Reason |
+|---|---|
+| `slide` block renders only `slideRef` label, not slide content | Per-slide structured extraction not yet built; flat `slideText` cannot resolve a specific slide number |
+| Per-slide structured extraction | Separate slice — `extractSlideText.js` still returns flat string |
+| Format-gating in BlockEditor add buttons | Deferred — all block types visible in all formats |
+| End-to-end real AI test for `guided_tool_workflow` | Mock path verified; real generation needs a test run |
+| `concept_application` prompt branch | No design yet |
+| `starterCode` → `practiceContent` rename | Deferred |
+
+---
+
+## Remaining Limitations
+
+| Item | Severity | Detail |
+|---|---|---|
+| `guided_tool_workflow` AI not end-to-end validated | Medium | Three-block shape verified via mock. Real GPT-5.4 generation not yet tested. |
+| `slide` block shows reference only | Medium | Renders "Slide 3" label; does not show extracted slide text. Needs per-slide structured extraction. |
+| `slideText` is session-only | Medium | Lost on page reload. User must re-upload PPTX to use slides in generation after reload. |
+| BlockEditor shows all block types regardless of format | Low | `slide`/`slide-explain` appear in `code_lab` step editors; format-gating deferred. |
+
+---
+
+## Next Session — Recommended Starting Point
+
+**Validate the `guided_tool_workflow` AI generation end-to-end before adding more features.**
+
+1. Run a real generation pass with `lessonFormat = 'guided_tool_workflow'` and an uploaded PPTX. Confirm the AI produces the correct three-block shape (`slide`, `slide-explain`, `explain`) and that `slideRef` values are populated correctly.
+
+2. If generation looks good, the most impactful next slice is **rendering the slide content inside the `slide` block** — showing the actual extracted text for the step's `slideRef`. This requires:
+   - Modifying `extractSlideText.js` to return `slides: [{ slideNumber, text }]` alongside the existing flat `slideText`
+   - Storing `slideData` (the array) in App state alongside `slideText`
+   - Updating the `slide` block renderer in `LessonAuthoringView` to resolve `slideRef` → text from `slideData`
+
+3. Secondary candidate: format-gating the BlockEditor add buttons so `slide`/`slide-explain` only appear for `guided_tool_workflow`.
+
+---
+
 **ID** 20
 **Date:** 2026-03-23
 **Session scope:** Wire slideText into generate-content (Slice D) — complete the PPTX slides pipeline end-to-end

@@ -141,8 +141,9 @@ All blocks share a common base:
 ```ts
 {
   id      : string
-  type    : 'explain' | 'code' | 'check' | 'task' | 'hint'   // code_lab types
-           | 'slide' | 'slide-explain'                         // guided_tool_workflow types
+  type    : 'explain' | 'code' | 'check' | 'task' | 'hint'          // code_lab types
+           | 'slide' | 'slide-explain' | 'explain'                    // guided_tool_workflow types
+                                                                       // ('explain' is shared)
   title   : string    // optional label shown above the block
   content : string
 }
@@ -156,14 +157,25 @@ language : string   // e.g. 'python' — required for type 'code', absent on all
 
 // slide blocks only
 slideRef : string   // slide number or range, e.g. "3" or "3-5" — required for type 'slide'
-                    // content is optional on slide blocks (caption / authoring note)
+                    // content is "" on AI-generated slide blocks; may hold a caption if manually edited
 ```
 
-**`slide` block** (`guided_tool_workflow` format):
-References one slide or a tight consecutive range from the uploaded deck. The `slideRef` value drives display — a rendered slide panel will use it to look up extracted slide text (or a future image). `content` is optional and used for authoring captions or notes.
+### Block types by format
 
-**`slide-explain` block** (`guided_tool_workflow` format):
-Learner-facing prose that expands and explains the step's `slide` block. Must stay anchored to the referenced slide content. One per step, always paired with its `slide` block.
+**`code_lab` steps** — AI generates a variable sequence of:
+`explain`, `code`, `check`, `task`, `hint`
+
+**`guided_tool_workflow` steps** — AI generates exactly three blocks in this order:
+
+1. **`slide`** — declares which slide or consecutive range covers this step. `slideRef` is a string like `"3"` or `"3-5"`. `content` is `""` (display is driven by `slideRef`, not content). The `slide` block is a reference anchor, not a prose block.
+
+2. **`slide-explain`** — learner-facing prose that explains the referenced slide content. Primary purpose: help the learner understand what is on the slide. Stays anchored to the slide material. Formatted as short paragraphs and/or bullet points — not a wall of text. Always AI-generated per step; user may delete it in the editor afterward.
+
+3. **`explain`** — concept-level teaching block grounded in the step `goal` and `coveredSubtopics`. Primary purpose: teach the underlying concept at the step level. Not slide-anchored. Behaves identically to an `explain` block in `code_lab`. Some overlap with `slide-explain` is acceptable — these two blocks approach the same material from different angles.
+
+**Distinction between `slide-explain` and `explain`:**
+- `slide-explain`: *what does this slide show, and what does it mean for the learner?*
+- `explain`: *what does the learner need to understand about this topic, given the step goal?*
 
 **Who can modify LessonContent:**
 `handleUpdateContent(stepId, fields)` in `App.jsx` — merges partial fields into the matching entry. Called from `BlockEditor`, `InstructionPanelEditor`, and `CodeEditorPanel`.

@@ -1052,6 +1052,10 @@ body {
   border-right: 1px solid var(--color-border);
 }
 
+.panel-instruction--full {
+  border-right: none;
+}
+
 .panel-code {
   background: var(--color-code-bg);
 }

@@ -54,7 +54,15 @@ Work done in this phase establishes the module format and per-step type model.
 - ✅ **Slides backend upload + extraction (Slice B)** — `POST /api/upload-slides` endpoint; `multer` in-memory upload; `jszip` + `<a:t>` XML extraction; returns `{ slideText, slideCount }` to frontend; `slideText` stored in App state; subtopics made optional when slides are present
 - ✅ **Wire slides into generate-structure (Slice C)** — pass `slideText` in `POST /api/generate-structure` body; update `buildGenerateStructurePrompt` to use slides as primary source when present
 - ✅ **Wire slides into generate-content (Slice D)** — pass `slideText` in `POST /api/generate-content` body for `lesson` steps only; update `buildGenerateContentPrompt` to use slide context when present; non-lesson steps and Screen 2 rendering unchanged
-- 🔲 **Pass `lessonFormat` to AI generation** — `lessonFormat` is in state but not yet forwarded to `POST /api/generate-structure` or `POST /api/generate-content`; prompts should use it to adjust generation style
+- ✅ **Pass `lessonFormat` to AI generation** — forwarded through `lessonContentService.js` → `POST /api/generate-content` → `promptContext` → `buildGenerateContentPrompt`; prompt branches on `lessonFormat`; `code_lab` behavior unchanged
+- ✅ **`guided_tool_workflow` content model** — new block types `slide` and `slide-explain` registered in `BlockEditor`; `Block` renderer handles them without crashing; `explain` block also used in this format
+- ✅ **`guided_tool_workflow` generate-content prompt** — produces exactly three blocks in order: `slide`, `slide-explain`, `explain`; `slide-explain` is AI-required; `explain` is step-goal-grounded
+- ✅ **Slide coverage rules in generate-structure** — instructional slides must each produce a step; non-instructional slides (title/agenda/divider/closing) may be skipped; default one slide = one step; conservative grouping only
+- ✅ **Conditional lab panel** — Screen 2 right panel shown only when `starterCode` is non-empty; content-driven, not format-driven; instruction panel expands to full width when lab panel is absent
+- 🔲 **Render slide content in `slide` block** — the `slide` block currently shows only the `slideRef` label; it should render the extracted slide text for that slide number from `slideText` (per-slide structured extraction required first)
+- 🔲 **Per-slide structured extraction** — `extractSlideText.js` returns a flat string; should return `slides: [{ slideNumber, text }]` so `slideRef` can be resolved to specific slide text in the UI
+- 🔲 **Format-gate block add buttons** — the `BlockEditor` add-block row shows all 7 types regardless of `lessonFormat`; `slide`/`slide-explain` should only appear for `guided_tool_workflow`; `code`/`check`/`task`/`hint` may be hidden for that format
+- 🔲 **End-to-end AI validation for `guided_tool_workflow`** — three-block shape verified in mock only; needs a real generation test to confirm prompt produces correct JSON
 - 🔲 **Per-lesson-step optional guidance field** — a free-text guidance field on individual `lesson` step cards in Screen 1
 
 ---
@@ -104,9 +112,12 @@ These items will be picked up by the team handling backend integration.
 |---|---|---|
 | `slideText` is session-only | Medium | `slideText` is lost on page reload. Only `slideFileName` (the display label) is restored from localStorage. User must re-upload the PPTX after a reload for slides to influence generation. |
 | `generate-content` does not use `slideText` | ~~Resolved~~ | ✅ Fixed in Slice D (Session 20) — `slideText` now passes through to the generate-content prompt for lesson steps. |
-| `lessonFormat` not yet forwarded to AI generation | Low | `lessonFormat` is in state and persisted but not yet passed to `POST /api/generate-structure` or `POST /api/generate-content`. Prompts ignore it for now. |
+| `guided_tool_workflow` AI not yet end-to-end validated | Medium | Three-block shape tested via mock only. Real generation with GPT-5.4 has not been verified. Run a full generation pass to confirm `slide`/`slide-explain`/`explain` shape is produced correctly. |
+| `slide` block shows reference only, not content | Medium | The `slide` block renders `slideRef` as a label (e.g. "Slide 3") but does not show the extracted slide text. Per-slide structured extraction is needed to resolve `slideRef` → text. |
+| `slideText` is session-only | Medium | `slideText` is lost on page reload. Only `slideFileName` (the display label) is restored from localStorage. User must re-upload the PPTX after a reload for slides to influence generation. |
+| BlockEditor shows all block types regardless of format | Low | `slide` and `slide-explain` add buttons appear even in `code_lab` steps; `code`/`check`/`task`/`hint` appear in `guided_tool_workflow` steps. Format-gating is deferred. |
 | localStorage can restore stale Screen 2 state | Low | A saved draft with `"screen": "authoring"` will reopen Screen 2 on reload. Can surface old lesson content unexpectedly. Clear by triggering a new generation. |
-| `code_lab` internal value vs "Programming" UI label | Info | The stored/internal value is still `code_lab`. The UI shows "Programming". These should be reconciled when `lessonFormat` is first forwarded to AI prompts. |
+| `code_lab` internal value vs "Programming" UI label | Info | The stored/internal value is still `code_lab`. The UI shows "Programming". Reconcile when convenient. |
 | `starterCode` field not yet renamed | Info | The field is called `starterCode` in `LessonContent`. The intended future name is `practiceContent` (if generalized beyond code). Rename deferred to avoid disrupting current generation flow. |
 | `src/utils/mockGeneration.js` is dead code | Low | No file imports it — mock behavior is server-side. Safe to delete. |
 | `lessonContentService.js` JSDoc and `CONTENT_FIELDS` describe old flat schema | Low | Runtime behavior is correct. Comments reference flat fields (`concept`, `codeExample`, etc.) instead of the current block-based schema. |
