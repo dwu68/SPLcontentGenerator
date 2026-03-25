@@ -466,9 +466,8 @@ function Block({ block }) {
     return (
       <div className="block block-slide">
         {title && <div className="block-heading">{title}</div>}
-        <div className="block-slide-ref">
-          <span className="block-slide-ref-label">Slide</span>
-          <span className="block-slide-ref-value">{slideRef || '?'}</span>
+        <div className="block-slide-placeholder">
+          <div className="block-slide-placeholder-label">Slide {slideRef || '?'}</div>
         </div>
         {safeContent && <div className="block-body">{segments}</div>}
       </div>

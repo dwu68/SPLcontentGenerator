@@ -48,10 +48,27 @@ export function buildGenerateStructurePrompt({ courseName, moduleName, subtopics
 Course: ${courseName}
 Module: ${moduleName}`
 
+  // Used for subtopics-only (Case 3) — no slide assignment needed.
   const footer = `Return a JSON object with a "steps" array. Each step must have exactly these fields:
 - "title": string — concise step title
 - "goal": string — learning goal starting with "Students will be able to..."
 - "coveredSubtopics": string[] — specific topics covered in this step
+
+Return only valid JSON, no explanation.`
+
+  // Used when slides are present (Cases 1 & 2) — each step must declare its slides.
+  const slideFooter = `Return a JSON object with a "steps" array. Each step must have exactly these fields:
+- "title": string — concise step title
+- "goal": string — learning goal starting with "Students will be able to..."
+- "coveredSubtopics": string[] — specific topics covered in this step
+- "slideNumbers": string[] — slide numbers assigned to this step, e.g. ["3"] or ["4", "5"]
+
+SLIDE OWNERSHIP RULES for slideNumbers:
+- Every instructional slide must appear in exactly one step's slideNumbers.
+- No slide number may appear in more than one step across the entire lesson.
+- slideNumbers must be an array of strings (e.g. ["3"], never [3]).
+- For a single-slide step: ["3"]. For a two-slide step: ["4", "5"].
+- Do not use range notation — list each slide number individually.
 
 Return only valid JSON, no explanation.`
 
@@ -86,7 +103,7 @@ Do not group slides just because they share a theme. Prefer splitting over group
 Slide content:
 ${slideText}
 
-${footer}`
+${slideFooter}`
   }
 
   // ── Case 2: slides + subtopics ───────────────────────────────────────────
@@ -116,7 +133,7 @@ ${slideText}
 Author sub-topics (one per line — treat as overrides or supplements to the slides):
 ${subtopicsText}
 
-${footer}`
+${slideFooter}`
   }
 
   // ── Case 3: subtopics only (original behavior) ───────────────────────────

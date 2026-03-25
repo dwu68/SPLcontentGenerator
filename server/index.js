@@ -67,28 +67,32 @@ function mockGenerateStructure(subtopicsText) {
 
 function mockGenerateContent(step, lessonFormat) {
   if (lessonFormat === 'guided_tool_workflow') {
+    // Use assigned slideNumbers if present; fall back to ['1'] for mock runs without slides.
+    const slideNums = Array.isArray(step.slideNumbers) && step.slideNumbers.length > 0
+      ? step.slideNumbers
+      : ['1']
+
+    const blocks = []
+    slideNums.forEach((num, i) => {
+      const b1 = i * 2 + 1
+      const b2 = i * 2 + 2
+      blocks.push({
+        id: `b${b1}`,
+        type: 'slide',
+        title: null,
+        slideRef: num,
+        content: '',
+      })
+      blocks.push({
+        id: `b${b2}`,
+        type: 'slide-explain',
+        title: null,
+        content: `Slide ${num} introduces "${step.title}" as a key part of this workflow.\n\nReview it carefully — it shows the core concept or pattern you will be working with in this step.`,
+      })
+    })
+
     return {
-      blocks: [
-        {
-          id: 'b1',
-          type: 'slide',
-          title: null,
-          slideRef: '1',
-          content: '',
-        },
-        {
-          id: 'b2',
-          type: 'slide-explain',
-          title: null,
-          content: `The slide introduces "${step.title}" as a key part of this workflow.\n\nReview the slide carefully — it shows the core term or pattern you will be working with. Pay attention to how it is named and positioned relative to other concepts in the tool.`,
-        },
-        {
-          id: 'b3',
-          type: 'explain',
-          title: null,
-          content: `${step.title} is a foundational concept in this module. Understanding it clearly now will make the subsequent steps easier to follow. The key is knowing when and why this pattern appears in a real workflow, not just what it is called.`,
-        },
-      ],
+      blocks,
       starterCode: '',
       expectedAction: '',
       validationNote: '',

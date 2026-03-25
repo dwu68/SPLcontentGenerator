@@ -37,8 +37,32 @@ function buildGuidedToolWorkflowContentPrompt(context) {
     stepTitle,
     stepGoal,
     stepTopics,
+    slideNumbers,
     slideText,
   } = context
+
+  // slideNumbers is the authoritative assignment from structure generation.
+  // If empty (no slides uploaded), fall back to a single placeholder pair.
+  const hasAssignedSlides = Array.isArray(slideNumbers) && slideNumbers.length > 0
+
+  // Build the example JSON block sequence for the return format section.
+  // One slide + one slide-explain per assigned slide number.
+  const examplePairs = hasAssignedSlides
+    ? slideNumbers.map((num, i) => {
+        const b1 = i * 2 + 1
+        const b2 = i * 2 + 2
+        return [
+          `    { "id": "b${b1}", "type": "slide", "title": null, "slideRef": "${num}", "content": "" }`,
+          `    { "id": "b${b2}", "type": "slide-explain", "title": string | null, "content": string }`,
+        ].join(',\n')
+      }).join(',\n')
+    : [
+        `    { "id": "b1", "type": "slide", "title": null, "slideRef": "?", "content": "" }`,
+        `    { "id": "b2", "type": "slide-explain", "title": string | null, "content": string }`,
+      ].join(',\n')
+
+  const totalPairs = hasAssignedSlides ? slideNumbers.length : 1
+  const totalBlocks = totalPairs * 2
 
   return `You are writing the instructional content for ONE step of a guided tool workflow lesson.
 
@@ -50,67 +74,65 @@ Module: ${moduleName}
 Step title: ${stepTitle}
 Step learning goal: ${stepGoal}
 Step topics: ${stepTopics.join(', ')}
+${hasAssignedSlides ? `Assigned slides for this step: ${slideNumbers.join(', ')}` : ''}
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 STEP SHAPE
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-Every step has exactly three blocks, always in this order:
+This step covers ${totalPairs} slide${totalPairs > 1 ? 's' : ''}.
+Produce exactly ${totalPairs} pair${totalPairs > 1 ? 's' : ''} of blocks — one pair per slide — in this order:
 
-1. "slide"         — declares which slide or consecutive range covers this step
-2. "slide-explain" — explains the referenced slide content for the learner
-3. "explain"       — teaches the underlying concept at the step level
+${hasAssignedSlides
+  ? slideNumbers.map((num, i) => `Pair ${i + 1}: "slide" (slideRef: "${num}") → "slide-explain"`).join('\n')
+  : 'Pair 1: "slide" (slideRef: "?") → "slide-explain"'
+}
 
-All three are required. Never omit any of them. Never include any other block type.
-${slideText ? `
+Total blocks: ${totalBlocks}. No other block types. No extra blocks.
+${hasAssignedSlides && slideText ? `
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 SLIDE DECK
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 The following text was extracted from the author's slides. Each slide is labelled [Slide N].
-
-Use this to:
-- Identify which slide number(s) cover this step's content.
-- Anchor the slide-explain block to those slides.
-- Use the same terminology and examples the slides use.
+Use the content of the assigned slides to write the slide-explain blocks.
+Use the same terminology and examples the slides use.
 
 <slides>
 ${slideText}
 </slides>
-` : `
+` : !hasAssignedSlides ? `
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 NO SLIDES UPLOADED
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 No slide text is available for this session.
 Set slideRef to "?" — the author will fill in the correct slide number manually.
-Write slide-explain and explain based on the step title and goal alone.
-`}
+Write the slide-explain block based on the step title and goal alone.
+` : ''}
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 SLIDE BLOCK RULES
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-- Set "slideRef" to the single slide number or tight consecutive range that covers this step.
-  Examples: "3" for one slide, "3-5" for a range.
-- Only use a range when consecutive slides form one coherent teaching unit for this step.
-- Do not span non-consecutive slides in one slideRef.
-- Set "content" to "" — slide display is handled by the UI from the slideRef.
-- "title" may be null.
+- "slideRef" must be a single slide number as a string (e.g. "3"). Never a range. Never null. Never a number type.
+- Use the assigned slide number exactly as given. Do not change it.
+- Set "content" to "" — the slide display is handled by the UI.
+- "title" must be null.
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 SLIDE-EXPLAIN BLOCK RULES
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 Primary purpose: help the learner understand what is on the referenced slide.
+Each slide-explain is anchored to its immediately preceding slide block.
 
 Write for a solo learner — no instructor, no live walkthrough.
 Write like a course author explaining the slide to someone reading alone.
 
 Content rules:
-- Draw primarily from the referenced slide content.
+- Draw from the content of the referenced slide.
 - Expand on what the slide shows so the learner can absorb it without an instructor.
 - Use the same terminology the slides use.
-- Some overlap with the explain block is fine — approach from the slide angle here.
 - Where naturally helpful, reference official documentation for the tool being taught.
 
 Formatting rules:
@@ -122,24 +144,6 @@ Formatting rules:
 - Start with the idea itself.
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-EXPLAIN BLOCK RULES
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-Primary purpose: teach the underlying concept at the step level, grounded in the step goal and topics.
-
-This block is not anchored to the slide. It is anchored to:
-- the step learning goal: "${stepGoal}"
-- the step topics: ${stepTopics.join(', ')}
-
-Content rules:
-- Teach the concept fully for a solo learner.
-- Go deeper than the slide if the topic warrants it.
-- May reference official documentation where helpful.
-- Some overlap with slide-explain is acceptable — approach from the concept angle here.
-- Usually 3–8 sentences. More if the concept genuinely requires it.
-- Do not use filler phrases. Start with the idea itself.
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 RETURN FORMAT
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
@@ -147,25 +151,7 @@ Return exactly ONE valid JSON object:
 
 {
   "blocks": [
-    {
-      "id": "b1",
-      "type": "slide",
-      "title": null,
-      "slideRef": string,
-      "content": ""
-    },
-    {
-      "id": "b2",
-      "type": "slide-explain",
-      "title": string | null,
-      "content": string
-    },
-    {
-      "id": "b3",
-      "type": "explain",
-      "title": string | null,
-      "content": string
-    }
+${examplePairs}
   ],
   "starterCode": "",
   "expectedAction": "",
@@ -173,8 +159,8 @@ Return exactly ONE valid JSON object:
 }
 
 Rules:
-- "blocks" must contain exactly three entries in the order shown: slide, slide-explain, explain.
-- "slideRef" must be a string (e.g. "3" or "3-5"). Never null or a number.
+- "blocks" must contain exactly ${totalBlocks} entries in the order shown: ${hasAssignedSlides ? slideNumbers.map((n) => `slide("${n}"), slide-explain`).join(', ') : 'slide("?"), slide-explain'}.
+- Each "slideRef" must be a string. Never null. Never a number.
 - slide "content" must be an empty string "".
 - "starterCode", "expectedAction", and "validationNote" must be empty strings.
 - Do not return markdown.

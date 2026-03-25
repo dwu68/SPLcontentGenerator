@@ -76,6 +76,7 @@ function normalizeStructure(rawSteps) {
     title: typeof step.title === 'string' ? step.title : '',
     goal: typeof step.goal === 'string' ? step.goal : '',
     coveredSubtopics: Array.isArray(step.coveredSubtopics) ? step.coveredSubtopics : [],
+    slideNumbers: Array.isArray(step.slideNumbers) ? step.slideNumbers.map(String) : [],
   }))
 }
 

@@ -42,6 +42,7 @@ export function buildPromptContext({
     stepTitle:       step?.title     ?? '',
     stepGoal:        step?.goal      ?? '',
     stepTopics:      Array.isArray(step?.coveredSubtopics) ? step.coveredSubtopics : [],
+    slideNumbers:    Array.isArray(step?.slideNumbers) ? step.slideNumbers : [],
     lessonStructure: lessonStructure,
     totalSteps:      lessonStructure.length,
     lessonFormat:    lessonFormat    ?? 'code_lab',

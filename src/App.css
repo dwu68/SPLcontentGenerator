@@ -1680,6 +1680,25 @@ body {
 .block-hint .block-body p { margin-bottom: 6px; }
 .block-hint .block-body p:last-child { margin-bottom: 0; }
 
+/* ── slide ──────────────────────────────────────────────────────────────────── */
+.block-slide-placeholder {
+  min-height: 120px;
+  background: var(--color-surface-raised);
+  border: 1.5px dashed var(--color-border);
+  border-radius: var(--radius-md);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.block-slide-placeholder-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-text-secondary);
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+}
+
 /* Custom scrollbars */
 ::-webkit-scrollbar        { width: 5px; height: 5px; }
 ::-webkit-scrollbar-track  { background: transparent; }

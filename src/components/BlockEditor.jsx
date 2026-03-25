@@ -140,7 +140,7 @@ function BlockCard({ block, onChange, onDelete }) {
               className="block-editor-lang-input"
               value={slideRef}
               onChange={(e) => onChange({ slideRef: e.target.value })}
-              placeholder="e.g. 3 or 3-5"
+              placeholder="e.g. 3"
             />
           </div>
         )}
