@@ -143,15 +143,26 @@ A dark-themed monospace `<textarea>` for the step's starter code. The Tab key in
 
 When a step has no `starterCode`, the right panel is hidden in view mode. An **Add Starter Code** button appears in the instruction panel header alongside the Edit button. Clicking it enters edit mode and reveals the code panel so the author can type the initial code. After saving, the panel remains visible only if `starterCode` is non-empty; an empty value collapses the panel back to hidden.
 
-**4. Non-lesson steps in Screen 2**
+**4. Add a hands-on practice step**
+
+At the bottom of the step sidebar, below all lesson steps, an **Add hands-on** button is always visible. It is disabled while generation is in progress and enabled once all steps have settled (done or error). Clicking it:
+1. Appends a new `lesson` step titled "Hands-on Practice" to `lessonStructure`, with `isHandsOn: true`
+2. Creates a matching empty `lessonContent` entry (`blocks: []`, `starterCode: ''`)
+3. Auto-selects the new step so the author can begin editing immediately
+
+In edit mode, the new step shows `BlockEditor` with an empty block list and the full add-block row (including `LINK` and `FILE` block types). No AI generation is triggered automatically.
+
+**AI-assist action for hands-on steps:** the **Add module lab** button appears in the instruction panel header (in place of "Add task with starter code") while in edit mode, as long as no task block or `starterCode` already exists. Clicking it calls `POST /api/generate-module-lab`, which uses the condensed content of all previous lesson steps as context and synthesizes a `task` block (title: "Module Lab") plus `starterCode`. Skip responses are shown inline when there is insufficient prior lesson content.
+
+**5. Non-lesson steps in Screen 2**
 
 Non-lesson steps (`downloadable_lab_files`, `starter_code_file`, `external_lab_link`) currently render using the same view as lesson steps. **This is a known gap** — per-type Screen 2 rendering is the next implementation slice.
 
-**5. Switch steps**
+**6. Switch steps**
 
 Clicking a different step in the sidebar loads its content. Edits to the previous step are already in app state — nothing is lost by switching.
 
-**6. Save Draft**
+**7. Save Draft**
 
 Clicking "Save Draft" in the header:
 1. Sets save status to "Saving…" (blue pulsing dot)
@@ -160,7 +171,7 @@ Clicking "Save Draft" in the header:
 
 The Save Draft button is disabled when status is already "Saved" or "Saving…".
 
-**7. Return to Screen 1**
+**8. Return to Screen 1**
 
 Clicking "← Back to Builder" returns to Screen 1. The lesson structure and all authoring content remain in app state.
 

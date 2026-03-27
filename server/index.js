@@ -26,6 +26,7 @@ import OpenAI from 'openai'
 import { buildGenerateStructurePrompt } from './prompts/generateStructurePrompt.js'
 import { buildGenerateContentPrompt } from './prompts/generateContentPrompt.js'
 import { buildGenerateTaskPrompt } from './prompts/generateTaskPrompt.js'
+import { buildGenerateModuleLabPrompt } from './prompts/generateModuleLabPrompt.js'
 import { buildPromptContext } from './lib/promptContext.js'
 import { extractSlideText } from './lib/extractSlideText.js'
 
@@ -194,6 +195,36 @@ function mockGenerateTask(step, lessonFormat) {
       content: `Apply ${topic.toLowerCase()} by completing the TODO in the starter code. When your solution is correct, the output should match the expected result shown in the comments.`,
     },
     starterCode: `# ${topic}\n# TODO: apply ${topicSlug} here\n# Expected: correct result\n`,
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Mock fallback — module-level lab generation
+//
+// Returns skip for concept_application (no natural coding synthesis).
+// For code_lab / guided_tool_workflow, synthesizes topics from previousSteps.
+// ---------------------------------------------------------------------------
+
+function mockGenerateModuleLab(previousSteps, lessonFormat) {
+  const format = lessonFormat || 'code_lab'
+  if (format === 'concept_application') {
+    return { skip: true, reason: 'This module is conceptual — no integrated coding lab is appropriate.' }
+  }
+  const allTopics = (previousSteps || [])
+    .flatMap((s) => s.coveredSubtopics || [])
+    .slice(0, 3)
+  if (allTopics.length === 0) {
+    return { skip: true, reason: 'No previous lesson content is available to base a module lab on.' }
+  }
+  const topicList = allTopics.join(', ')
+  const slug = topicList.toLowerCase().replace(/[^a-z0-9]+/g, '_').slice(0, 40)
+  return {
+    taskBlock: {
+      type:    'task',
+      title:   'Module Lab',
+      content: `Apply ${topicList} together in a single exercise. Your solution should correctly use each concept and produce the expected output shown in the starter code comments.`,
+    },
+    starterCode: `# Module Lab: ${topicList}\n\n# TODO: apply ${slug} together\n# Expected: correct output combining all module concepts\n`,
   }
 }
 
@@ -396,6 +427,49 @@ app.post('/api/generate-task', async (req, res) => {
     return res.json(raw)
   } catch (err) {
     console.error('[generate-task]', err.message)
+    return res.status(500).json({ error: err.message })
+  }
+})
+
+// POST /api/generate-module-lab
+app.post('/api/generate-module-lab', async (req, res) => {
+  const {
+    courseName,
+    moduleName,
+    lessonFormat,
+    outputLanguage = 'Python',
+    currentStep,
+    previousSteps = [],
+  } = req.body
+
+  if (!courseName || !moduleName || !currentStep?.title) {
+    return res.status(400).json({
+      error: 'Missing required fields: courseName, moduleName, currentStep (with title)',
+    })
+  }
+
+  if (USE_MOCK) {
+    return res.json(mockGenerateModuleLab(previousSteps, lessonFormat))
+  }
+
+  try {
+    const prompt = buildGenerateModuleLabPrompt({
+      courseName,
+      moduleName,
+      lessonFormat: lessonFormat || 'code_lab',
+      outputLanguage,
+      currentStep,
+      previousSteps,
+    })
+    const completion = await openai.chat.completions.create({
+      model: process.env.OPENAI_MODEL || 'gpt-4o-mini',
+      response_format: { type: 'json_object' },
+      messages: [{ role: 'user', content: prompt }],
+    })
+    const raw = JSON.parse(completion.choices[0].message.content)
+    return res.json(raw)
+  } catch (err) {
+    console.error('[generate-module-lab]', err.message)
     return res.status(500).json({ error: err.message })
   }
 })

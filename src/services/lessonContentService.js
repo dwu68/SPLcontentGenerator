@@ -165,6 +165,107 @@ export async function generateTaskForStep({ courseName, moduleName, step, curren
 }
 
 /**
+ * generateModuleLabForStep
+ *
+ * Calls POST /api/generate-module-lab for a Hands-on Practice step.
+ * Condenses previous lesson steps client-side before sending — only
+ * lesson steps that appear before the current step and have at least
+ * one block are included. Each step is reduced to:
+ *   { title, goal, coveredSubtopics, blockSummaries: [{ type, excerpt }] }
+ * Fields excluded: starterCode, expectedAction, validationNote.
+ *
+ * If no qualifying previous steps exist, returns a skip response
+ * immediately without making a network call.
+ *
+ * Returns one of:
+ *   { taskBlock, starterCode }         — lab generated; caller assigns block id
+ *   { skip: true, reason: string }     — no suitable lab; caller shows reason
+ * Throws on network error or unexpected server response.
+ *
+ * @param {object}   params
+ * @param {string}   params.courseName
+ * @param {string}   params.moduleName
+ * @param {string}   [params.lessonFormat]
+ * @param {object}   params.step             — current LessonStructure step
+ * @param {object[]} params.lessonStructure  — full structure array
+ * @param {object[]} params.lessonContent    — full content array
+ * @returns {Promise<{ taskBlock, starterCode } | { skip: true, reason: string }>}
+ */
+export async function generateModuleLabForStep({
+  courseName,
+  moduleName,
+  lessonFormat,
+  step,
+  lessonStructure,
+  lessonContent,
+}) {
+  // Collect lesson steps that appear before the current step and have content
+  const currentIndex = lessonStructure.findIndex((s) => s.id === step.id)
+  const stepsBeforeCurrent = currentIndex >= 0
+    ? lessonStructure.slice(0, currentIndex)
+    : lessonStructure
+
+  const previousSteps = stepsBeforeCurrent
+    .filter((s) => s.stepType === 'lesson')
+    .map((s) => {
+      const content = lessonContent.find((c) => c.id === s.id)
+      const blocks = Array.isArray(content?.blocks) ? content.blocks : []
+      if (blocks.length === 0) return null  // skip steps with no completed content
+
+      const blockSummaries = blocks.map((b) => ({
+        type:    b.type,
+        excerpt: (b.content ?? '').trim().slice(0, 150),
+      }))
+
+      return {
+        title:            s.title,
+        goal:             s.goal ?? '',
+        coveredSubtopics: Array.isArray(s.coveredSubtopics) ? s.coveredSubtopics : [],
+        blockSummaries,
+      }
+    })
+    .filter(Boolean)
+
+  // Early exit — no qualifying context to synthesize from
+  if (previousSteps.length === 0) {
+    return {
+      skip: true,
+      reason: 'No previous lesson content is available to base a module lab on. Add content to the earlier steps first.',
+    }
+  }
+
+  const res = await fetch('/api/generate-module-lab', {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({
+      courseName,
+      moduleName,
+      lessonFormat,
+      currentStep: {
+        title:            step.title,
+        goal:             step.goal ?? '',
+        coveredSubtopics: Array.isArray(step.coveredSubtopics) ? step.coveredSubtopics : [],
+      },
+      previousSteps,
+    }),
+  })
+
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({}))
+    throw new Error(body.error || `Server error ${res.status} for step "${step.title}"`)
+  }
+
+  const raw = await res.json()
+  if (raw.skip === true) {
+    return { skip: true, reason: raw.reason || 'No suitable module lab for this step.' }
+  }
+  if (!raw.taskBlock || typeof raw.starterCode !== 'string') {
+    throw new Error('Unexpected response shape from /api/generate-module-lab')
+  }
+  return { taskBlock: raw.taskBlock, starterCode: raw.starterCode }
+}
+
+/**
  * generateAllLessonContent
  *
  * Generates content for every step in the lesson structure.

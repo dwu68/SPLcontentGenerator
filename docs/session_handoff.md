@@ -2,6 +2,131 @@
 
 ---
 
+**ID** 25
+**Date:** 2026-03-27
+**Session scope:** Hands-on Practice step from Screen 2; `external_link` / `downloadable_file` block types; `Add module lab` dedicated narrow generation path; edit-mode branch fix for empty-blocks steps
+
+---
+
+## What Was Completed This Session
+
+### Feature — "Add hands-on" step in Screen 2 sidebar
+
+A new **Add hands-on** button sits at the bottom of the Screen 2 step sidebar, always visible, disabled while any step is still queued or generating. Clicking it:
+
+1. Appends a new `lesson` step to `lessonStructure` with title "Hands-on Practice" and `isHandsOn: true`
+2. Creates a matching empty `lessonContent` entry (`blocks: []`, `starterCode: ''`, `expectedAction: ''`, `validationNote: ''`) — no AI call
+3. Auto-selects the new step
+
+`isHandsOn: true` is the canonical routing marker. Screen 2 action routing (which AI-assist button appears in edit mode) is keyed on this flag, not on the step title string. The flag persists in the localStorage draft and survives renaming the step.
+
+### Fix — Edit-mode branch for empty-blocks steps
+
+The condition selecting between `BlockEditor` and `InstructionPanelEditor` in edit mode was changed from `blocks?.length > 0` to `Array.isArray(blocks)`. This means:
+- Steps with `blocks: []` (new hands-on steps, and AI-generated steps that happen to have no blocks) correctly open `BlockEditor`
+- Only legacy flat-field drafts (`blocks` is `undefined`) fall back to `InstructionPanelEditor`
+
+### Feature — `external_link` and `downloadable_file` block types
+
+Both new block types use the existing base shape `{ id, type, title, content }` — no new fields. Available via the add-block row in `BlockEditor` for all editable lesson steps.
+
+**`external_link`:**
+- `content` = the URL
+- `title` = learner-facing link label (optional; falls back to URL)
+- Edit UI: standard title input + `<input type="url">` for content
+- View: clickable link card with blue left border
+
+**`downloadable_file`:**
+- `title` = filename or display label
+- `content` = description of the file
+- Edit UI: "Filename or label" input + description textarea
+- View: file card with grey left border and "File upload — coming soon" placeholder
+
+### Feature — "Add module lab" for hands-on steps
+
+For steps with `isHandsOn: true`, the "Add task with starter code" button is suppressed and replaced by **Add module lab** in edit mode (same guard: no task block and no `starterCode`). The two buttons are mutually exclusive by design.
+
+**Generation path:**
+- Client: `generateModuleLabForStep()` in `lessonContentService.js`
+  - Finds all lesson steps appearing before the current step in `lessonStructure`
+  - Filters to those with `blocks.length > 0` (completed content only)
+  - Condenses each to `{ title, goal, coveredSubtopics, blockSummaries: [{ type, excerpt }] }` where `excerpt` = first 150 chars of `content`; `starterCode` / `expectedAction` / `validationNote` excluded
+  - If no qualifying steps: returns skip immediately without a network call
+- Server: `POST /api/generate-module-lab` → `buildGenerateModuleLabPrompt()` in `generateModuleLabPrompt.js`
+- Response (success): `{ taskBlock: { type: 'task', title: 'Module Lab', content }, starterCode }`
+- Response (skip): `{ skip: true, reason }`
+
+On success: `taskBlock` gets `id: block-${Date.now()}` client-side; appended to `blocks[]`; `starterCode` set at step level. Author remains in edit mode.
+
+---
+
+## Files Changed This Session
+
+| File | Change |
+|---|---|
+| `server/prompts/generateModuleLabPrompt.js` | **New** — prompt builder for module-level lab; serializes condensed previous-steps context; module-synthesis task + starterCode rules; skip contract |
+| `server/index.js` | Import `buildGenerateModuleLabPrompt`; `mockGenerateModuleLab()`; `POST /api/generate-module-lab` route |
+| `src/services/lessonContentService.js` | New export `generateModuleLabForStep()` — condensation, early-exit skip, fetch, validation |
+| `src/App.jsx` | `isHandsOn: true` in `handleAddHandsOnStep`; new `handleAddModuleLab()` handler; import and prop wiring |
+| `src/components/LessonAuthoringView.jsx` | (1) Edit-mode branch: `blocks?.length > 0` → `Array.isArray(blocks)`; (2) `onAddModuleLab` + `isHandsOnStep` props threaded to `LessonStepPanels`; (3) mutual-exclusion button conditions; (4) `external_link` / `downloadable_file` view rendering in `Block`; (5) three new module-lab feedback state vars |
+| `src/components/BlockEditor.jsx` | `external_link` and `downloadable_file` added to `TYPE_LABELS`, `ADD_TYPES`, `contentRows`, `contentPlaceholder`; `isExternalLink` / `isDownloadableFile` flags; URL input for `external_link` content field; type-aware labels |
+| `src/App.css` | `.step-sidebar-footer`, `.step-sidebar-add-handson`; `.block-external-link`, `.block-external-link-url`, `.block-downloadable-file`, `.block-downloadable-file-placeholder`, `.block-empty-placeholder` |
+| `docs/product_overview.md` | New features documented; current state date updated to Session 25 |
+| `docs/decisions.md` | Three new decisions: `isHandsOn` marker; dedicated module-lab path; `external_link`/`downloadable_file` as block types |
+| `docs/data_model.md` | `isHandsOn` added to lesson step shape; `external_link`/`downloadable_file` block semantics; block-types-by-format table updated |
+| `docs/user_flow.md` | New Screen 2 step 4 (hands-on flow); step numbers updated |
+| `docs/todo.md` | Five new ✅ items; four new Known Issues entries |
+| `docs/session_handoff.md` | This entry |
+
+---
+
+## What Has Been Manually Tested and Is Working
+
+*(Based on code review and mock-mode logic — full manual test list provided to author at end of session)*
+
+- "Add hands-on" button appears below the step list; disabled during generation; enabled after
+- New hands-on step appears in sidebar with "Hands-on Practice" title, is auto-selected
+- Edit mode on the new empty step opens `BlockEditor`, not `InstructionPanelEditor`
+- `+ LINK` and `+ FILE` add-block buttons appear in `BlockEditor` for all steps
+- `external_link` block: URL input in edit mode; link card in view mode; empty-URL fallback renders "No URL set"
+- `downloadable_file` block: "Filename or label" label in edit mode; file card with description and placeholder in view mode
+- Edit mode on a normal lesson step: "Add task with starter code" appears; "Add module lab" does not
+- Edit mode on a hands-on step: "Add module lab" appears; "Add task with starter code" does not
+- `isHandsOn: true` is present on the step after creation and survives localStorage save/restore
+
+---
+
+## Known Limitations / Follow-up Ideas
+
+| Item | Severity | Detail |
+|---|---|---|
+| `Add module lab` real-model skip behavior not validated | Medium | Mock always skips for `concept_application`. Real model behavior on borderline steps not yet tested with live OpenAI calls. |
+| `isHandsOn` steps included in Screen 1 re-generation | Low | If the author re-generates from Screen 1, the hands-on step is treated as a regular lesson step and receives AI-generated content. Overwrite is expected but may surprise authors who forget. |
+| `downloadable_file` block has no real file upload | Low | Stores title and description only. Real upload requires backend work deferred to another team. |
+| Block add-button row grows with each new type | Low | Now 9 buttons in the add-block row. If more types are added, the row will need grouping or a dropdown. |
+| `DIAG` console logs still in production code | Low | Carry-forward from Session 24 — `callProvider` and the generate-content route still emit `[DIAG]` logs. |
+
+---
+
+## Most Sensible Next Steps
+
+**A. End-to-end validate `Add module lab` with real OpenAI**
+Run a full generation pass on a `code_lab` module, add a hands-on step, trigger "Add module lab", and confirm the synthesized task and starter code draw on concepts from the previous steps — not just the most recent one.
+
+**B. Validate skip behavior with real model**
+Test `Add module lab` on a `guided_tool_workflow` module with slide-only steps and on a `concept_application` module to confirm skip fires appropriately and the reason text is author-friendly.
+
+**C. Format-gate block add buttons in `BlockEditor`**
+`slide` and `slide-explain` blocks are still addable in `code_lab` editors. A filter on `ADD_TYPES` keyed by `lessonFormat` prop would fix this. Low risk, small change. Carry-forward from Sessions 23–24.
+
+**D. Clean up `[DIAG]` console logs**
+Remove diagnostic logging from `callProvider` and the generate-content route once the progressive generation hang is confirmed not to recur. Carry-forward from Session 24.
+
+**E. Per-slide structured extraction**
+`extractSlideText.js` returns flat text. Returning `[{ slideNumber, text }]` would allow the `slide` block to render actual extracted slide text rather than just the reference label. Foundation work before the slide-content rendering slice.
+
+---
+
 **ID** 24
 **Date:** 2026-03-27
 **Session scope:** AI-assisted "Add task with starter code" in Screen 2 edit mode; view-mode "Add Starter Code" button removal; progressive generation hang diagnostics

@@ -33,9 +33,15 @@ function LessonAuthoringView({
   onSelectStep,
   onUpdateContent,
   onAddTask,
+  onAddModuleLab,
+  onAddHandsOnStep,
   dirtyStepIds,
   stepGenerationStatus = {},
 }) {
+  // Disabled while any step is still queued or actively generating
+  const generationInProgress = Object.values(stepGenerationStatus).some(
+    (s) => s === 'queued' || s === 'generating'
+  )
   const [isEditing, setIsEditing] = useState(false)
   const [editSnapshot, setEditSnapshot] = useState(null)
 
@@ -44,7 +50,8 @@ function LessonAuthoringView({
   // Lesson content entry — only present for lesson steps
   const selectedContent = lessonContent.find((s) => s.id === selectedStepId) ?? null
 
-  const isLessonStep = selectedStructureStep?.stepType === 'lesson'
+  const isLessonStep  = selectedStructureStep?.stepType === 'lesson'
+  const isHandsOnStep = Boolean(selectedStructureStep?.isHandsOn)
 
   // Enter edit mode — snapshot the current lesson content so Cancel can restore it
   const handleEdit = () => {
@@ -112,6 +119,16 @@ function LessonAuthoringView({
             )
           })}
         </nav>
+        <div className="step-sidebar-footer">
+          <button
+            className="btn btn-ghost step-sidebar-add-handson"
+            onClick={onAddHandsOnStep}
+            disabled={generationInProgress}
+            title={generationInProgress ? 'Waiting for all steps to finish generating…' : 'Add a hands-on practice step'}
+          >
+            + Add hands-on
+          </button>
+        </div>
       </aside>
 
       {/* ── Main Editor Area ─────────────────────────────────────────────── */}
@@ -127,6 +144,8 @@ function LessonAuthoringView({
               onCancel={handleCancel}
               onUpdateContent={onUpdateContent}
               onAddTask={onAddTask}
+              onAddModuleLab={onAddModuleLab}
+              isHandsOnStep={isHandsOnStep}
             />
           ) : (
             <NonLessonStepPanel step={selectedStructureStep} />
@@ -141,19 +160,27 @@ function LessonAuthoringView({
 
 // ── Lesson step: instruction panel + code panel ──────────────────────────────
 
-function LessonStepPanels({ selectedContent, genStatus, isEditing, onEdit, onSave, onCancel, onUpdateContent, onAddTask }) {
+function LessonStepPanels({ selectedContent, genStatus, isEditing, onEdit, onSave, onCancel, onUpdateContent, onAddTask, onAddModuleLab, isHandsOnStep }) {
   const hasLabContent = Boolean(selectedContent?.starterCode?.trim())
   const hasTaskBlock  = selectedContent?.blocks?.some((b) => b.type === 'task') ?? false
 
+  // ── Add task with starter code (normal lesson steps) ─────────────────────
   const [isAddingTask,    setIsAddingTask]    = useState(false)
   const [addTaskError,    setAddTaskError]    = useState(null)
   const [addTaskSkipNote, setAddTaskSkipNote] = useState(null)
 
-  // Clear feedback whenever edit mode exits
+  // ── Add module lab (hands-on steps) ──────────────────────────────────────
+  const [isAddingModuleLab,    setIsAddingModuleLab]    = useState(false)
+  const [addModuleLabError,    setAddModuleLabError]    = useState(null)
+  const [addModuleLabSkipNote, setAddModuleLabSkipNote] = useState(null)
+
+  // Clear all AI-action feedback whenever edit mode exits
   useEffect(() => {
     if (!isEditing) {
       setAddTaskError(null)
       setAddTaskSkipNote(null)
+      setAddModuleLabError(null)
+      setAddModuleLabSkipNote(null)
     }
   }, [isEditing])
 
@@ -171,7 +198,24 @@ function LessonStepPanels({ selectedContent, genStatus, isEditing, onEdit, onSav
     }
   }
 
-  const showAddTaskBtn = isEditing && selectedContent && !hasTaskBlock && !hasLabContent
+  const handleAddModuleLabClick = async () => {
+    setIsAddingModuleLab(true)
+    setAddModuleLabError(null)
+    setAddModuleLabSkipNote(null)
+    try {
+      const result = await onAddModuleLab()
+      if (result?.skipped) setAddModuleLabSkipNote(result.reason)
+    } catch (err) {
+      setAddModuleLabError(err.message || 'Failed to generate module lab. Please try again.')
+    } finally {
+      setIsAddingModuleLab(false)
+    }
+  }
+
+  // "Add task with starter code" — normal steps only, no existing task/lab
+  const showAddTaskBtn      = isEditing && selectedContent && !isHandsOnStep && !hasTaskBlock && !hasLabContent
+  // "Add module lab" — hands-on steps only, no existing task/lab
+  const showAddModuleLabBtn = isEditing && selectedContent && isHandsOnStep  && !hasTaskBlock && !hasLabContent
 
   return (
     <>
@@ -192,6 +236,15 @@ function LessonStepPanels({ selectedContent, genStatus, isEditing, onEdit, onSav
                     disabled={isAddingTask}
                   >
                     {isAddingTask ? 'Generating…' : 'Add task with starter code'}
+                  </button>
+                )}
+                {showAddModuleLabBtn && (
+                  <button
+                    className="btn btn-sm btn-secondary"
+                    onClick={handleAddModuleLabClick}
+                    disabled={isAddingModuleLab}
+                  >
+                    {isAddingModuleLab ? 'Generating…' : 'Add module lab'}
                   </button>
                 )}
                 <button className="btn btn-sm btn-success" onClick={onSave}>
@@ -218,10 +271,20 @@ function LessonStepPanels({ selectedContent, genStatus, isEditing, onEdit, onSav
             {addTaskSkipNote}
           </div>
         )}
+        {addModuleLabError && (
+          <div style={{ fontSize: 12, color: 'var(--color-danger, #c0392b)', padding: '4px 16px 0' }}>
+            {addModuleLabError}
+          </div>
+        )}
+        {addModuleLabSkipNote && (
+          <div style={{ fontSize: 12, color: 'var(--color-text-secondary)', padding: '4px 16px 0' }}>
+            {addModuleLabSkipNote}
+          </div>
+        )}
         <div className="panel-body">
           {selectedContent ? (
             isEditing ? (
-              selectedContent.blocks?.length > 0 ? (
+              Array.isArray(selectedContent.blocks) ? (
                 <BlockEditor
                   blocks={selectedContent.blocks}
                   onUpdate={(newBlocks) => onUpdateContent(selectedContent.id, { blocks: newBlocks })}
@@ -585,6 +648,40 @@ function Block({ block }) {
           <summary>{title || 'Need a hint?'}</summary>
           <div className="block-body">{segments}</div>
         </details>
+      </div>
+    )
+  }
+
+  if (type === 'external_link') {
+    return (
+      <div className="block block-external-link">
+        {title && <div className="block-heading">{title}</div>}
+        <div className="block-body">
+          {safeContent ? (
+            <a
+              href={safeContent}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="block-external-link-url"
+            >
+              {title || safeContent}
+            </a>
+          ) : (
+            <span className="block-empty-placeholder">No URL set</span>
+          )}
+        </div>
+      </div>
+    )
+  }
+
+  if (type === 'downloadable_file') {
+    return (
+      <div className="block block-downloadable-file">
+        <div className="block-heading">{title || 'File'}</div>
+        <div className="block-body">
+          {safeContent && <p>{safeContent}</p>}
+          <div className="block-downloadable-file-placeholder">File upload — coming soon</div>
+        </div>
       </div>
     )
   }

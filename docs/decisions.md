@@ -100,6 +100,28 @@ Canonical record of decisions made and their rationale. Covers technology choice
 
 **Rationale:** Most steps do not need starter code. Showing an empty dark panel by default wastes layout space and is visually noisy. The affordance to add it is discoverable (next to the Edit button) without being in the way when unused.
 
+### `isHandsOn: true` as step identity marker — not title text
+
+**Decision:** Steps created via "Add hands-on" carry `isHandsOn: true` on the `lessonStructure` entry. Screen 2 action routing (which AI-assist button appears in edit mode) is keyed on this flag, not on the step title string.
+
+**Rationale:** Relying on `step.title === 'Hands-on Practice'` would break silently if the author renames the step, and would misfire on any other step that happens to share that title. A boolean flag on the step object is stable, cheap to check, and persists correctly through localStorage round-trips. The step type remains `lesson` — `isHandsOn` is purely a UI routing signal with no behavioral effect on generation, structure, or persistence beyond the Screen 2 button choice.
+
+### Dedicated narrow generation path for module-level lab (`Add module lab`)
+
+**Decision:** The "Add module lab" action for `isHandsOn` steps uses a dedicated endpoint (`POST /api/generate-module-lab`) and prompt (`generateModuleLabPrompt.js`), not the full content generation path or the step-local `generate-task` path.
+
+**Rationale:** The module lab differs from a step-local task in one fundamental way: its context is the entire module's prior lesson content, not the current step's blocks. The step-local `generate-task` prompt is scoped to anchor its output to the current step's existing blocks. Re-using it for a module lab would produce a narrowly scoped task rather than a synthesis exercise. A dedicated prompt allows explicit module-synthesis instructions, a different task title ("Module Lab" vs "Lab"), and its own skip criteria.
+
+**Context condensation:** Previous-step context is built client-side in `generateModuleLabForStep()` before the network request. Each qualifying step (lesson steps before the current one with at least one block) is reduced to `{ title, goal, coveredSubtopics, blockSummaries: [{ type, excerpt }] }` where each block excerpt is the first 150 characters of `content`. Fields `starterCode`, `expectedAction`, and `validationNote` are excluded — they describe the practice interface, not the taught content. This keeps the payload compact while giving the model enough signal to synthesize across topics.
+
+**Early-exit skip:** If no qualifying previous steps exist after filtering, `generateModuleLabForStep()` returns a skip response immediately without making a network call. This avoids a wasted round-trip and surfaces a clear author-facing message.
+
+### `external_link` and `downloadable_file` as block types — not step types
+
+**Decision:** External links and downloadable file references within a lesson step are implemented as block types (`external_link`, `downloadable_file`) using the existing base block shape `{ id, type, title, content }`. They are not new step types and do not require new step-level fields.
+
+**Rationale:** The existing non-lesson step types (`external_lab_link`, `downloadable_lab_files`) are step-level constructs designed to hold module-structure metadata. Making links and files available *within* a lesson step's content — alongside `explain`, `task`, and other blocks — requires them to be block types. Both fit cleanly into the existing schema: `external_link` uses `content` for the URL and `title` for the link label; `downloadable_file` uses `title` for the filename label and `content` for the description. No new fields are needed. Actual file upload for `downloadable_file` is a placeholder, consistent with the existing pattern for the `downloadable_lab_files` step type.
+
 ---
 
 ## coveredSubtopics — Local String State in StepBuilderCard

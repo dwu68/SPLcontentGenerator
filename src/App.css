@@ -965,6 +965,19 @@ body {
   padding: 6px;
 }
 
+.step-sidebar-footer {
+  flex-shrink: 0;
+  padding: 8px;
+  border-top: 1px solid var(--color-border);
+}
+
+.step-sidebar-add-handson {
+  width: 100%;
+  justify-content: flex-start;
+  font-size: 12px;
+  color: var(--color-text-secondary);
+}
+
 .step-nav-btn {
   display: flex;
   align-items: flex-start;
@@ -1739,6 +1752,48 @@ body {
   color: var(--color-text-secondary);
   letter-spacing: 0.03em;
   text-transform: uppercase;
+}
+
+/* ── external_link ──────────────────────────────────────────────────────────── */
+.block-external-link {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-left: 3px solid var(--color-primary);
+  border-radius: var(--radius-md);
+  padding: 14px 16px;
+}
+
+.block-external-link-url {
+  color: var(--color-primary);
+  font-size: 13px;
+  word-break: break-all;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.block-external-link-url:hover {
+  color: var(--color-primary-hover);
+}
+
+/* ── downloadable_file ──────────────────────────────────────────────────────── */
+.block-downloadable-file {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-left: 3px solid var(--color-text-muted);
+  border-radius: var(--radius-md);
+  padding: 14px 16px;
+}
+
+.block-downloadable-file-placeholder {
+  margin-top: 8px;
+  font-size: 12px;
+  color: var(--color-text-muted);
+  font-style: italic;
+}
+
+.block-empty-placeholder {
+  font-size: 13px;
+  color: var(--color-text-muted);
+  font-style: italic;
 }
 
 /* Custom scrollbars */

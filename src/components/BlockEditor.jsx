@@ -22,16 +22,22 @@ import React from 'react'
  */
 
 const TYPE_LABELS = {
-  explain:       'EXPLAIN',
-  code:          'CODE',
-  check:         'CHECK',
-  task:          'TASK',
-  hint:          'HINT',
-  slide:         'SLIDE',
-  'slide-explain': 'SLIDE EXPLAIN',
+  explain:           'EXPLAIN',
+  code:              'CODE',
+  check:             'CHECK',
+  task:              'TASK',
+  hint:              'HINT',
+  slide:             'SLIDE',
+  'slide-explain':   'SLIDE EXPLAIN',
+  external_link:     'LINK',
+  downloadable_file: 'FILE',
 }
 
-const ADD_TYPES = ['explain', 'code', 'check', 'task', 'hint', 'slide', 'slide-explain']
+const ADD_TYPES = [
+  'explain', 'code', 'check', 'task', 'hint',
+  'slide', 'slide-explain',
+  'external_link', 'downloadable_file',
+]
 
 // ---------------------------------------------------------------------------
 // BlockEditor
@@ -95,9 +101,11 @@ function BlockCard({ block, onChange, onDelete }) {
   const { type, title = '', content = '', language = '' } = block
   const slideRef = block.slideRef ?? ''
   const label = TYPE_LABELS[type] ?? type.toUpperCase()
-  const isCode  = type === 'code'
-  const isHint  = type === 'hint'
-  const isSlide = type === 'slide'
+  const isCode             = type === 'code'
+  const isHint             = type === 'hint'
+  const isSlide            = type === 'slide'
+  const isExternalLink     = type === 'external_link'
+  const isDownloadableFile = type === 'downloadable_file'
 
   return (
     <div className={`block-editor-card block-editor-card--${type}`}>
@@ -120,14 +128,20 @@ function BlockCard({ block, onChange, onDelete }) {
         {/* Title — all types */}
         <div className="block-editor-field">
           <label className="block-editor-field-label">
-            {isHint ? 'Collapsed label (optional)' : 'Title (optional)'}
+            {isHint             ? 'Collapsed label (optional)'
+             : isDownloadableFile ? 'Filename or label'
+             : 'Title (optional)'}
           </label>
           <input
             type="text"
             className="field-input"
             value={title}
             onChange={(e) => onChange({ title: e.target.value })}
-            placeholder={isHint ? 'e.g. Need a hint?' : 'e.g. What it is'}
+            placeholder={
+              isHint             ? 'e.g. Need a hint?'
+              : isDownloadableFile ? 'e.g. starter_data.csv'
+              : 'e.g. What it is'
+            }
           />
         </div>
 
@@ -159,18 +173,31 @@ function BlockCard({ block, onChange, onDelete }) {
           </div>
         )}
 
-        {/* Content — all types (optional caption/notes for slide blocks) */}
+        {/* Content — URL input for external_link; textarea for all others */}
         <div className="block-editor-field">
           <label className="block-editor-field-label">
-            {isSlide ? 'Caption / notes (optional)' : 'Content'}
+            {isSlide            ? 'Caption / notes (optional)'
+             : isExternalLink    ? 'URL'
+             : isDownloadableFile ? 'Description'
+             : 'Content'}
           </label>
-          <textarea
-            className={isCode ? 'block-editor-code-textarea' : 'field-textarea'}
-            value={content}
-            rows={contentRows(type)}
-            onChange={(e) => onChange({ content: e.target.value })}
-            placeholder={contentPlaceholder(type)}
-          />
+          {isExternalLink ? (
+            <input
+              type="url"
+              className="field-input"
+              value={content}
+              onChange={(e) => onChange({ content: e.target.value })}
+              placeholder="https://…"
+            />
+          ) : (
+            <textarea
+              className={isCode ? 'block-editor-code-textarea' : 'field-textarea'}
+              value={content}
+              rows={contentRows(type)}
+              onChange={(e) => onChange({ content: e.target.value })}
+              placeholder={contentPlaceholder(type)}
+            />
+          )}
         </div>
       </div>
     </div>
@@ -183,27 +210,29 @@ function BlockCard({ block, onChange, onDelete }) {
 
 function contentRows(type) {
   switch (type) {
-    case 'code':          return 6
-    case 'explain':       return 5
-    case 'slide-explain': return 6
-    case 'check':         return 4
-    case 'task':          return 4
-    case 'hint':          return 3
-    case 'slide':         return 2
-    default:              return 4
+    case 'code':              return 6
+    case 'explain':           return 5
+    case 'slide-explain':     return 6
+    case 'check':             return 4
+    case 'task':              return 4
+    case 'hint':              return 3
+    case 'slide':             return 2
+    case 'downloadable_file': return 3
+    default:                  return 4
   }
 }
 
 function contentPlaceholder(type) {
   switch (type) {
-    case 'explain':       return 'Teach the concept: why it matters, how it works, the key rules…'
-    case 'code':          return 'Short annotated snippet (4–10 lines)…'
-    case 'check':         return 'Ask the learner a quick question or reflection prompt…'
-    case 'task':          return 'Numbered steps the learner must complete…'
-    case 'hint':          return 'A nudge for learners who are stuck…'
-    case 'slide':         return 'Optional caption or authoring note for this slide reference…'
-    case 'slide-explain': return 'Expand and explain the slide content for a solo learner…'
-    default:              return ''
+    case 'explain':           return 'Teach the concept: why it matters, how it works, the key rules…'
+    case 'code':              return 'Short annotated snippet (4–10 lines)…'
+    case 'check':             return 'Ask the learner a quick question or reflection prompt…'
+    case 'task':              return 'Numbered steps the learner must complete…'
+    case 'hint':              return 'A nudge for learners who are stuck…'
+    case 'slide':             return 'Optional caption or authoring note for this slide reference…'
+    case 'slide-explain':     return 'Expand and explain the slide content for a solo learner…'
+    case 'downloadable_file': return 'What this file contains and how the learner should use it…'
+    default:                  return ''
   }
 }
 

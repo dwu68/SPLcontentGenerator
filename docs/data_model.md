@@ -64,6 +64,9 @@ Each entry in `lessonStructure[]` is a step. All steps share a common base; type
 {
   goal             : string   // learning outcome ("Students will be able to…")
   coveredSubtopics : string[] // list of topic strings
+  isHandsOn        : boolean  // present only on steps created via "Add hands-on" in Screen 2
+                              // undefined (absent) on all AI-generated steps and Screen 1 manual steps
+                              // drives Screen 2 action routing: "Add module lab" vs "Add task with starter code"
 }
 ```
 
@@ -163,9 +166,21 @@ language : string   // e.g. 'python' — required for type 'code', absent on all
 // slide blocks only
 slideRef : string   // slide number or range, e.g. "3" or "3-5" — required for type 'slide'
                     // content is "" on AI-generated slide blocks; may hold a caption if manually edited
+
+// external_link blocks — no extra fields beyond base
+// title   = learner-facing link label (optional; falls back to displaying the URL)
+// content = the URL
+
+// downloadable_file blocks — no extra fields beyond base
+// title   = filename or display label, e.g. "starter_data.csv"
+// content = description of what the file contains and how to use it
+//           actual file upload is a placeholder; not yet implemented
 ```
 
 ### Block types by format
+
+**All steps (all formats)** — manually addable in `BlockEditor`:
+`external_link`, `downloadable_file`
 
 **`code_lab` steps** — AI generates a variable sequence of:
 `explain`, `code`, `check`, `task`, `hint`

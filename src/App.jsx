@@ -3,7 +3,7 @@ import Header from './components/Header'
 import LessonInputForm from './components/LessonInputForm'
 import LessonStructurePreview from './components/LessonStructurePreview'
 import LessonAuthoringView from './components/LessonAuthoringView'
-import { generateStepContent, generateTaskForStep } from './services/lessonContentService'
+import { generateStepContent, generateTaskForStep, generateModuleLabForStep } from './services/lessonContentService'
 import { generateLessonStructure } from './services/lessonStructureService'
 
 const STORAGE_KEY = 'spl_lesson_draft'
@@ -259,6 +259,74 @@ function App() {
     setIsGenerating(false)
   }
 
+  // ── Screen 2: add a new empty hands-on lesson step ───────────────────────
+  //
+  // Creates a lesson step in lessonStructure + a matching empty lessonContent
+  // entry (no AI call — author authors manually in edit mode afterward).
+  // Auto-selects the new step so the author can start editing immediately.
+  const handleAddHandsOnStep = () => {
+    const newId = `step-new-${Date.now()}`
+    setLessonStructure((prev) => [
+      ...prev,
+      {
+        id: newId,
+        stepNumber: prev.length + 1,
+        stepType: 'lesson',
+        title: 'Hands-on Practice',
+        goal: '',
+        coveredSubtopics: [],
+        isHandsOn: true,
+      },
+    ])
+    setLessonContent((prev) => [
+      ...prev,
+      {
+        id: newId,
+        stepNumber: lessonStructure.length + 1,
+        title: 'Hands-on Practice',
+        blocks: [],
+        starterCode: '',
+        expectedAction: '',
+        validationNote: '',
+      },
+    ])
+    setSelectedStepId(newId)
+    setSaveStatus('unsaved')
+  }
+
+  // ── Screen 2: generate module-level lab for a Hands-on Practice step ────
+  //
+  // Uses all previous lesson steps as context (condensed in the service layer).
+  // Appends a task block + starterCode to the current step, same as handleAddTask.
+  // Returns { skipped: true, reason } when the model signals no suitable lab.
+  // Throws on network / server error.
+  const handleAddModuleLab = async () => {
+    const structureStep = lessonStructure.find((s) => s.id === selectedStepId)
+    if (!structureStep) return null
+
+    const result = await generateModuleLabForStep({
+      courseName,
+      moduleName,
+      lessonFormat,
+      step: structureStep,
+      lessonStructure,
+      lessonContent,
+    })
+
+    if (result.skip) return { skipped: true, reason: result.reason }
+
+    const blockWithId = { ...result.taskBlock, id: `block-${Date.now()}` }
+    setLessonContent((prev) =>
+      prev.map((s) =>
+        s.id !== selectedStepId ? s :
+        { ...s, blocks: [...(s.blocks || []), blockWithId], starterCode: result.starterCode }
+      )
+    )
+    setDirtyStepIds((prev) => new Set([...prev, selectedStepId]))
+    setSaveStatus('unsaved')
+    return null
+  }
+
   // ── Screen 2: add a task block + starterCode to a step via AI ───────────
   //
   // Called from LessonAuthoringView with the live (in-edit) blocks for the
@@ -433,6 +501,8 @@ function App() {
           onSelectStep={setSelectedStepId}
           onUpdateContent={handleUpdateContent}
           onAddTask={handleAddTask}
+          onAddModuleLab={handleAddModuleLab}
+          onAddHandsOnStep={handleAddHandsOnStep}
           dirtyStepIds={dirtyStepIds}
           saveStatus={saveStatus}
           onSaveDraft={handleSaveDraft}
