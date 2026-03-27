@@ -60,11 +60,16 @@ async function callProvider({ courseName, moduleName, step, lessonStructure, les
     headers: { 'content-type': 'application/json' },
     body: JSON.stringify({ courseName, moduleName, step, lessonStructure, lessonFormat, learnerLevel, outputLanguage, slideText }),
   })
+  // [DIAG] point 1b — confirm fetch resolved and what HTTP status came back
+  console.log('[DIAG][frontend] fetch resolved for step:', step?.title, '| status:', res.status, '| ok:', res.ok)
   if (!res.ok) {
     const body = await res.json().catch(() => ({}))
     throw new Error(body.error || `Server error ${res.status} for step "${step.title}"`)
   }
-  return res.json()
+  const _diagJson = await res.json()
+  // [DIAG] point 1c — confirm res.json() resolved and what the top-level keys are
+  console.log('[DIAG][frontend] res.json() resolved for step:', step?.title, '| top-level keys:', Object.keys(_diagJson))
+  return _diagJson
 }
 
 // ---------------------------------------------------------------------------
@@ -118,6 +123,45 @@ function normalizeContent(rawContent, step) {
 export async function generateStepContent({ courseName, moduleName, step, lessonStructure, lessonFormat, learnerLevel, outputLanguage, slideText }) {
   const raw = await callProvider({ courseName, moduleName, step, lessonStructure, lessonFormat, learnerLevel, outputLanguage, slideText })
   return normalizeContent(raw, step)
+}
+
+/**
+ * generateTaskForStep
+ *
+ * Calls POST /api/generate-task for a step that has no task block or starterCode.
+ * Returns one of:
+ *   { taskBlock, starterCode }         — task generated; caller assigns block id
+ *   { skip: true, reason: string }     — model signalled no suitable task exists
+ *
+ * Throws on network error or unexpected server response.
+ *
+ * @param {object}   params
+ * @param {string}   params.courseName
+ * @param {string}   params.moduleName
+ * @param {object}   params.step             — LessonStructure step (title, goal, topics, slideNumbers)
+ * @param {object[]} params.currentBlocks    — live blocks already in this step (in-edit state)
+ * @param {string}   [params.lessonFormat]
+ * @param {string}   [params.slideText]
+ * @returns {Promise<{ taskBlock, starterCode } | { skip: true, reason: string }>}
+ */
+export async function generateTaskForStep({ courseName, moduleName, step, currentBlocks, lessonFormat, slideText }) {
+  const res = await fetch('/api/generate-task', {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ courseName, moduleName, step, currentBlocks, lessonFormat, slideText }),
+  })
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({}))
+    throw new Error(body.error || `Server error ${res.status} for step "${step.title}"`)
+  }
+  const raw = await res.json()
+  if (raw.skip === true) {
+    return { skip: true, reason: raw.reason || 'No suitable task for this step.' }
+  }
+  if (!raw.taskBlock || typeof raw.starterCode !== 'string') {
+    throw new Error('Unexpected response shape from /api/generate-task')
+  }
+  return { taskBlock: raw.taskBlock, starterCode: raw.starterCode }
 }
 
 /**

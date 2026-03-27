@@ -82,6 +82,18 @@ Canonical record of decisions made and their rationale. Covers technology choice
 
 **Trade-off documented:** Navigating back to Screen 1 mid-generation does not cancel in-flight requests — the background loop continues updating state. Cancellation support is deferred.
 
+### Dedicated narrow generation path for task + starter code
+
+**Decision:** Adding a task block + `starterCode` to an existing step uses a dedicated endpoint (`POST /api/generate-task`) and a separate focused prompt (`generateTaskPrompt.js`), not the full `POST /api/generate-content` path.
+
+**Rationale:** Re-running the full content generation for a single missing field would regenerate all blocks and overwrite existing authored content. The narrow path takes the current blocks as context, generates only the task block and its matching `starterCode`, and appends without touching anything else. The prompt is scoped to this single operation and can carry appropriate constraints (step-anchored, smallest viable task, no concept introduction) without complicating the main content prompt.
+
+**Skip responses:** The prompt instructs the model to return `{ "skip": true, "reason": "..." }` when a task is genuinely inappropriate for the step (e.g. purely conceptual, `guided_tool_workflow` without a coding action). The service passes this through and the UI displays the reason inline. No content is modified on a skip. This prevents forcing a task block onto steps where none is appropriate, at very low implementation cost.
+
+**Block ID assignment:** The task block returned by `POST /api/generate-task` has no `id` field — the client assigns `block-${Date.now()}` at insertion time, consistent with the pattern used by `BlockEditor` for manually added blocks.
+
+**`starterCode` placement:** `starterCode` remains a step-level field on `LessonContent`, not a block in `blocks[]`. The right-side code panel reads it from the step object. This is consistent with how the main content generation path handles it.
+
 ### Starter code panel — shown on demand, not always visible
 
 **Decision:** The right-side code panel is hidden in view mode when `starterCode` is empty. An **Add Starter Code** button in the instruction panel header allows the author to open the panel on demand. In edit mode the panel always renders (so the author can type into it). After saving, the panel persists only if `starterCode` is non-empty.

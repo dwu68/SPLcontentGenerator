@@ -2,6 +2,129 @@
 
 ---
 
+**ID** 24
+**Date:** 2026-03-27
+**Session scope:** AI-assisted "Add task with starter code" in Screen 2 edit mode; view-mode "Add Starter Code" button removal; progressive generation hang diagnostics
+
+---
+
+## What Was Completed This Session
+
+### Feature — "Add task with starter code" in Screen 2 edit mode
+
+When a `lesson` step in edit mode has no `task` block and no `starterCode`, the instruction panel header now shows an **Add task with starter code** button.
+
+**Behaviour:**
+- Clicking calls `POST /api/generate-task` with the step's current live blocks, metadata (title, goal, topics, slideNumbers), `lessonFormat`, and `slideText`
+- The AI generates one `task` block anchored to what the existing blocks have already taught, plus matching `starterCode`
+- The task block is appended to the end of the block sequence; `starterCode` is set at the step level
+- The author stays in edit mode and can immediately refine both
+- If the AI judges the step unsuitable (purely conceptual, no coding action), it returns `{ skip: true, reason }` — shown as an inline note; no content is modified
+- Loading, error, and skip feedback are local state in `LessonStepPanels` — cleared automatically when edit mode exits
+
+**`server/prompts/generateTaskPrompt.js`** (new file):
+- Focused prompt that serializes the current blocks as context, asks for one task block + starterCode anchored to the existing teaching content
+- Block IDs are not assigned by the server; client uses `block-${Date.now()}` at insertion, matching `BlockEditor`'s existing pattern
+- Includes lessonFormat guidance (mirrors the style from `generateContentPrompt.js`)
+- Instructs the model to return `{ skip: true, reason }` for unsuitable steps
+
+**`server/index.js`**:
+- Added `mockGenerateTask(step, lessonFormat)` — returns skip for `concept_application`; returns a minimal task + starterCode for `code_lab` / `guided_tool_workflow`
+- Added `POST /api/generate-task` route
+
+**`src/services/lessonContentService.js`**:
+- Added `generateTaskForStep(...)` — narrow fetch to `/api/generate-task`; validates response shape; passes skip responses through as `{ skip: true, reason }`; throws on server error
+
+**`src/App.jsx`**:
+- Added `handleAddTask(currentBlocks)` — calls `generateTaskForStep` with the live structure step context; uses a functional `setLessonContent` updater to append the new block safely; marks step dirty
+- Passes `onAddTask` prop to `LessonAuthoringView`
+
+**`src/components/LessonAuthoringView.jsx`**:
+- `LessonStepPanels` accepts `onAddTask`
+- Three local state variables: `isAddingTask`, `addTaskError`, `addTaskSkipNote`
+- `useEffect` clears error/skip note on edit-mode exit
+- Button condition: `isEditing && selectedContent && !hasTaskBlock && !hasLabContent`
+- Button disabled while generating; label changes to "Generating…"
+- Error and skip note render as small inline messages below the panel header
+
+### Fix — Removed "Add Starter Code" from view mode
+
+The **Add Starter Code** button previously shown next to the Edit button in view mode was removed. The equivalent authoring affordance is now available in edit mode via "Add task with starter code" (which covers the common case) and the code panel's direct editability while in edit mode.
+
+### Diagnostics — Progressive generation hang investigation
+
+Added targeted DIAG points to narrow down where later steps were getting stuck in `generating`:
+
+**`server/index.js`** — new DIAG 4b between `parseContentResponse` and `res.json()`:
+```
+[DIAG][server] parseContentResponse OK | about to res.json | serialized response length (chars): N
+```
+
+**`src/services/lessonContentService.js`** — two new client-side DIAGs in `callProvider`:
+- DIAG 1b: immediately after `fetch` resolves (logs HTTP status)
+- DIAG 1c: immediately after `res.json()` resolves (logs top-level keys)
+
+The hang was not consistently reproducible by the end of the session. DIAGs remain in place for future observation.
+
+---
+
+## Files Changed This Session
+
+| File | Change |
+|---|---|
+| `server/prompts/generateTaskPrompt.js` | **New file** — focused task + starterCode generation prompt |
+| `server/index.js` | `mockGenerateTask`; `POST /api/generate-task` route; DIAG 4b |
+| `src/services/lessonContentService.js` | `generateTaskForStep()` export; DIAG 1b + 1c in `callProvider` |
+| `src/App.jsx` | `handleAddTask()` handler; `onAddTask` prop wired to `LessonAuthoringView` |
+| `src/components/LessonAuthoringView.jsx` | `onAddTask` prop; local state + button in `LessonStepPanels`; view-mode "Add Starter Code" button removed |
+| `docs/product_overview.md` | "Add task with starter code" feature documented; current state date updated |
+| `docs/decisions.md` | New decision: dedicated narrow generation path for task + starter code |
+| `docs/session_handoff.md` | This entry |
+
+---
+
+## What Has Been Manually Tested and Is Working
+
+- "Add task with starter code" button appears only in edit mode when step has no task block and no starterCode
+- Button is absent once a task block or starterCode exists on the step
+- Clicking generates a task block + starterCode and inserts them; author stays in edit mode
+- Code panel appears after successful generation (starterCode is now non-empty)
+- Error message appears inline on server failure; existing content is unchanged
+- Skip response (mock: `concept_application` format) shows the reason message; no content is modified
+- Button disables and shows "Generating…" while the request is in flight
+- Error and skip note clear when exiting edit mode
+- "Add Starter Code" button is gone from view mode
+
+---
+
+## Known Limitations / Follow-up Ideas
+
+| Item | Severity | Detail |
+|---|---|---|
+| DIAG points remain in production code | Low | `callProvider` and the generate-content route still have `[DIAG]` console logs. Should be cleaned up once the progressive generation hang is confirmed resolved. |
+| Skip response UX is informational only | Low | The skip note appears but disappears silently if the author exits and re-enters edit mode. No persistent indication that a task was suggested to be skipped. |
+| `hint` block not generated alongside task | Low | The narrow path generates only a task block. An associated hint block (if the step has a likely stuck point) is not generated. Author can add one manually via BlockEditor. |
+| No server-side validation that task is anchored to existing blocks | Low | The prompt instructs anchoring; the model generally complies. No post-generation check verifies that the task topic aligns with the existing block content. |
+| Real skip behavior not yet tested against live model | Medium | Mock always skips for `concept_application`. Real model behavior on borderline steps (e.g. `guided_tool_workflow` steps with slides but no coding) is not yet validated. |
+
+---
+
+## Most Sensible Next Steps
+
+**A. Clean up DIAG points**
+Remove the `[DIAG]` console logs from `callProvider` and the generate-content route once the progressive generation hang is confirmed not to recur. They were a debugging aid, not permanent logging.
+
+**B. Validate generate-task skip behavior with live model**
+Run end-to-end with real OpenAI calls across `code_lab`, `guided_tool_workflow`, and `concept_application` steps to confirm the skip response fires correctly for unsuitable steps and does not fire for steps where a task is appropriate.
+
+**C. Format-gate block add buttons in BlockEditor**
+`slide`/`slide-explain` blocks are addable in `code_lab` editors. A single filter on the `ADD_TYPES` list in `BlockEditor` keyed by `lessonFormat` prop would fix this. Carry-forward from Session 23.
+
+**D. Cancel in-flight generation on back-navigation**
+Add an `AbortController` ref to the generation loop in `handleGenerate`. Carry-forward from Session 23.
+
+---
+
 **ID** 23
 **Date:** 2026-03-27
 **Session scope:** Progressive Screen 2 generation (step-by-step, navigate first) + manual "Add Starter Code" affordance in Screen 2

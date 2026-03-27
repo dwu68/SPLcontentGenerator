@@ -25,6 +25,7 @@ import multer from 'multer'
 import OpenAI from 'openai'
 import { buildGenerateStructurePrompt } from './prompts/generateStructurePrompt.js'
 import { buildGenerateContentPrompt } from './prompts/generateContentPrompt.js'
+import { buildGenerateTaskPrompt } from './prompts/generateTaskPrompt.js'
 import { buildPromptContext } from './lib/promptContext.js'
 import { extractSlideText } from './lib/extractSlideText.js'
 
@@ -61,94 +62,138 @@ function mockGenerateStructure(subtopicsText) {
 }
 
 // ---------------------------------------------------------------------------
-// Mock fallback — mirrors mockGeneration.js content logic, server-side
-// Returns the same raw shape the content route expects: { concept, … }
+// Mock fallback — signal-driven content generation (mirrors unified prompt logic)
+//
+// Primary signal:  slideNumbers.length > 0  → mandatory [slide, slide-explain] pairs first
+// Secondary signal: lessonFormat            → calibrates additional blocks
+// Derived signal:  task block present       → starterCode is non-empty; otherwise ""
+//
+// Returns the same raw shape the content route expects: { blocks, starterCode, … }
 // ---------------------------------------------------------------------------
 
 function mockGenerateContent(step, lessonFormat) {
-  if (lessonFormat === 'guided_tool_workflow') {
-    // Use assigned slideNumbers if present; fall back to ['1'] for mock runs without slides.
-    const slideNums = Array.isArray(step.slideNumbers) && step.slideNumbers.length > 0
-      ? step.slideNumbers
-      : ['1']
+  const hasSlides = Array.isArray(step.slideNumbers) && step.slideNumbers.length > 0
+  const slideNums = hasSlides ? step.slideNumbers : []
+  const topic     = step.title
+  const topicLower = topic.toLowerCase()
+  const format    = lessonFormat || 'code_lab'
 
-    const blocks = []
-    slideNums.forEach((num, i) => {
-      const b1 = i * 2 + 1
-      const b2 = i * 2 + 2
-      blocks.push({
-        id: `b${b1}`,
+  const blocks = []
+  let nextId = 1
+  const push = (block) => blocks.push({ id: `b${nextId++}`, ...block })
+
+  // ── Signal 1: assigned slides → mandatory pairs first ──────────────────────
+  if (hasSlides) {
+    slideNums.forEach((num) => {
+      push({
         type: 'slide',
         title: null,
-        slideRef: num,
+        slideRef: String(num),
         content: '',
       })
-      blocks.push({
-        id: `b${b2}`,
+      push({
         type: 'slide-explain',
         title: null,
-        content: `Slide ${num} introduces "${step.title}" as a key part of this workflow.\n\nReview it carefully — it shows the core concept or pattern you will be working with in this step.`,
+        content: `Slide ${num} covers "${topic}".\n\nReview it carefully — it introduces the core idea you will be working with in this step.`,
       })
     })
+  }
 
+  // ── Signal 2: lessonFormat → additional blocks ─────────────────────────────
+
+  if (format === 'code_lab') {
+    // code_lab: explain + code + task (standard lab pattern)
+    // explain bridges slides → practice, or stands alone if no slides
+    push({
+      type: 'explain',
+      title: hasSlides ? `${topic} in code` : 'What it is',
+      content: hasSlides
+        ? `The slide above introduces the concept. Here is what it looks like when you write it yourself.`
+        : `${topic} is a core concept you will use throughout this module. Understanding it clearly now will make the next steps much easier.`,
+      language: null,
+    })
+    push({
+      type: 'code',
+      title: null,
+      content: `# ${topic} — example\n\nresult = example_${topicLower.replace(/\s+/g, '_')}()\nprint(result)  # expected output`,
+      language: 'python',
+    })
+    push({
+      type: 'task',
+      title: 'Lab',
+      content: `Practice ${topicLower} by completing the TODO in the starter code. When correct, the output should match the expected result shown in the comments.`,
+      language: null,
+    })
     return {
       blocks,
-      starterCode: '',
-      expectedAction: '',
-      validationNote: '',
+      starterCode: `# Step ${step.stepNumber}: ${topic}\n# -----------------------------------------------\n# Study the example in the lesson panel, then\n# complete the TODO below.\n\n# TODO: apply ${topicLower} here\n# Expected: correct output\n`,
+      expectedAction: `Complete the TODO by correctly applying ${topicLower}. The code should run without errors and produce the expected output.`,
+      validationNote: `Correct solution fills in the TODO and produces the expected output. Watch for: copying the code example without adapting it, and leaving the TODO comment in place.`,
     }
   }
 
-  const topic = step.title
-  const topicLower = topic.toLowerCase()
-  return {
-    blocks: [
-      {
-        id: 'b1',
-        type: 'explain',
-        title: 'What it is',
-        content: `${topic} is a core concept you will use throughout this module. Understanding it clearly now will make the next steps much easier.`,
-        language: null,
-      },
-      {
-        id: 'b2',
+  if (format === 'guided_tool_workflow') {
+    // guided_tool_workflow: slides carry most teaching.
+    // Add one explain block for the concept gap not covered by slide-explain.
+    // No task, no starter code unless the step genuinely involves coding (which mock cannot detect).
+    push({
+      type: 'explain',
+      title: `${topic} — key point`,
+      content: hasSlides
+        ? `The slide above introduces ${topicLower}. Understanding this clearly is important before moving to the next step in the workflow.`
+        : `${topic} is a key part of this workflow. Understanding the concept before using the tool will help you recognize what is happening at each stage.`,
+      language: null,
+    })
+    if (!hasSlides) {
+      // No slides — add a second explain to compensate for the missing slide-explain coverage
+      push({
         type: 'explain',
         title: 'Why it matters',
-        content: `Getting ${topicLower} wrong does not always produce an obvious error — sometimes the code runs but produces incorrect output, which makes it harder to debug. The key is to apply it consistently.`,
+        content: `Getting ${topicLower} right here keeps the rest of the workflow predictable and makes it easier to troubleshoot if something goes wrong.`,
         language: null,
-      },
-      {
-        id: 'b3',
-        type: 'code',
-        title: null,
-        content: `# ${topic} — short example\n\n# Correct usage:\nresult = do_the_thing_correctly()   # this works as expected\nprint(result)\n\n# Common mistake (do not do this):\n# wrong_result = do_the_thing_wrong() # produces incorrect output`,
-        language: 'python',
-      },
-      {
-        id: 'b4',
-        type: 'check',
-        title: 'Before you continue',
-        content: `What is the most important rule to remember when applying ${topicLower}?\n\n→ Apply it consistently and verify the output matches the expected result.`,
-        language: null,
-      },
-      {
-        id: 'b5',
-        type: 'task',
-        title: 'Your turn',
-        content: `1. Look at the starter code on the right. Find the section marked TODO.\n2. Apply ${topicLower} to complete that section.\n3. Confirm the output matches the expected result shown in the comment.`,
-        language: null,
-      },
-      {
-        id: 'b6',
-        type: 'hint',
-        title: 'Need a hint?',
-        content: `Look at the code example above — the correct usage pattern there is exactly what the TODO is asking for. Focus on the key rule for ${topicLower}.`,
-        language: null,
-      },
-    ],
-    expectedAction: `The learner completes the TODO block by correctly applying ${topicLower}. The code should run without errors and produce the expected output.`,
-    validationNote: `Correct solution: the TODO block is filled in and the output matches what is expected. Watch for: copy-pasting the example without adapting it to the task, and leaving the TODO comment in place.`,
-    starterCode: `# Step ${step.stepNumber}: ${topic}\n# -----------------------------------------------\n# Study the example in the lesson panel, then\n# complete the TODO below.\n\n# TODO: apply ${topicLower} here\n\n\n# Expected output is shown as a comment after each print:\nif True:\n    print("Step ${step.stepNumber} is running")  # Step ${step.stepNumber} is running\n`,
+      })
+    }
+    return { blocks, starterCode: '', expectedAction: '', validationNote: '' }
+  }
+
+  // concept_application (and any unrecognized format)
+  // explain + check — no task, no starter code
+  push({
+    type: 'explain',
+    title: 'Core idea',
+    content: `${topic} underpins the applications you will explore in this module. Grasping the concept clearly here will sharpen how you recognize it in practice.`,
+    language: null,
+  })
+  push({
+    type: 'check',
+    title: 'Quick check',
+    content: `In what situation would you apply ${topicLower} rather than a simpler alternative?\n\n→ ${topic} is the right choice when the defining conditions are clearly present. Recognizing those conditions is the key skill.`,
+    language: null,
+  })
+  return { blocks, starterCode: '', expectedAction: '', validationNote: '' }
+}
+
+// ---------------------------------------------------------------------------
+// Mock fallback — task + starterCode generation
+//
+// Returns skip for concept_application (no natural coding action).
+// Returns a minimal task block + starterCode for code_lab and guided_tool_workflow.
+// ---------------------------------------------------------------------------
+
+function mockGenerateTask(step, lessonFormat) {
+  const format = lessonFormat || 'code_lab'
+  if (format === 'concept_application') {
+    return { skip: true, reason: 'This step is conceptual — no coding action to practice.' }
+  }
+  const topic     = step.title
+  const topicSlug = topic.toLowerCase().replace(/\s+/g, '_')
+  return {
+    taskBlock: {
+      type:    'task',
+      title:   'Lab',
+      content: `Apply ${topic.toLowerCase()} by completing the TODO in the starter code. When your solution is correct, the output should match the expected result shown in the comments.`,
+    },
+    starterCode: `# ${topic}\n# TODO: apply ${topicSlug} here\n# Expected: correct result\n`,
   }
 }
 
@@ -249,6 +294,9 @@ app.post('/api/generate-structure', async (req, res) => {
 
 // POST /api/generate-content
 app.post('/api/generate-content', async (req, res) => {
+  // [DIAG] point 2 — confirm request reached Express
+  console.log('[DIAG][server] /api/generate-content received | step:', req.body?.step?.title, '| lessonFormat:', req.body?.lessonFormat, '| USE_MOCK:', USE_MOCK)
+
   const {
     courseName,
     moduleName,
@@ -281,17 +329,73 @@ app.post('/api/generate-content', async (req, res) => {
       outputLanguage,
       slideText,
     })
+    // [DIAG] point 3 — confirm we are about to call OpenAI and what model is being used
+    const _diagModel = process.env.OPENAI_MODEL || 'gpt-4o-mini'
+    console.log('[DIAG][server] calling OpenAI | model:', _diagModel, '| prompt length (chars):', buildGenerateContentPrompt(context).length)
     const completion = await openai.chat.completions.create({
-      model: process.env.OPENAI_MODEL || 'gpt-4o-mini',
+      model: _diagModel,
       response_format: { type: 'json_object' },
       messages: [
         { role: 'user', content: buildGenerateContentPrompt(context) },
       ],
     })
+    // [DIAG] point 4 — confirm OpenAI returned and what the response looks like
+    console.log('[DIAG][server] OpenAI returned | finish_reason:', completion.choices[0]?.finish_reason, '| content length (chars):', completion.choices[0]?.message?.content?.length)
     const contentFields = parseContentResponse(completion.choices[0].message.content)
+    // [DIAG] point 4b — confirm parseContentResponse succeeded and what we are about to send
+    const _diagResponseJson = JSON.stringify(contentFields)
+    console.log('[DIAG][server] parseContentResponse OK | about to res.json | serialized response length (chars):', _diagResponseJson.length)
     return res.json(contentFields)
   } catch (err) {
-    console.error('[generate-content]', err.message)
+    // [DIAG] point 5 — capture the full error including stack
+    console.error('[DIAG][server] generate-content ERROR | message:', err.message, '| status:', err.status, '| code:', err.code)
+    console.error('[DIAG][server] stack:', err.stack)
+    return res.status(500).json({ error: err.message })
+  }
+})
+
+// POST /api/generate-task
+app.post('/api/generate-task', async (req, res) => {
+  const {
+    courseName,
+    moduleName,
+    step,
+    currentBlocks = [],
+    lessonFormat,
+    slideText,
+    outputLanguage = 'Python',
+  } = req.body
+
+  if (!courseName || !moduleName || !step?.title) {
+    return res.status(400).json({
+      error: 'Missing required fields: courseName, moduleName, step (with title)',
+    })
+  }
+
+  if (USE_MOCK) {
+    return res.json(mockGenerateTask(step, lessonFormat))
+  }
+
+  try {
+    const prompt = buildGenerateTaskPrompt({
+      stepTitle:     step.title,
+      stepGoal:      step.goal      ?? '',
+      stepTopics:    Array.isArray(step.coveredSubtopics) ? step.coveredSubtopics : [],
+      slideNumbers:  Array.isArray(step.slideNumbers)    ? step.slideNumbers    : [],
+      currentBlocks: Array.isArray(currentBlocks)        ? currentBlocks        : [],
+      lessonFormat:  lessonFormat   || 'code_lab',
+      slideText:     slideText      || '',
+      outputLanguage,
+    })
+    const completion = await openai.chat.completions.create({
+      model: process.env.OPENAI_MODEL || 'gpt-4o-mini',
+      response_format: { type: 'json_object' },
+      messages: [{ role: 'user', content: prompt }],
+    })
+    const raw = JSON.parse(completion.choices[0].message.content)
+    return res.json(raw)
+  } catch (err) {
+    console.error('[generate-task]', err.message)
     return res.status(500).json({ error: err.message })
   }
 })

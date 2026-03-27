@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import InstructionPanelEditor from './InstructionPanelEditor'
 import CodeEditorPanel from './CodeEditorPanel'
 import BlockEditor from './BlockEditor'
@@ -32,6 +32,7 @@ function LessonAuthoringView({
   selectedStepId,
   onSelectStep,
   onUpdateContent,
+  onAddTask,
   dirtyStepIds,
   stepGenerationStatus = {},
 }) {
@@ -125,6 +126,7 @@ function LessonAuthoringView({
               onSave={handleSave}
               onCancel={handleCancel}
               onUpdateContent={onUpdateContent}
+              onAddTask={onAddTask}
             />
           ) : (
             <NonLessonStepPanel step={selectedStructureStep} />
@@ -139,8 +141,37 @@ function LessonAuthoringView({
 
 // ── Lesson step: instruction panel + code panel ──────────────────────────────
 
-function LessonStepPanels({ selectedContent, genStatus, isEditing, onEdit, onSave, onCancel, onUpdateContent }) {
+function LessonStepPanels({ selectedContent, genStatus, isEditing, onEdit, onSave, onCancel, onUpdateContent, onAddTask }) {
   const hasLabContent = Boolean(selectedContent?.starterCode?.trim())
+  const hasTaskBlock  = selectedContent?.blocks?.some((b) => b.type === 'task') ?? false
+
+  const [isAddingTask,    setIsAddingTask]    = useState(false)
+  const [addTaskError,    setAddTaskError]    = useState(null)
+  const [addTaskSkipNote, setAddTaskSkipNote] = useState(null)
+
+  // Clear feedback whenever edit mode exits
+  useEffect(() => {
+    if (!isEditing) {
+      setAddTaskError(null)
+      setAddTaskSkipNote(null)
+    }
+  }, [isEditing])
+
+  const handleAddTaskClick = async () => {
+    setIsAddingTask(true)
+    setAddTaskError(null)
+    setAddTaskSkipNote(null)
+    try {
+      const result = await onAddTask(selectedContent?.blocks ?? [])
+      if (result?.skipped) setAddTaskSkipNote(result.reason)
+    } catch (err) {
+      setAddTaskError(err.message || 'Failed to generate task. Please try again.')
+    } finally {
+      setIsAddingTask(false)
+    }
+  }
+
+  const showAddTaskBtn = isEditing && selectedContent && !hasTaskBlock && !hasLabContent
 
   return (
     <>
@@ -154,6 +185,15 @@ function LessonStepPanels({ selectedContent, genStatus, isEditing, onEdit, onSav
           <div className="panel-header-actions">
             {isEditing ? (
               <>
+                {showAddTaskBtn && (
+                  <button
+                    className="btn btn-sm btn-secondary"
+                    onClick={handleAddTaskClick}
+                    disabled={isAddingTask}
+                  >
+                    {isAddingTask ? 'Generating…' : 'Add task with starter code'}
+                  </button>
+                )}
                 <button className="btn btn-sm btn-success" onClick={onSave}>
                   Save
                 </button>
@@ -162,19 +202,22 @@ function LessonStepPanels({ selectedContent, genStatus, isEditing, onEdit, onSav
                 </button>
               </>
             ) : (
-              <>
-                {selectedContent && !hasLabContent && (
-                  <button className="btn btn-sm btn-secondary" onClick={onEdit}>
-                    Add Starter Code
-                  </button>
-                )}
-                <button className="btn btn-sm btn-secondary" onClick={onEdit}>
-                  Edit
-                </button>
-              </>
+              <button className="btn btn-sm btn-secondary" onClick={onEdit}>
+                Edit
+              </button>
             )}
           </div>
         </div>
+        {addTaskError && (
+          <div style={{ fontSize: 12, color: 'var(--color-danger, #c0392b)', padding: '4px 16px 0' }}>
+            {addTaskError}
+          </div>
+        )}
+        {addTaskSkipNote && (
+          <div style={{ fontSize: 12, color: 'var(--color-text-secondary)', padding: '4px 16px 0' }}>
+            {addTaskSkipNote}
+          </div>
+        )}
         <div className="panel-body">
           {selectedContent ? (
             isEditing ? (

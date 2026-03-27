@@ -13,7 +13,7 @@ The tool is evolving beyond programming-only lessons. The intended final goal is
 
 Internal teams producing SPL lesson content — primarily data science educators and instructional designers who know their subject matter but need tooling to translate it into structured, consistent lesson formats.
 
-## Current State (as of 2026-03-24, updated after Session 21)
+## Current State (as of 2026-03-27, updated after Session 24)
 
 Both screens are live with real AI generation (GPT-5.4). Screen 1 generates a step-by-step lesson structure from subtopics or uploaded PPTX slides; Screen 2 generates block-based lesson content for each lesson step. `lessonFormat` is now forwarded to all AI generation calls, enabling format-specific prompt behavior.
 
@@ -33,6 +33,7 @@ Both screens are live with real AI generation (GPT-5.4). Screen 1 generates a st
   - **`code_lab`**: `blocks[]` of (`explain`, `code`, `check`, `task`, `hint`) plus `starterCode`, `expectedAction`, `validationNote`
   - **`guided_tool_workflow`**: `blocks[]` of exactly three blocks in order — `slide`, `slide-explain`, `explain` — with `starterCode`/`expectedAction`/`validationNote` as empty strings. The `slide-explain` block is always AI-generated but is user-deletable in the editor. The `explain` block is step-goal-grounded, not slide-anchored. When `slideText` is present, the AI infers `slideRef` from `[Slide N]` labels in the extracted text.
 - **View / edit mode** (Screen 2): view mode renders blocks as readable prose; edit mode opens `BlockEditor` per block
+- **Add task with starter code** (Screen 2 edit mode): when a step in edit mode has no `task` block and no `starterCode`, an **Add task with starter code** button appears in the instruction panel header. Clicking it calls a dedicated narrow AI path (`POST /api/generate-task`) that generates one `task` block and matching `starterCode` anchored to the step's existing instructional content. The task block is appended to the end of the existing block sequence; `starterCode` remains a step-level field. On success the author stays in edit mode. If the AI judges the step unsuitable for a task (e.g. purely conceptual, tool-workflow without a real coding action), it returns a skip response with a brief reason, shown inline — no content is modified.
 - **Block types supported in editor**: `explain`, `code`, `check`, `task`, `hint` (code_lab); `slide`, `slide-explain` (guided_tool_workflow). All are manually addable/deletable.
 - **Conditional lab panel** (Screen 2): the right-side lab/code panel is shown only when `starterCode` is non-empty. When absent, the instruction panel expands to full width. This is content-driven, not format-driven.
 - **Check block answer reveal**: question and answer separated by `\n→ `; "Show answer" toggle in view mode
@@ -65,6 +66,8 @@ The author fills in module-level details (course name, module name, lesson forma
 For each step, Screen 2 shows the generated or configured content. For `lesson` steps: block-based view with editable block cards. The layout adapts:
 - If `starterCode` is non-empty, shows a split view (instruction panel left, lab panel right)
 - If `starterCode` is empty (as is always the case for `guided_tool_workflow`), the instruction panel expands to full width
+
+In edit mode, if a step has no `task` block and no `starterCode`, the author can trigger AI to generate both with a single action ("Add task with starter code"). The AI uses the step's existing blocks and metadata as context. The result is inserted at the end of the block sequence without disrupting the existing instructional content. Unsuitable steps (conceptual-only, no coding action) receive a graceful skip with a reason message instead.
 
 For non-lesson steps: Screen 2 renders a minimal read-only summary of the configured fields (description, link URL, file reference) — no block editor is shown and no AI generation is run for these steps.
 

@@ -3,7 +3,7 @@ import Header from './components/Header'
 import LessonInputForm from './components/LessonInputForm'
 import LessonStructurePreview from './components/LessonStructurePreview'
 import LessonAuthoringView from './components/LessonAuthoringView'
-import { generateStepContent } from './services/lessonContentService'
+import { generateStepContent, generateTaskForStep } from './services/lessonContentService'
 import { generateLessonStructure } from './services/lessonStructureService'
 
 const STORAGE_KEY = 'spl_lesson_draft'
@@ -259,6 +259,43 @@ function App() {
     setIsGenerating(false)
   }
 
+  // ── Screen 2: add a task block + starterCode to a step via AI ───────────
+  //
+  // Called from LessonAuthoringView with the live (in-edit) blocks for the
+  // currently selected step. Returns:
+  //   null                        — success; state already updated
+  //   { skipped: true, reason }   — model signalled no suitable task; caller shows reason
+  // Throws on network / server error.
+  //
+  // State update uses setLessonContent's functional updater so the append is
+  // always applied to the current state, not a closure-captured snapshot.
+  const handleAddTask = async (currentBlocks) => {
+    const structureStep = lessonStructure.find((s) => s.id === selectedStepId)
+    if (!structureStep) return null
+
+    const result = await generateTaskForStep({
+      courseName,
+      moduleName,
+      step: structureStep,
+      currentBlocks,
+      lessonFormat,
+      slideText,
+    })
+
+    if (result.skip) return { skipped: true, reason: result.reason }
+
+    const blockWithId = { ...result.taskBlock, id: `block-${Date.now()}` }
+    setLessonContent((prev) =>
+      prev.map((s) =>
+        s.id !== selectedStepId ? s :
+        { ...s, blocks: [...(s.blocks || []), blockWithId], starterCode: result.starterCode }
+      )
+    )
+    setDirtyStepIds((prev) => new Set([...prev, selectedStepId]))
+    setSaveStatus('unsaved')
+    return null
+  }
+
   // ── Screen 2: update a single step's content fields ─────────────────────
   const handleUpdateContent = (stepId, updatedFields) => {
     setLessonContent((prev) =>
@@ -395,6 +432,7 @@ function App() {
           selectedStepId={selectedStepId}
           onSelectStep={setSelectedStepId}
           onUpdateContent={handleUpdateContent}
+          onAddTask={handleAddTask}
           dirtyStepIds={dirtyStepIds}
           saveStatus={saveStatus}
           onSaveDraft={handleSaveDraft}
