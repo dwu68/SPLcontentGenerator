@@ -52,6 +52,9 @@ const CONTENT_FIELDS = [
  * @returns {Promise<object>}
  */
 async function callProvider({ courseName, moduleName, step, lessonStructure, lessonFormat, learnerLevel, outputLanguage, slideText }) {
+  // [DIAG] point 1 — confirm fetch is about to fire and what payload size looks like
+  const _diagPayload = { courseName, moduleName, step, lessonStructure, lessonFormat, learnerLevel, outputLanguage, slideText }
+  console.log('[DIAG][frontend] callProvider firing for step:', step?.title, '| lessonFormat:', lessonFormat, '| payload bytes:', JSON.stringify(_diagPayload).length)
   const res = await fetch('/api/generate-content', {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
@@ -103,11 +106,29 @@ function normalizeContent(rawContent, step) {
 // ---------------------------------------------------------------------------
 
 /**
+ * generateStepContent
+ *
+ * Generates content for a single lesson step. Used by the progressive
+ * generation flow in App.jsx where Screen 2 is navigated to immediately
+ * and steps are generated one at a time.
+ *
+ * @param {object} params — same shape as callProvider params
+ * @returns {Promise<LessonContent>}
+ */
+export async function generateStepContent({ courseName, moduleName, step, lessonStructure, lessonFormat, learnerLevel, outputLanguage, slideText }) {
+  const raw = await callProvider({ courseName, moduleName, step, lessonStructure, lessonFormat, learnerLevel, outputLanguage, slideText })
+  return normalizeContent(raw, step)
+}
+
+/**
  * generateAllLessonContent
  *
  * Generates content for every step in the lesson structure.
  * Each step is one POST /api/generate-content call; steps are processed
  * sequentially. Throws on the first network or server error.
+ *
+ * Kept for reference / batch fallback; the progressive slice uses
+ * generateStepContent instead.
  *
  * @param {object}   params
  * @param {string}   params.courseName

@@ -3,7 +3,7 @@ import Header from './components/Header'
 import LessonInputForm from './components/LessonInputForm'
 import LessonStructurePreview from './components/LessonStructurePreview'
 import LessonAuthoringView from './components/LessonAuthoringView'
-import { generateAllLessonContent } from './services/lessonContentService'
+import { generateStepContent } from './services/lessonContentService'
 import { generateLessonStructure } from './services/lessonStructureService'
 
 const STORAGE_KEY = 'spl_lesson_draft'
@@ -59,6 +59,11 @@ function App() {
   const [isGenerating, setIsGenerating] = useState(false)
   const [generationError, setGenerationError] = useState(null)
   const [titleValidationError, setTitleValidationError] = useState(null)
+
+  // ── Per-step generation status (Screen 2 progressive generation) ─────────
+  // Shape: { [stepId]: 'queued' | 'generating' | 'done' | 'error' }
+  // Only populated during / after a generation run. Empty object = no run yet.
+  const [stepGenerationStatus, setStepGenerationStatus] = useState({})
 
   // ── Restore draft from localStorage on mount ────────────────────────────
   useEffect(() => {
@@ -192,6 +197,17 @@ function App() {
   }
 
   // ── Screen 1 → Screen 2: generate content from structure ────────────────
+  //
+  // Progressive generation slice:
+  //   1. Validate and confirm (same as before)
+  //   2. Navigate to Screen 2 immediately
+  //   3. Generate one lesson step at a time, updating lessonContent + status
+  //      after each step so completed steps are visible while later steps wait
+  //   4. Continue on per-step error (marks step 'error') rather than aborting
+  //
+  // Known limitation (this slice): navigating back to Screen 1 mid-generation
+  // does not cancel in-flight requests. Back navigation is available but the
+  // background loop will continue updating state until it finishes.
   const handleGenerate = async () => {
     const emptyStep = lessonStructure.find((s) => !s.title.trim())
     if (emptyStep) {
@@ -207,22 +223,40 @@ function App() {
       )
       if (!ok) return
     }
+
+    const lessonSteps = lessonStructure.filter((s) => s.stepType === 'lesson')
+
+    // Initialise all lesson steps as queued
+    const initialStatus = {}
+    for (const step of lessonSteps) {
+      initialStatus[step.id] = 'queued'
+    }
+
     setGenerationError(null)
     setIsGenerating(true)
-    try {
-      const content = await generateAllLessonContent({ courseName, moduleName, lessonStructure, lessonFormat, slideText })
-      setLessonContent(content)
-      setSelectedStepId(lessonStructure[0]?.id || null)
-      setDirtyStepIds(new Set())
-      setSaveStatus('unsaved')
-      // Clear any stale localStorage draft so a page reload won't restore old content
-      localStorage.removeItem(STORAGE_KEY)
-      setScreen('authoring')
-    } catch {
-      setGenerationError('Failed to generate lesson content. Please try again.')
-    } finally {
-      setIsGenerating(false)
+    setLessonContent([])
+    setStepGenerationStatus(initialStatus)
+    setDirtyStepIds(new Set())
+    setSelectedStepId(lessonStructure[0]?.id || null)
+    localStorage.removeItem(STORAGE_KEY)
+    setScreen('authoring') // navigate immediately — user sees Screen 2 right away
+
+    for (const step of lessonSteps) {
+      setStepGenerationStatus((prev) => ({ ...prev, [step.id]: 'generating' }))
+      try {
+        const content = await generateStepContent({
+          courseName, moduleName, step, lessonStructure, lessonFormat, slideText,
+        })
+        setLessonContent((prev) => [...prev, content])
+        setStepGenerationStatus((prev) => ({ ...prev, [step.id]: 'done' }))
+      } catch (err) {
+        setStepGenerationStatus((prev) => ({ ...prev, [step.id]: 'error' }))
+        setGenerationError(err.message || `Failed to generate content for step "${step.title}".`)
+      }
     }
+
+    setSaveStatus('unsaved')
+    setIsGenerating(false)
   }
 
   // ── Screen 2: update a single step's content fields ─────────────────────
@@ -364,6 +398,7 @@ function App() {
           dirtyStepIds={dirtyStepIds}
           saveStatus={saveStatus}
           onSaveDraft={handleSaveDraft}
+          stepGenerationStatus={stepGenerationStatus}
         />
       )}
     </div>

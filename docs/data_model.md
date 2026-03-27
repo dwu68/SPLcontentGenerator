@@ -34,6 +34,11 @@ saveStatus        : 'saved' | 'unsaved' | 'saving'
 isGenerating         : boolean        // true while any generation call is in flight
 generationError      : string | null  // message from the most recent failed generation
 titleValidationError : string | null  // set when generate is blocked by empty step titles
+
+// Per-step generation status (Screen 2 progressive generation)
+stepGenerationStatus : Record<stepId, 'queued' | 'generating' | 'done' | 'error'>
+                       // populated at generation start; empty object before first run
+                       // not persisted to localStorage
 ```
 
 ---
@@ -107,7 +112,7 @@ All mutations go through handlers in `App.jsx`:
 
 ## LessonContent
 
-Produced by `generateAllLessonContent(lessonStructure)` in `lessonContentService.js`. Currently only populated for `lesson` steps. IDs match the corresponding `lessonStructure` entry.
+Populated progressively during Screen 2 generation. Each entry is produced by `generateStepContent()` in `lessonContentService.js` (one call per step, sequential). `generateAllLessonContent()` remains in the service as a batch-mode fallback but is no longer called by the app. Only `lesson` steps produce `LessonContent` entries. IDs match the corresponding `lessonStructure` entry.
 
 **Note:** The runtime schema is block-based. The `LessonContent` object carries `blocks[]` as the primary content. The flat fields (`concept`, `codeExample`, `instructions`) are a legacy fallback — new content is generated in the block-based format only.
 
@@ -190,9 +195,9 @@ subtopics (raw string)
   ▼
 lessonStructure[]   — stepType: 'lesson' for all AI-generated steps
   │  user may add non-lesson steps manually (no AI call for those)
-  │  generateAllLessonContent() — skips non-lesson steps (planned; currently all steps are lesson)
+  │  generateStepContent() called once per lesson step (non-lesson steps skipped)
   ▼
-lessonContent[]     — one entry per lesson step; block-based schema
+lessonContent[]     — one entry per lesson step; block-based schema; populated progressively
 ```
 
 The two arrays share the same `id` values. `lessonContent` is a **full replacement** each time "Generate Lesson Content →" is clicked — there is no merge or diff. Manual edits made in Screen 2 are lost if the user returns to Screen 1 and re-generates.

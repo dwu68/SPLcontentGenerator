@@ -74,6 +74,20 @@ Canonical record of decisions made and their rationale. Covers technology choice
 
 **Rationale:** Merging AI-generated content with user edits is a complex problem best deferred until real AI generation is in place. A `window.confirm()` guard is shown when lesson content already exists.
 
+### Progressive generation — navigate first, generate step-by-step
+
+**Decision:** Clicking "Generate Lesson Content →" navigates to Screen 2 immediately, before any generation has completed. Content is generated one step at a time via `generateStepContent()`. Each step transitions `queued → generating → done|error` and its content becomes visible as soon as it finishes. Per-step errors do not abort remaining steps.
+
+**Rationale:** The previous model awaited the full batch before navigating, blocking the user on Screen 1 with no visibility into progress. The progressive model lets the user read and navigate completed steps while later steps continue generating, and makes partial failures visible rather than silently dropping the whole batch.
+
+**Trade-off documented:** Navigating back to Screen 1 mid-generation does not cancel in-flight requests — the background loop continues updating state. Cancellation support is deferred.
+
+### Starter code panel — shown on demand, not always visible
+
+**Decision:** The right-side code panel is hidden in view mode when `starterCode` is empty. An **Add Starter Code** button in the instruction panel header allows the author to open the panel on demand. In edit mode the panel always renders (so the author can type into it). After saving, the panel persists only if `starterCode` is non-empty.
+
+**Rationale:** Most steps do not need starter code. Showing an empty dark panel by default wastes layout space and is visually noisy. The affordance to add it is discoverable (next to the Edit button) without being in the way when unused.
+
 ---
 
 ## coveredSubtopics — Local String State in StepBuilderCard

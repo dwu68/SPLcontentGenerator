@@ -98,9 +98,15 @@ The user can change the sub-topics in the form and click "Generate Structure Pre
 
 **6. Proceed to Screen 2**
 
-Clicking "✨ Generate Lesson Content →" calls `generateAllLessonContent()` in `lessonContentService.js`, which makes one `POST /api/generate-content` call per step. A confirmation prompt is shown if lesson content already exists in Screen 2. The app navigates to Screen 2 and auto-selects the first step.
+Clicking "✨ Generate Lesson Content →" validates that all steps have titles, shows a confirmation prompt if lesson content already exists, then **navigates to Screen 2 immediately** — before any generation has completed. The app auto-selects the first step.
 
-**Note:** Currently, AI content is generated for all steps regardless of step type. Non-lesson step types will be excluded from generation in a future slice.
+Content is generated one step at a time via `generateStepContent()` in `lessonContentService.js`, which calls `POST /api/generate-content` once per lesson step. Each step transitions through `queued → generating → done` (or `error`) as the loop progresses. Completed step content becomes visible as soon as each step finishes — the user does not wait for the full batch.
+
+**Per-step generation status** is tracked in `stepGenerationStatus` (an object keyed by step ID). The sidebar shows a color-coded dot: pulsing blue for `generating`, muted grey for `queued`, red for `error`. The instruction panel shows a distinct status message when a step's content is not yet available.
+
+**Per-step errors do not abort the remaining steps.** A failed step is marked `error`; generation continues with the next step.
+
+**Known limitation:** Navigating back to Screen 1 mid-generation does not cancel in-flight requests. The background generation loop continues updating state until it finishes.
 
 ---
 
@@ -134,6 +140,8 @@ For `lesson` steps with AI-generated content, the instruction panel shows blocks
 **3. Edit starter code (right panel)**
 
 A dark-themed monospace `<textarea>` for the step's starter code. The Tab key inserts 4 spaces. Changes update app state immediately. The panel is read-only in view mode.
+
+When a step has no `starterCode`, the right panel is hidden in view mode. An **Add Starter Code** button appears in the instruction panel header alongside the Edit button. Clicking it enters edit mode and reveals the code panel so the author can type the initial code. After saving, the panel remains visible only if `starterCode` is non-empty; an empty value collapses the panel back to hidden.
 
 **4. Non-lesson steps in Screen 2**
 

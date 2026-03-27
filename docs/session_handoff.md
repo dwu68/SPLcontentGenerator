@@ -2,6 +2,248 @@
 
 ---
 
+**ID** 23
+**Date:** 2026-03-27
+**Session scope:** Progressive Screen 2 generation (step-by-step, navigate first) + manual "Add Starter Code" affordance in Screen 2
+
+---
+
+## What Was Completed This Session
+
+### Feature 1 — Progressive Screen 2 generation
+
+Previously, clicking "Generate Lesson Content →" awaited the full batch before navigating. The user sat blocked on Screen 1 with no visibility.
+
+**New behaviour:** The app navigates to Screen 2 immediately on click. Content is generated one step at a time. Each completed step becomes visible as soon as it finishes. Remaining steps show their queued/generating status in the sidebar and instruction panel.
+
+**`src/services/lessonContentService.js`**:
+- Added `generateStepContent()` export — single-step version of `callProvider()` + `normalizeContent()`.
+- `generateAllLessonContent()` kept as-is (batch fallback, no longer called by the app).
+
+**`src/App.jsx`**:
+- Added `stepGenerationStatus` state: `{ [stepId]: 'queued' | 'generating' | 'done' | 'error' }`.
+- Rewrote `handleGenerate`:
+  - Initialises all lesson steps as `queued`
+  - Navigates to Screen 2 immediately (`setScreen('authoring')`)
+  - Loops: each step transitions `queued → generating → done|error` with intermediate state updates
+  - Per-step errors do not abort remaining steps; `generationError` records the most recent failure
+  - Back-navigation limitation documented inline in comment above the function
+- Passes `stepGenerationStatus` to `LessonAuthoringView`.
+
+**`src/components/LessonAuthoringView.jsx`**:
+- Accepts `stepGenerationStatus` prop (defaults `{}`).
+- Sidebar: each step shows a color-coded dot — pulsing blue (`generating`), muted grey (`queued`), red (`error`). `done` shows no dot.
+- Content panel: a new `StepGenerationMessage` component replaces the old generic "No content" string, rendering distinct messages for `queued`, `generating`, `error`, and the no-run-yet state.
+
+**`src/App.css`**:
+- `.step-nav-genstatus` + `--queued` / `--generating` / `--error` sidebar dot variants
+- `.panel-gen-status` + `--queued` / `--generating` / `--error` instruction panel message variants
+- Shared `genstatus-pulse` keyframe animation for the generating state
+
+### Feature 2 — Manual "Add Starter Code" affordance in Screen 2
+
+Previously, steps without `starterCode` had no way to add it manually in Screen 2 — the right-side code panel was simply absent.
+
+**`src/components/LessonAuthoringView.jsx`** (only file changed):
+- In `LessonStepPanels`, when view mode and `starterCode` is empty, an **Add Starter Code** button appears in the instruction panel header alongside the Edit button. Both buttons call `onEdit()`.
+- Code panel render condition changed from `hasLabContent` to `hasLabContent || isEditing`. In edit mode the panel always renders, allowing the author to type starter code even when none existed before.
+- After Save: `hasLabContent` re-evaluates. Non-empty `starterCode` → panel persists. Empty → panel collapses.
+
+### Docs updated
+
+- `docs/user_flow.md` — "Proceed to Screen 2" section rewritten; starter code panel section updated with "Add Starter Code" behavior
+- `docs/decisions.md` — two new decisions added: "Progressive generation" and "Starter code panel — shown on demand"
+- `docs/data_model.md` — `stepGenerationStatus` added to App state shape; `LessonContent` and flow diagram updated to reference `generateStepContent()`
+
+---
+
+## Files Changed This Session
+
+| File | Change |
+|---|---|
+| `src/services/lessonContentService.js` | Added `generateStepContent()` export |
+| `src/App.jsx` | Added `stepGenerationStatus` state; rewrote `handleGenerate` for progressive flow |
+| `src/components/LessonAuthoringView.jsx` | Per-step status in sidebar + panel; "Add Starter Code" button; code panel shown in edit mode |
+| `src/App.css` | Generation status dot and message styles |
+| `docs/user_flow.md` | Screen 1 → Screen 2 transition; starter code panel affordance |
+| `docs/decisions.md` | Two new decisions: progressive generation, starter code panel |
+| `docs/data_model.md` | `stepGenerationStatus` in state shape; `generateStepContent()` references |
+
+---
+
+## What Has Been Manually Tested and Is Working
+
+- Clicking "Generate Content" on Screen 1 navigates to Screen 2 immediately
+- Steps arrive one at a time — content becomes visible as each step completes
+- Sidebar dots correctly show queued / generating / done states during a run
+- Instruction panel shows correct status message per step before content arrives
+- Clicking a completed step while others are still queued/generating works normally
+- Steps without `starterCode` show the "Add Starter Code" button in view mode
+- Clicking "Add Starter Code" enters edit mode and reveals the code panel
+- Typing starter code and saving makes the panel persist in view mode
+- Saving with empty starter code collapses the code panel back to hidden
+
+---
+
+## Known Limitations / Risks
+
+| Item | Severity | Detail |
+|---|---|---|
+| Back navigation mid-generation does not cancel requests | Medium | Navigating to Screen 1 while generation is running leaves the background loop continuing to call the API and update state. No cancellation mechanism (AbortController) is in place. |
+| `stepGenerationStatus` is not persisted | Low | On page reload the status map resets to `{}`. Steps restored from localStorage show the generic "No content" message rather than "done". This is cosmetic — the content itself is restored correctly. |
+| Real AI generation not yet tested end-to-end with new prompts | Medium | From Session 22: `slideNumbers` contract and the rewritten `guided_tool_workflow` prompt have not been run against the live model. |
+| `slideNumbers` not visible in Screen 1 UI | Low | Authors cannot see or correct slide assignments from Screen 1. |
+| Format-gating in BlockEditor still absent | Low | `slide`/`slide-explain` add buttons appear in `code_lab` editors. Deferred from Session 21. |
+| `concept_application` has no prompt branch | Low | Falls through to `code_lab` behavior silently. |
+| `slideText` is session-only | Medium | Lost on page reload. User must re-upload PPTX. |
+
+---
+
+## Most Sensible Next Implementation Options
+
+**A. Cancel in-flight generation on back-navigation**
+Add an `AbortController` ref to the generation loop in `handleGenerate`. Check the signal before each `await generateStepContent()` call. This closes the known limitation cleanly.
+
+**B. Validate the new AI prompts against the live model**
+Run end-to-end with real OpenAI calls to verify: (1) `slideNumbers` is returned as strings by the structure prompt, (2) the `guided_tool_workflow` content prompt correctly produces N × [slide, slide-explain] pairs, (3) no silent field omissions.
+
+**C. Show `slideNumbers` in Screen 1 step cards**
+Authors currently cannot see which slides were assigned to each step. A small read-only tag or chip on each step card would close the visibility gap. No state changes needed — the data is already on the step object.
+
+**D. Format-gate block add buttons in BlockEditor**
+`slide`/`slide-explain` blocks should only be addable when `lessonFormat === 'guided_tool_workflow'`. A single filter on the `ADD_TYPES` array keyed by `lessonFormat` prop would fix this.
+
+---
+
+**ID** 22
+**Date:** 2026-03-25
+**Session scope:** Path B slide ownership — explicit `slideNumbers` assignment; contract re-evaluation; session ended early pending product model reconsideration
+
+---
+
+## What Was Completed This Session
+
+### Re-evaluation of the guided_tool_workflow contract
+
+Before any coding, the session opened with a full review of the current implementation against an updated product direction.
+
+The previous 3-block contract (`slide` → `slide-explain` → `explain`, exactly one of each) was identified as wrong in two ways:
+- It assumed one slide per step; the new model allows multiple slides per step
+- It included a default `explain` block; the new model drops this
+
+The new contract: a step contains N × `[slide, slide-explain]` pairs — one pair per assigned slide, no default `explain`.
+
+The deeper architectural issue identified: the old contract let the content generation prompt **infer** which slides belonged to each step. Because content generation is called once per step with no cross-step visibility, this cannot enforce global slide ownership (each slide appears in exactly one step). This is a global constraint, and it belongs at the structure layer.
+
+**Path B was chosen** (vs. Path A which would have patched the content prompt without fixing ownership):
+- Structure generation assigns `slideNumbers[]` explicitly per step
+- Content generation consumes those assignments — no inference
+
+### Slice implemented (Path B end-to-end)
+
+**`server/prompts/generateStructurePrompt.js`**:
+- Added `slideFooter` — used by Cases 1 & 2 (slides present). Requires `slideNumbers: string[]` per step in the AI output.
+- Ownership rules in the footer: every instructional slide must appear in exactly one step; no slide may be reused across steps; individual numbers only (no range notation).
+- Case 3 (subtopics only) unchanged — still uses original `footer` without `slideNumbers`.
+
+**`src/services/lessonStructureService.js`**:
+- `normalizeStructure` now preserves `slideNumbers` from the AI response and coerces each entry to a string.
+- Defaults to `[]` when the field is absent (subtopics-only sessions, mock runs).
+
+**`server/lib/promptContext.js`**:
+- Added `slideNumbers: step?.slideNumbers ?? []` to the context object so all prompt builders can access it.
+
+**`server/prompts/generateContentPrompt.js`**:
+- Full rewrite of `buildGuidedToolWorkflowContentPrompt`.
+- Shape: N × `[slide, slide-explain]` pairs, where N = `slideNumbers.length` (minimum 1).
+- No `explain` block. No range `slideRef`. `slideRef` must be a single slide number string.
+- When `slideNumbers` is empty (no slides uploaded), produces one pair with `slideRef: "?"`.
+- The prompt tells the AI exactly which slides are assigned and explicitly lists the expected block sequence in the return format.
+
+**`server/index.js`**:
+- `mockGenerateContent` for `guided_tool_workflow` updated: reads `step.slideNumbers`, produces one `[slide, slide-explain]` pair per number. Falls back to `['1']` when `slideNumbers` is absent.
+- Old 3-block mock (slide + slide-explain + explain) removed.
+
+**`src/components/LessonAuthoringView.jsx`**:
+- `slide` block renderer changed from a tiny inline label (`block-slide-ref`) to a styled placeholder box (`block-slide-placeholder`).
+
+**`src/components/BlockEditor.jsx`**:
+- `slideRef` input placeholder text updated from `"e.g. 3 or 3-5"` to `"e.g. 3"` (ranges are no longer part of the contract).
+
+**`src/App.css`**:
+- Added `.block-slide-placeholder` (dashed border, muted background, min-height 120px) and `.block-slide-placeholder-label` styles.
+
+### Commit
+
+`95a9480` — `feat: Path B slide ownership — explicit slideNumbers assignment across structure and content`
+
+---
+
+## Files Changed This Session
+
+| File | Change |
+|---|---|
+| `server/prompts/generateStructurePrompt.js` | `slideFooter` with `slideNumbers` + ownership rules for Cases 1 & 2 |
+| `src/services/lessonStructureService.js` | `normalizeStructure` preserves `slideNumbers`, defaults `[]` |
+| `server/lib/promptContext.js` | Added `slideNumbers` to context |
+| `server/prompts/generateContentPrompt.js` | Rewritten `guided_tool_workflow` branch — N pairs, no `explain`, no ranges |
+| `server/index.js` | Mock updated to N pairs from `step.slideNumbers` |
+| `src/components/LessonAuthoringView.jsx` | `slide` block renders placeholder box |
+| `src/components/BlockEditor.jsx` | `slideRef` placeholder text updated |
+| `src/App.css` | Placeholder box styles added |
+
+---
+
+## Current System Behavior After This Session
+
+- **Structure generation with slides** (Cases 1 & 2): the AI is now asked to produce `slideNumbers` per step. Each instructional slide is assigned to exactly one step. The frontend normalizes this field onto the Step object in App state.
+- **Structure generation without slides** (Case 3): behavior unchanged. `slideNumbers` is `[]` on all steps.
+- **Content generation for `guided_tool_workflow`**: receives `slideNumbers` from the step, produces one `[slide, slide-explain]` pair per number. The prompt is explicit — the AI does not infer slide ownership.
+- **Mock mode**: correctly exercises the new shape.
+- **Screen 2 `slide` block**: renders as a dashed placeholder box labeled "Slide N". Not a tiny label.
+- **`explain` block**: no longer generated by default for `guided_tool_workflow`. Authors can still add one manually via the BlockEditor add-block row.
+
+---
+
+## Known Risks and Incomplete Areas
+
+| Item | Severity | Detail |
+|---|---|---|
+| Real AI generation not yet tested | Medium | The new structure prompt (with `slideNumbers`) and content prompt have not been run against GPT-5.4. The `slideNumbers` contract could fail silently if the model omits the field or produces numbers as integers instead of strings. `normalizeStructure` will coerce integers via `.map(String)` but missing fields will result in `[]`. |
+| `slideNumbers` is not shown in Screen 1 UI | Low | Step cards do not display which slides are assigned to them. Authors cannot see or edit the slide assignment in Screen 1. This is an authoring visibility gap — there is no way to verify or correct the assignment without inspecting localStorage. |
+| Format-gating in BlockEditor still absent | Low | `slide`/`slide-explain` add buttons appear in `code_lab` step editors. Deferred from Session 21, still unaddressed. |
+| `concept_application` has no prompt branch | Low | Falls through to `code_lab` behavior silently. |
+| `slideText` is session-only | Medium | Lost on page reload. User must re-upload PPTX. Unchanged from previous sessions. |
+
+---
+
+## ⚠️ Pending Product Direction Change — Next Session Must Re-evaluate
+
+**Implementation was stopped here intentionally.**
+
+During this session, a higher-level product model question surfaced that needs to be resolved before further implementation:
+
+**The current model treats `lessonFormat` as a hard contract** — `guided_tool_workflow` produces a rigid block sequence, `code_lab` produces a different rigid sequence. This worked as a starting point, but it may not be the right model going forward.
+
+**The direction under consideration for next session:**
+
+- `lessonFormat` may be better treated as a **soft bias** (a signal to the AI about what kind of content to lean toward) rather than a **hard switch** that locks in a block sequence contract.
+- **Block composition may need to be driven by content needs** — what this step actually requires to teach the material — rather than by format rules.
+- Better signals for block composition may be:
+  - **Slide presence** — does this step have assigned slides? → include slide blocks
+  - **Lab need** — does this step involve a hands-on activity? → include task/hint blocks
+  - **Starter code need** — does this step have practice code? → include code blocks and show the right panel
+  - These signals are independent and composable, not locked to a format type
+
+**What this means for the work done in this session:**
+- The `slideNumbers` assignment mechanism (Path B) is still correct and still needed — the global ownership constraint is real regardless of how the block contract is structured.
+- The content prompt contract (N × [slide, slide-explain]) may be too rigid if `guided_tool_workflow` steps could legitimately also have lab components or concept blocks alongside slides.
+- The `explain` block removal may need to be revisited.
+
+**Next session should start here** — by deciding whether `lessonFormat` remains a hard block contract or becomes a soft signal, and what the new block composition model looks like. Do not extend the current implementation until this is resolved.
+
+---
+
 **ID** 21
 **Date:** 2026-03-24
 **Session scope:** `guided_tool_workflow` content model, prompt, slide coverage rules, Screen 2 crash fix, conditional lab panel

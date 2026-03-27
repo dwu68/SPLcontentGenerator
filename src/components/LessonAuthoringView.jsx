@@ -33,6 +33,7 @@ function LessonAuthoringView({
   onSelectStep,
   onUpdateContent,
   dirtyStepIds,
+  stepGenerationStatus = {},
 }) {
   const [isEditing, setIsEditing] = useState(false)
   const [editSnapshot, setEditSnapshot] = useState(null)
@@ -82,21 +83,33 @@ function LessonAuthoringView({
       <aside className="step-sidebar">
         <div className="step-sidebar-header">Lesson Steps</div>
         <nav className="step-sidebar-list" aria-label="Lesson steps">
-          {lessonStructure.map((step) => (
-            <button
-              key={step.id}
-              className={`step-nav-btn ${step.id === selectedStepId ? 'active' : ''}`}
-              onClick={() => handleSelectStep(step.id)}
-              aria-current={step.id === selectedStepId ? 'step' : undefined}
-              title={step.title}
-            >
-              <div className="step-nav-num">{step.stepNumber}</div>
-              <div className="step-nav-title">{step.title}</div>
-              {dirtyStepIds.has(step.id) && (
-                <div className="step-nav-dirty" title="Unsaved changes" aria-label="Unsaved" />
-              )}
-            </button>
-          ))}
+          {lessonStructure.map((step) => {
+            const genStatus = stepGenerationStatus[step.id]
+            return (
+              <button
+                key={step.id}
+                className={`step-nav-btn ${step.id === selectedStepId ? 'active' : ''}`}
+                onClick={() => handleSelectStep(step.id)}
+                aria-current={step.id === selectedStepId ? 'step' : undefined}
+                title={step.title}
+              >
+                <div className="step-nav-num">{step.stepNumber}</div>
+                <div className="step-nav-title">{step.title}</div>
+                {genStatus === 'generating' && (
+                  <div className="step-nav-genstatus step-nav-genstatus--generating" title="Generating…" aria-label="Generating" />
+                )}
+                {genStatus === 'queued' && (
+                  <div className="step-nav-genstatus step-nav-genstatus--queued" title="Queued" aria-label="Queued" />
+                )}
+                {genStatus === 'error' && (
+                  <div className="step-nav-genstatus step-nav-genstatus--error" title="Generation failed" aria-label="Error" />
+                )}
+                {dirtyStepIds.has(step.id) && (
+                  <div className="step-nav-dirty" title="Unsaved changes" aria-label="Unsaved" />
+                )}
+              </button>
+            )
+          })}
         </nav>
       </aside>
 
@@ -106,6 +119,7 @@ function LessonAuthoringView({
           isLessonStep ? (
             <LessonStepPanels
               selectedContent={selectedContent}
+              genStatus={stepGenerationStatus[selectedStepId]}
               isEditing={isEditing}
               onEdit={handleEdit}
               onSave={handleSave}
@@ -125,7 +139,7 @@ function LessonAuthoringView({
 
 // ── Lesson step: instruction panel + code panel ──────────────────────────────
 
-function LessonStepPanels({ selectedContent, isEditing, onEdit, onSave, onCancel, onUpdateContent }) {
+function LessonStepPanels({ selectedContent, genStatus, isEditing, onEdit, onSave, onCancel, onUpdateContent }) {
   const hasLabContent = Boolean(selectedContent?.starterCode?.trim())
 
   return (
@@ -148,9 +162,16 @@ function LessonStepPanels({ selectedContent, isEditing, onEdit, onSave, onCancel
                 </button>
               </>
             ) : (
-              <button className="btn btn-sm btn-secondary" onClick={onEdit}>
-                Edit
-              </button>
+              <>
+                {selectedContent && !hasLabContent && (
+                  <button className="btn btn-sm btn-secondary" onClick={onEdit}>
+                    Add Starter Code
+                  </button>
+                )}
+                <button className="btn btn-sm btn-secondary" onClick={onEdit}>
+                  Edit
+                </button>
+              </>
             )}
           </div>
         </div>
@@ -172,13 +193,13 @@ function LessonStepPanels({ selectedContent, isEditing, onEdit, onSave, onCancel
               <LessonStepView step={selectedContent} />
             )
           ) : (
-            <div className="panel-empty-msg">No content generated for this step yet.</div>
+            <StepGenerationMessage status={genStatus} />
           )}
         </div>
       </section>
 
-      {/* Code Panel — only shown when step has lab content */}
-      {hasLabContent && (
+      {/* Code Panel — shown when step has lab content, or while editing (to allow adding it) */}
+      {(hasLabContent || isEditing) && (
         <section className="panel panel-code" aria-label="Code editor panel">
           <div className="panel-header panel-header-code">
             <span className="panel-title panel-title-code">Lab</span>
@@ -531,6 +552,44 @@ function Block({ block }) {
       {title && <div className="block-heading">{title}</div>}
       <div>{safeContent}</div>
     </div>
+  )
+}
+
+/**
+ * StepGenerationMessage — shown in the instruction panel body when a lesson
+ * step has no content yet (selectedContent is null).
+ *
+ * Renders a distinct message for each generation status:
+ *   queued     — step is waiting for earlier steps to finish
+ *   generating — step is currently being generated
+ *   error      — generation failed for this step
+ *   undefined  — no generation run has started (initial / restored state)
+ */
+function StepGenerationMessage({ status }) {
+  if (status === 'generating') {
+    return (
+      <div className="panel-gen-status panel-gen-status--generating">
+        Generating content for this step…
+      </div>
+    )
+  }
+  if (status === 'queued') {
+    return (
+      <div className="panel-gen-status panel-gen-status--queued">
+        Queued — waiting for earlier steps to complete.
+      </div>
+    )
+  }
+  if (status === 'error') {
+    return (
+      <div className="panel-gen-status panel-gen-status--error">
+        Content generation failed for this step. Go back to Screen 1 and click Generate Content to retry.
+      </div>
+    )
+  }
+  // No active generation run (fresh load or localStorage restore with a gap)
+  return (
+    <div className="panel-empty-msg">No content generated for this step yet.</div>
   )
 }
 
