@@ -261,6 +261,20 @@ app.use(express.json())
 
 const PPTX_MIME = 'application/vnd.openxmlformats-officedocument.presentationml.presentation'
 
+// ---------------------------------------------------------------------------
+// Uploads directory — created on startup if absent
+// ---------------------------------------------------------------------------
+
+const UPLOADS_DIR = path.join(__dirname, 'uploads')
+if (!fs.existsSync(UPLOADS_DIR)) fs.mkdirSync(UPLOADS_DIR, { recursive: true })
+
+// Serve uploaded files as static assets at /uploads/<filename>
+app.use('/uploads', express.static(UPLOADS_DIR))
+
+// ---------------------------------------------------------------------------
+// Multer configs
+// ---------------------------------------------------------------------------
+
 const slidesUpload = multer({
   storage: multer.memoryStorage(),
   limits: { fileSize: 10 * 1024 * 1024 },
@@ -283,6 +297,26 @@ app.post('/api/upload-slides', slidesUpload.single('slides'), async (req, res) =
     console.error('[upload-slides]', err.message)
     return res.status(500).json({ error: err.message })
   }
+})
+
+const fileUpload = multer({
+  storage: multer.diskStorage({
+    destination: (_req, _file, cb) => cb(null, UPLOADS_DIR),
+    filename: (_req, file, cb) => {
+      const safeName = file.originalname.replace(/[^a-zA-Z0-9._-]/g, '_')
+      cb(null, `${Date.now()}-${safeName}`)
+    },
+  }),
+  limits: { fileSize: 50 * 1024 * 1024 }, // 50 MB
+})
+
+// POST /api/upload-file
+app.post('/api/upload-file', fileUpload.single('file'), (req, res) => {
+  if (!req.file) return res.status(400).json({ error: 'No file received' })
+  return res.json({
+    fileUrl:  `/uploads/${req.file.filename}`,
+    fileName: req.file.originalname,
+  })
 })
 
 // POST /api/generate-structure

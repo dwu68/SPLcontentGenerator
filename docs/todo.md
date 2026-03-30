@@ -64,7 +64,14 @@ Work done in this phase establishes the module format and per-step type model.
 - ✅ **`downloadable_file` block type** — available in `BlockEditor` for all editable steps; title = filename, content = description; file upload is placeholder
 - ✅ **Edit-mode branch fix** — empty-blocks steps now correctly use `BlockEditor` in edit mode (condition `blocks?.length > 0` → `Array.isArray(blocks)`)
 - ✅ **`Add module lab` for hands-on steps** — dedicated narrow path (`POST /api/generate-module-lab`); condensed previous-step context; replaces "Add task with starter code" for `isHandsOn` steps; skip responses supported
-- 🔲 **Render slide content in `slide` block** — the `slide` block currently shows only the `slideRef` label; it should render the extracted slide text for that slide number from `slideText` (per-slide structured extraction required first)
+- ✅ **`downloadable_file` real file upload** — `POST /api/upload-file` (disk storage, 50 MB); `express.static('/uploads')`; `fileUrl`/`fileName` stored on block; edit UI with uploading/success/error states; view mode shows download link or "No file uploaded yet"; `server/uploads/` git-ignored
+- ✅ **Screen 2 sidebar widened** — `224px → 320px`
+- ✅ **Screen 2 sidebar collapsible** — `‹`/`›` toggle; collapsed hides step list; main area expands; state not persisted
+- ✅ **Slide placeholder aspect ratio** — `aspect-ratio: 4/3`; `max-height: 50vh`
+- ✅ **Screen 1 sidebar widened** — `360px → 420px`
+- ✅ **Screen 1 label copy** — "Course Name" → "Course Name / Skill Name"; subtitle updated
+- ✅ **"Add hands-on" button moved inline** — now flows inside step list `<nav>` after last step; styled with blue tint + dashed border
+- 🔲 **Render slide content in `slide` block`** — the `slide` block currently shows only the `slideRef` label; it should render the extracted slide text for that slide number from `slideText` (per-slide structured extraction required first)
 - 🔲 **Per-slide structured extraction** — `extractSlideText.js` returns a flat string; should return `slides: [{ slideNumber, text }]` so `slideRef` can be resolved to specific slide text in the UI
 - 🔲 **Format-gate block add buttons** — the `BlockEditor` add-block row shows all 7 types regardless of `lessonFormat`; `slide`/`slide-explain` should only appear for `guided_tool_workflow`; `code`/`check`/`task`/`hint` may be hidden for that format
 - 🔲 **End-to-end AI validation for `guided_tool_workflow`** — three-block shape verified in mock only; needs a real generation test to confirm prompt produces correct JSON
@@ -120,7 +127,8 @@ These items will be picked up by the team handling backend integration.
 | `guided_tool_workflow` AI not yet end-to-end validated | Medium | Three-block shape tested via mock only. Real generation with GPT-5.4 has not been verified. Run a full generation pass to confirm `slide`/`slide-explain`/`explain` shape is produced correctly. |
 | `Add module lab` real-model skip behavior not validated | Medium | Mock always skips for `concept_application`. Real model behavior on borderline steps (e.g. guided_tool_workflow steps with no coding, concept_application steps with a technical concept) is not yet tested end-to-end. |
 | `isHandsOn` steps included in Screen 1 re-generation | Low | If the author returns to Screen 1 and re-generates content, the hands-on step is treated as a regular lesson step and will receive AI-generated content. Authors should be aware that re-generation overwrites the manually authored hands-on step. |
-| `downloadable_file` block has no actual file upload | Low | File upload is a placeholder in the edit UI. The block stores only a title and description. Real upload requires backend work deferred to another team. |
+| Uploaded files not cleaned up | Low | `server/uploads/` grows indefinitely. No deletion on block removal. Fine for internal use now. |
+| `fileUrl` is a relative path | Info | Works same-origin. Would break if moved to a CDN or separate file server. |
 | `slide` block shows reference only, not content | Medium | The `slide` block renders `slideRef` as a label (e.g. "Slide 3") but does not show the extracted slide text. Per-slide structured extraction is needed to resolve `slideRef` → text. |
 | `slideText` is session-only | Medium | `slideText` is lost on page reload. Only `slideFileName` (the display label) is restored from localStorage. User must re-upload the PPTX after a reload for slides to influence generation. |
 | BlockEditor shows all block types regardless of format | Low | `slide` and `slide-explain` add buttons appear even in `code_lab` steps; `code`/`check`/`task`/`hint` appear in `guided_tool_workflow` steps. Format-gating is deferred. |

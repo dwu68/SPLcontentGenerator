@@ -2,6 +2,173 @@
 
 ---
 
+**ID** 26
+**Date:** 2026-03-30
+**Session scope:** UI polish pass (sidebar widths, collapsible sidebar, slide placeholder proportions, label copy) + `downloadable_file` real file upload + "Add hands-on" button relocation and visual treatment
+
+---
+
+## What Was Completed This Session
+
+### UI Polish — Screen 1
+
+- **Left setup sidebar widened:** `360px → 420px`. Form inputs have more horizontal room.
+- **Label renamed:** "Course Name" → "Course Name / Skill Name" (`LessonInputForm.jsx`).
+- **Subtitle copy updated:** "Enter course details and the list of topics you want to cover. Each topic becomes one step in the lesson." → "Enter course/skill details and the list of topics you want to cover. AI will generate lesson steps accordingly."
+
+### UI Polish — Screen 2
+
+- **Left lesson-steps sidebar widened in two increments:** `224px → 280px → 320px`. Step titles have significantly more room before truncating.
+- **Sidebar made collapsible:** A `‹` / `›` toggle button sits in the sidebar header. When collapsed, the sidebar shrinks to 36px and the step list is hidden; the main authoring area expands to fill the freed space. Toggle state is local React state (`isSidebarCollapsed`) in `LessonAuthoringView`. Collapsed state hides the step list and header label via `.step-sidebar--collapsed` modifier class. Not persisted to localStorage — collapses reset on reload.
+- **Slide placeholder aspect ratio:** `.block-slide-placeholder` updated to `aspect-ratio: 4 / 3` with `max-height: 50vh` so it never dominates the viewport. Previously it had only a `min-height: 120px` with no upper bound.
+
+### Feature — `downloadable_file` real file upload
+
+The `downloadable_file` block type previously stored only a title and description with a "coming soon" placeholder. It now supports real file upload.
+
+**Block shape extension (additive, no breaking change):**
+```js
+{
+  id, type, title, content,   // existing fields unchanged
+  fileUrl:  string,            // new — e.g. "/uploads/1711808000000-myfile.csv"
+  fileName: string,            // new — original filename for display / download attribute
+}
+```
+
+**Backend (`server/index.js`):**
+- `server/uploads/` directory created on server startup (`fs.mkdirSync`) if absent.
+- `express.static(UPLOADS_DIR)` serves `/uploads/<filename>` as static assets.
+- `fileUpload` multer config: disk storage, `Date.now()-safeName` filename, 50 MB limit, no MIME filter.
+- `POST /api/upload-file` — accepts `multipart/form-data` with field `file`; returns `{ fileUrl, fileName }`.
+
+**Edit mode (`BlockEditor.jsx`):**
+- Local state: `uploadStatus` (`'idle' | 'uploading' | 'success' | 'error'`) and `uploadError`.
+- Hidden `<input type="file">` + styled `<label>` trigger button (same pattern as slides upload).
+- Upload fires immediately on file selection; no explicit submit step.
+- Button label: "Choose file" (no file yet) / "Replace file" (file already attached).
+- Status text below button: muted for idle, blue for uploading, green for success, red for error.
+- On success: calls `onChange({ fileUrl, fileName })` to write into block state.
+- On re-upload: overwrites `fileUrl` and `fileName` cleanly.
+
+**View mode (`LessonAuthoringView.jsx`):**
+- If `block.fileUrl` is present: renders `<a href={fileUrl} download={fileName}>⬇ filename</a>`.
+- If absent: renders "No file uploaded yet" (replaces "File upload — coming soon").
+
+**`.gitignore`:** `server/uploads/` added. `server/uploads/.gitkeep` keeps the directory tracked while ignoring its contents.
+
+### UI — "Add hands-on" button relocation and styling
+
+- **Moved** from a separate `<div class="step-sidebar-footer">` (pinned at the bottom of the sidebar) into the `<nav class="step-sidebar-list">` directly after the last step item. Button now flows inline below the last step.
+- **`.step-sidebar-footer`** CSS block removed entirely (dead code after move).
+- **Visual treatment:** Button now has a light-blue tinted background (`#eff6ff`), primary-color text, and a dashed blue border (`#bfdbfe`). Hover deepens to `#dbeafe` with a solid primary border. Clearly distinguishable from the plain step-nav buttons above it.
+
+---
+
+## Important Decisions Made
+
+- **`fileUrl` / `fileName` on the block itself** — the uploaded file reference lives on the `downloadable_file` block object, making blocks self-contained. No new step-level fields added.
+- **Disk storage, not memory** — uploaded files survive server restarts. `server/uploads/` is git-ignored via `.gitignore`.
+- **No MIME filter on `/api/upload-file`** — any file type is accepted (CSV, PDF, zip, etc.). Filtering can be added later if needed.
+- **Collapsed sidebar state not persisted** — intentional. Reload always starts with the sidebar open. Adding localStorage persistence for this would be a one-liner if desired.
+- **`max-height: 50vh` on slide placeholder** — content-driven cap; the 4:3 aspect ratio is maintained via CSS `aspect-ratio` and the cap prevents a very tall viewport from producing an oversized placeholder.
+
+---
+
+## Files Changed This Session
+
+| File | Change |
+|---|---|
+| `.gitignore` | Added `server/uploads/` |
+| `server/uploads/.gitkeep` | **New** — keeps directory tracked |
+| `server/index.js` | `UPLOADS_DIR` setup + `fs.mkdirSync`; `express.static('/uploads')`; `fileUpload` multer (disk); `POST /api/upload-file` route |
+| `src/components/BlockEditor.jsx` | Added `useState` import; `fileUrl`/`fileName` destructured from block; `uploadStatus`/`uploadError` local state; `handleFileChange` async upload handler; file upload UI section in `downloadable_file` cards |
+| `src/components/LessonAuthoringView.jsx` | `downloadable_file` view: real download `<a>` vs "No file uploaded yet"; "Add hands-on" button moved from footer into nav |
+| `src/components/LessonInputForm.jsx` | Label: "Course Name" → "Course Name / Skill Name"; subtitle copy updated |
+| `src/App.css` | `.builder-left` width `360px → 420px`; `.step-sidebar` width `224px → 320px`; `.step-sidebar--collapsed` rule simplified; `.step-sidebar-footer` block removed; `.step-sidebar-add-handson` restyled (blue tint, dashed border); `.block-slide-placeholder` `aspect-ratio: 4/3` + `max-height: 50vh`; `.block-downloadable-file-link` (download link); `.block-file-upload*` upload control styles |
+
+---
+
+## What Is Currently Working
+
+- All previous functionality from Sessions 1–25 remains intact.
+- File upload on `downloadable_file` blocks: choose file → upload → download link shown in view mode.
+- Re-upload overwrites block reference cleanly.
+- Sidebar collapse/expand toggle.
+- "Add hands-on" flows inline below last step with clear visual treatment.
+- Slide placeholder renders at 4:3, capped at 50vh.
+- Screen 1 label and subtitle copy updated.
+
+---
+
+## What Is Not Implemented Yet
+
+- **`slideText` per-slide structured extraction** — flat text only; `slide` block shows ref label not actual slide content.
+- **Format-gating block add buttons** — `slide`/`slide-explain` still appear in `code_lab` editors; `code`/`check`/`task`/`hint` still appear in `guided_tool_workflow` editors.
+- **`guided_tool_workflow` AI not end-to-end validated** — three-block shape tested via mock only.
+- **`concept_application` format** — lessonFormat value exists and is forwarded; no dedicated prompt branch yet.
+- **Backend persistence** — localStorage only; deferred to another team.
+- **`[DIAG]` console logs** — still in `callProvider` and the generate-content route.
+
+---
+
+## Recommended Next Steps
+
+**1. End-to-end validate `guided_tool_workflow` generation with real model**
+Run a full generation pass on a GTW module (with slides if possible), confirm the three-block shape (`slide`, `slide-explain`, `explain`) is produced correctly by GPT. This is a medium-severity known gap.
+
+**2. Format-gate block add buttons in `BlockEditor`**
+Filter `ADD_TYPES` based on a `lessonFormat` prop passed down to `BlockEditor`. Small, low-risk, well-scoped. Prevents authors from accidentally adding `slide`/`slide-explain` blocks to `code_lab` steps.
+
+**3. Remove `[DIAG]` console logs**
+`callProvider` in `lessonContentService.js` and the generate-content route in `server/index.js` both emit `[DIAG]` logging. Safe to remove now that the progressive generation hang has been resolved.
+
+---
+
+## Known Issues / Rough Edges
+
+| Item | Severity | Detail |
+|---|---|---|
+| Uploaded files not cleaned up | Low | `server/uploads/` grows indefinitely. No deletion on block removal. Fine for internal use; would need a cleanup strategy for production. |
+| `fileUrl` is a relative path (`/uploads/…`) | Info | Works in dev (Vite proxy) and production (same-origin Express). Would break if the app ever moves to a CDN or separate file server. |
+| Collapsed sidebar state lost on reload | Low | Intentional — not persisted. One-liner fix if desired. |
+| `[DIAG]` logs still in production code | Low | Carry-forward from Session 24. |
+| `downloadable_file` upload has no MIME restriction | Info | Any file type accepted. Add `fileFilter` to multer config if restriction is needed. |
+| `isHandsOn` steps overwritten by Screen 1 re-generation | Low | Carry-forward from Session 25. |
+| `src/utils/mockGeneration.js` is dead code | Low | Nothing imports it. Safe to delete. |
+
+---
+
+## Git
+
+### Recommended commit message
+```
+feat: real file upload for downloadable_file blocks + UI polish pass
+```
+
+### Alternative messages
+```
+feat: downloadable_file upload endpoint + sidebar polish (widths, collapsible, hands-on button)
+```
+```
+feat(session-26): file upload, sidebar collapse, slide placeholder ratio, copy updates
+```
+
+### Commands
+
+```bash
+git add .gitignore server/index.js server/uploads/.gitkeep \
+  src/App.css \
+  src/components/BlockEditor.jsx \
+  src/components/LessonAuthoringView.jsx \
+  src/components/LessonInputForm.jsx
+
+git commit -m "feat: real file upload for downloadable_file blocks + UI polish pass"
+```
+
+> **Do not commit** `output/claude-code-prompt-engineering-for-coding-0327-1223.json` — it is an untracked generated output file and should stay out of version control. Add `output/*.json` to `.gitignore` if you want this enforced automatically.
+
+---
+
 **ID** 25
 **Date:** 2026-03-27
 **Session scope:** Hands-on Practice step from Screen 2; `external_link` / `downloadable_file` block types; `Add module lab` dedicated narrow generation path; edit-mode branch fix for empty-blocks steps

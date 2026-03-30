@@ -305,7 +305,7 @@ body {
 }
 
 .builder-left {
-  width: 360px;
+  width: 420px;
   flex-shrink: 0;
   border-right: 1px solid var(--color-border);
   background: var(--color-surface);
@@ -939,7 +939,7 @@ body {
 
 /* ── Step Sidebar ────────────────────────────────────────────────────────────── */
 .step-sidebar {
-  width: 224px;
+  width: 320px;
   flex-shrink: 0;
   display: flex;
   flex-direction: column;
@@ -948,7 +948,21 @@ body {
   overflow: hidden;
 }
 
+.step-sidebar--collapsed {
+  width: 36px;
+}
+.step-sidebar--collapsed .step-sidebar-list {
+  display: none;
+}
+.step-sidebar--collapsed .step-sidebar-header {
+  padding: 10px 4px;
+  justify-content: center;
+}
+
 .step-sidebar-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
   padding: 13px 16px 11px;
   border-bottom: 1px solid var(--color-border);
   font-size: 10.5px;
@@ -959,23 +973,42 @@ body {
   flex-shrink: 0;
 }
 
+.step-sidebar-toggle {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 16px;
+  line-height: 1;
+  color: var(--color-text-muted);
+  padding: 1px 3px;
+  border-radius: 4px;
+  flex-shrink: 0;
+  transition: background 0.1s, color 0.1s;
+}
+.step-sidebar-toggle:hover {
+  background: var(--color-surface-raised);
+  color: var(--color-text);
+}
+
 .step-sidebar-list {
   flex: 1;
   overflow-y: auto;
   padding: 6px;
 }
 
-.step-sidebar-footer {
-  flex-shrink: 0;
-  padding: 8px;
-  border-top: 1px solid var(--color-border);
-}
-
 .step-sidebar-add-handson {
   width: 100%;
   justify-content: flex-start;
   font-size: 12px;
-  color: var(--color-text-secondary);
+  color: var(--color-primary);
+  background: #eff6ff;
+  border: 1px dashed #bfdbfe;
+  border-radius: var(--radius-sm);
+  margin-top: 4px;
+}
+.step-sidebar-add-handson:hover:not(:disabled) {
+  background: #dbeafe;
+  border-color: var(--color-primary);
 }
 
 .step-nav-btn {
@@ -1737,7 +1770,9 @@ body {
 
 /* ── slide ──────────────────────────────────────────────────────────────────── */
 .block-slide-placeholder {
-  min-height: 120px;
+  aspect-ratio: 4 / 3;
+  width: 100%;
+  max-height: 50vh;
   background: var(--color-surface-raised);
   border: 1.5px dashed var(--color-border);
   border-radius: var(--radius-md);
@@ -1788,6 +1823,70 @@ body {
   font-size: 12px;
   color: var(--color-text-muted);
   font-style: italic;
+}
+
+.block-downloadable-file-link {
+  display: inline-block;
+  margin-top: 8px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--color-primary);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  word-break: break-all;
+}
+.block-downloadable-file-link:hover {
+  color: var(--color-primary-hover);
+}
+
+/* ── Block file upload control (edit mode) ──────────────────────────────────── */
+.block-file-upload {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.block-file-upload-input {
+  display: none;
+}
+
+.block-file-upload-btn {
+  display: inline-block;
+  padding: 5px 12px;
+  font-size: 12px;
+  font-family: var(--font-sans);
+  font-weight: 500;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface);
+  color: var(--color-text);
+  cursor: pointer;
+  transition: background 0.1s, border-color 0.1s;
+  white-space: nowrap;
+}
+.block-file-upload-btn:hover {
+  background: var(--color-surface-raised);
+  border-color: var(--color-border-focus);
+}
+.block-file-upload-btn--disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+.block-file-upload-status {
+  font-size: 12px;
+  color: var(--color-text-muted);
+}
+.block-file-upload-status--uploading {
+  color: var(--color-primary);
+}
+.block-file-upload-status--success {
+  color: var(--color-success, #16a34a);
+}
+.block-file-upload-status--error {
+  color: var(--color-danger);
 }
 
 .block-empty-placeholder {

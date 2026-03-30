@@ -65,13 +65,12 @@ function LessonInputForm({
     <div className="form-panel" onKeyDown={handleKeyDown}>
       <div className="form-panel-title">Lesson Setup</div>
       <p className="form-panel-subtitle">
-        Enter course details and the list of topics you want to cover. Each topic
-        becomes one step in the lesson.
+        Enter course/skill details and the list of topics you want to cover. AI will generate lesson steps accordingly.
       </p>
 
       <div className="form-group">
         <label className="form-label" htmlFor="course-name">
-          Course Name
+          Course Name / Skill Name
         </label>
         <input
           id="course-name"

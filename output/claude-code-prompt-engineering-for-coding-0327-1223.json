@@ -1,0 +1,46 @@
+{
+  "courseName": "Claude Code",
+  "moduleName": "Prompt Engineering for Coding",
+  "learnerLevel": "beginner",
+  "outputLanguage": "Python",
+  "exportedAt": "2026-03-27T16:23:09.084Z",
+  "steps": [
+    {
+      "stepNumber": 1,
+      "stepTitle": "Module overview",
+      "stepGoal": "Students will be able to describe the module scope and the main prompt engineering topics covered in Claude Code.",
+      "stepTopics": [
+        "Module outline",
+        "Task prompts vs. system prompts vs. agentic prompts",
+        "How Claude Code interprets instructions + files",
+        "Code generation templates",
+        "Multi-file structured prompting",
+        "Setting constraints (versions, libraries, patterns)"
+      ],
+      "blocks": [
+        {
+          "id": "b1",
+          "type": "slide",
+          "title": null,
+          "slideRef": "2",
+          "content": ""
+        },
+        {
+          "id": "b2",
+          "type": "slide-explain",
+          "title": null,
+          "content": "This module is about writing better prompts for coding with Claude Code. The focus is not just on asking for code, but on shaping how Claude should respond, what context it should read, and how tightly you want the output controlled.\n\nThe outline covers six connected ideas:\n\n- task prompts vs. system prompts vs. agentic prompts\n- how Claude Code interprets instructions plus files\n- code generation templates\n- multi-file structured prompting\n- setting constraints such as versions, libraries, and patterns\n\nTogether, these topics help you move from simple one-off requests to prompts that work well on real codebases. By the end of the module, you should be able to describe what each prompt type is for and choose the right structure when you want Claude Code to generate code safely and consistently."
+        },
+        {
+          "id": "b3",
+          "type": "explain",
+          "title": null,
+          "content": "Prompt engineering for coding is mostly about matching the prompt to the job.\n\nA task prompt is for a single, immediate request, like “Write a Python function that validates an email address using regex.” A system prompt is a persistent set of rules that shapes Claude’s behavior across the whole session, such as “Always write Python 3.11 with type hints and docstrings.” An agentic prompt is for a larger workflow where Claude plans and executes multiple steps, like scaffolding an app, defining models, implementing CRUD, and writing tests.\n\nThe practical difference is scope. Task prompts are short and focused on one output, system prompts define the ongoing rules, and agentic prompts describe the goal plus the steps needed to reach it. Knowing which type you are using helps you avoid prompts that are too vague for the result you want or too heavy for a simple coding task."
+        }
+      ],
+      "starterCode": "",
+      "expectedAction": "",
+      "validationNote": ""
+    }
+  ]
+}

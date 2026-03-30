@@ -44,6 +44,7 @@ function LessonAuthoringView({
   )
   const [isEditing, setIsEditing] = useState(false)
   const [editSnapshot, setEditSnapshot] = useState(null)
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false)
 
   // Step metadata (all types) — drives sidebar and stepType branching
   const selectedStructureStep = lessonStructure.find((s) => s.id === selectedStepId) ?? null
@@ -88,8 +89,17 @@ function LessonAuthoringView({
   return (
     <div className="authoring-layout">
       {/* ── Step Sidebar ────────────────────────────────────────────────── */}
-      <aside className="step-sidebar">
-        <div className="step-sidebar-header">Lesson Steps</div>
+      <aside className={`step-sidebar${isSidebarCollapsed ? ' step-sidebar--collapsed' : ''}`}>
+        <div className="step-sidebar-header">
+          {!isSidebarCollapsed && <span className="step-sidebar-header-text">Lesson Steps</span>}
+          <button
+            className="step-sidebar-toggle"
+            onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
+            title={isSidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+          >
+            {isSidebarCollapsed ? '›' : '‹'}
+          </button>
+        </div>
         <nav className="step-sidebar-list" aria-label="Lesson steps">
           {lessonStructure.map((step) => {
             const genStatus = stepGenerationStatus[step.id]
@@ -118,8 +128,6 @@ function LessonAuthoringView({
               </button>
             )
           })}
-        </nav>
-        <div className="step-sidebar-footer">
           <button
             className="btn btn-ghost step-sidebar-add-handson"
             onClick={onAddHandsOnStep}
@@ -128,7 +136,7 @@ function LessonAuthoringView({
           >
             + Add hands-on
           </button>
-        </div>
+        </nav>
       </aside>
 
       {/* ── Main Editor Area ─────────────────────────────────────────────── */}
@@ -675,12 +683,24 @@ function Block({ block }) {
   }
 
   if (type === 'downloadable_file') {
+    const fileUrl  = block.fileUrl  ?? ''
+    const fileName = block.fileName ?? ''
     return (
       <div className="block block-downloadable-file">
         <div className="block-heading">{title || 'File'}</div>
         <div className="block-body">
           {safeContent && <p>{safeContent}</p>}
-          <div className="block-downloadable-file-placeholder">File upload — coming soon</div>
+          {fileUrl ? (
+            <a
+              className="block-downloadable-file-link"
+              href={fileUrl}
+              download={fileName || title || true}
+            >
+              ⬇ {fileName || title || 'Download file'}
+            </a>
+          ) : (
+            <div className="block-downloadable-file-placeholder">No file uploaded yet</div>
+          )}
         </div>
       </div>
     )
