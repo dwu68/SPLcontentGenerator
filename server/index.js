@@ -27,6 +27,7 @@ import { buildGenerateStructurePrompt } from './prompts/generateStructurePrompt.
 import { buildGenerateContentPrompt } from './prompts/generateContentPrompt.js'
 import { buildGenerateTaskPrompt } from './prompts/generateTaskPrompt.js'
 import { buildGenerateModuleLabPrompt } from './prompts/generateModuleLabPrompt.js'
+import { buildGenerateBlockPrompt } from './prompts/generateBlockPrompt.js'
 import { buildPromptContext } from './lib/promptContext.js'
 import { extractSlideText } from './lib/extractSlideText.js'
 
@@ -225,6 +226,36 @@ function mockGenerateModuleLab(previousSteps, lessonFormat) {
       content: `Apply ${topicList} together in a single exercise. Your solution should correctly use each concept and produce the expected output shown in the starter code comments.`,
     },
     starterCode: `# Module Lab: ${topicList}\n\n# TODO: apply ${slug} together\n# Expected: correct output combining all module concepts\n`,
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Mock fallback — single block generation (code or check)
+// ---------------------------------------------------------------------------
+
+function mockGenerateBlock(step, blockType, language) {
+  const topic    = step?.title ?? 'this topic'
+  const topicSlug = topic.toLowerCase().replace(/\s+/g, '_')
+
+  if (blockType === 'code') {
+    const lang = language || 'python'
+    return {
+      block: {
+        type:     'code',
+        title:    'Example',
+        language: lang,
+        content:  `# Example: ${topic}\n${topicSlug}_example = "mock value"  # illustrative value\nprint(${topicSlug}_example)  # outputs: mock value`,
+      },
+    }
+  }
+
+  // blockType === 'check'
+  return {
+    block: {
+      type:    'check',
+      title:   'Knowledge Check',
+      content: `What is a key concept in "${topic}"?\n→ (Mock answer) The core idea is to apply ${topicSlug} correctly to produce the expected result.`,
+    },
   }
 }
 
@@ -504,6 +535,54 @@ app.post('/api/generate-module-lab', async (req, res) => {
     return res.json(raw)
   } catch (err) {
     console.error('[generate-module-lab]', err.message)
+    return res.status(500).json({ error: err.message })
+  }
+})
+
+// POST /api/generate-block
+app.post('/api/generate-block', async (req, res) => {
+  const {
+    step,
+    currentBlocks = [],
+    blockType,
+    language      = 'python',
+    lessonFormat  = 'code_lab',
+    outputLanguage = 'Python',
+  } = req.body
+
+  if (!step?.title || !blockType) {
+    return res.status(400).json({
+      error: 'Missing required fields: step (with title), blockType',
+    })
+  }
+  if (blockType !== 'code' && blockType !== 'check') {
+    return res.status(400).json({ error: 'blockType must be "code" or "check"' })
+  }
+
+  if (USE_MOCK) {
+    return res.json(mockGenerateBlock(step, blockType, language))
+  }
+
+  try {
+    const prompt = buildGenerateBlockPrompt({
+      stepTitle:     step.title,
+      stepGoal:      step.goal      ?? '',
+      stepTopics:    Array.isArray(step.coveredSubtopics) ? step.coveredSubtopics : [],
+      currentBlocks: Array.isArray(currentBlocks)         ? currentBlocks         : [],
+      blockType,
+      language,
+      lessonFormat,
+      outputLanguage,
+    })
+    const completion = await openai.chat.completions.create({
+      model: process.env.OPENAI_MODEL || 'gpt-4o-mini',
+      response_format: { type: 'json_object' },
+      messages: [{ role: 'user', content: prompt }],
+    })
+    const raw = JSON.parse(completion.choices[0].message.content)
+    return res.json(raw)
+  } catch (err) {
+    console.error('[generate-block]', err.message)
     return res.status(500).json({ error: err.message })
   }
 })

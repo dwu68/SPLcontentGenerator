@@ -34,6 +34,7 @@ function LessonAuthoringView({
   onUpdateContent,
   onAddTask,
   onAddModuleLab,
+  onAddBlock,
   onAddHandsOnStep,
   dirtyStepIds,
   stepGenerationStatus = {},
@@ -153,6 +154,7 @@ function LessonAuthoringView({
               onUpdateContent={onUpdateContent}
               onAddTask={onAddTask}
               onAddModuleLab={onAddModuleLab}
+              onAddBlock={onAddBlock}
               isHandsOnStep={isHandsOnStep}
             />
           ) : (
@@ -168,7 +170,7 @@ function LessonAuthoringView({
 
 // ── Lesson step: instruction panel + code panel ──────────────────────────────
 
-function LessonStepPanels({ selectedContent, genStatus, isEditing, onEdit, onSave, onCancel, onUpdateContent, onAddTask, onAddModuleLab, isHandsOnStep }) {
+function LessonStepPanels({ selectedContent, genStatus, isEditing, onEdit, onSave, onCancel, onUpdateContent, onAddTask, onAddModuleLab, onAddBlock, isHandsOnStep }) {
   const hasLabContent = Boolean(selectedContent?.starterCode?.trim())
   const hasTaskBlock  = selectedContent?.blocks?.some((b) => b.type === 'task') ?? false
 
@@ -182,6 +184,10 @@ function LessonStepPanels({ selectedContent, genStatus, isEditing, onEdit, onSav
   const [addModuleLabError,    setAddModuleLabError]    = useState(null)
   const [addModuleLabSkipNote, setAddModuleLabSkipNote] = useState(null)
 
+  // ── Add AI block — code example or knowledge check ───────────────────────
+  const [isAddingBlock, setIsAddingBlock] = useState(false)
+  const [addBlockError, setAddBlockError] = useState(null)
+
   // Clear all AI-action feedback whenever edit mode exits
   useEffect(() => {
     if (!isEditing) {
@@ -189,6 +195,7 @@ function LessonStepPanels({ selectedContent, genStatus, isEditing, onEdit, onSav
       setAddTaskSkipNote(null)
       setAddModuleLabError(null)
       setAddModuleLabSkipNote(null)
+      setAddBlockError(null)
     }
   }, [isEditing])
 
@@ -217,6 +224,18 @@ function LessonStepPanels({ selectedContent, genStatus, isEditing, onEdit, onSav
       setAddModuleLabError(err.message || 'Failed to generate module lab. Please try again.')
     } finally {
       setIsAddingModuleLab(false)
+    }
+  }
+
+  const handleAddBlockClick = async (blockType) => {
+    setIsAddingBlock(true)
+    setAddBlockError(null)
+    try {
+      await onAddBlock(blockType, selectedContent?.blocks ?? [])
+    } catch (err) {
+      setAddBlockError(err.message || `Failed to generate ${blockType} block. Please try again.`)
+    } finally {
+      setIsAddingBlock(false)
     }
   }
 
@@ -255,6 +274,22 @@ function LessonStepPanels({ selectedContent, genStatus, isEditing, onEdit, onSav
                     {isAddingModuleLab ? 'Generating…' : 'Add module lab'}
                   </button>
                 )}
+                <button
+                  className="btn btn-sm btn-secondary"
+                  onClick={() => handleAddBlockClick('code')}
+                  disabled={isAddingBlock}
+                  title="AI generates a code example grounded in this step's content"
+                >
+                  {isAddingBlock ? 'Generating…' : '+ AI Example'}
+                </button>
+                <button
+                  className="btn btn-sm btn-secondary"
+                  onClick={() => handleAddBlockClick('check')}
+                  disabled={isAddingBlock}
+                  title="AI generates a knowledge check question grounded in this step's content"
+                >
+                  {isAddingBlock ? 'Generating…' : '+ AI Check'}
+                </button>
                 <button className="btn btn-sm btn-success" onClick={onSave}>
                   Save
                 </button>
@@ -287,6 +322,11 @@ function LessonStepPanels({ selectedContent, genStatus, isEditing, onEdit, onSav
         {addModuleLabSkipNote && (
           <div style={{ fontSize: 12, color: 'var(--color-text-secondary)', padding: '4px 16px 0' }}>
             {addModuleLabSkipNote}
+          </div>
+        )}
+        {addBlockError && (
+          <div style={{ fontSize: 12, color: 'var(--color-danger, #c0392b)', padding: '4px 16px 0' }}>
+            {addBlockError}
           </div>
         )}
         <div className="panel-body">

@@ -3,7 +3,7 @@ import Header from './components/Header'
 import LessonInputForm from './components/LessonInputForm'
 import LessonStructurePreview from './components/LessonStructurePreview'
 import LessonAuthoringView from './components/LessonAuthoringView'
-import { generateStepContent, generateTaskForStep, generateModuleLabForStep } from './services/lessonContentService'
+import { generateStepContent, generateTaskForStep, generateModuleLabForStep, generateBlockForStep } from './services/lessonContentService'
 import { generateLessonStructure } from './services/lessonStructureService'
 
 const STORAGE_KEY = 'spl_lesson_draft'
@@ -364,6 +364,39 @@ function App() {
     return null
   }
 
+  // ── Screen 2: generate a single AI block (code example or check question) ─
+  //
+  // Detects the code language from any existing code block in the step;
+  // falls back to 'python' if none is found.
+  // Appends the returned block to the end of the step's block list.
+  // Throws on network / server error (no skip path).
+  const handleAddBlock = async (blockType, currentBlocks) => {
+    const structureStep = lessonStructure.find((s) => s.id === selectedStepId)
+    if (!structureStep) return
+
+    const existingCodeBlock = currentBlocks.find((b) => b.type === 'code')
+    const language = existingCodeBlock?.language || 'python'
+
+    const result = await generateBlockForStep({
+      step: structureStep,
+      currentBlocks,
+      blockType,
+      language,
+      lessonFormat,
+      slideText,
+    })
+
+    const blockWithId = { ...result.block, id: `block-${Date.now()}` }
+    setLessonContent((prev) =>
+      prev.map((s) =>
+        s.id !== selectedStepId ? s :
+        { ...s, blocks: [...(s.blocks || []), blockWithId] }
+      )
+    )
+    setDirtyStepIds((prev) => new Set([...prev, selectedStepId]))
+    setSaveStatus('unsaved')
+  }
+
   // ── Screen 2: update a single step's content fields ─────────────────────
   const handleUpdateContent = (stepId, updatedFields) => {
     setLessonContent((prev) =>
@@ -502,6 +535,7 @@ function App() {
           onUpdateContent={handleUpdateContent}
           onAddTask={handleAddTask}
           onAddModuleLab={handleAddModuleLab}
+          onAddBlock={handleAddBlock}
           onAddHandsOnStep={handleAddHandsOnStep}
           dirtyStepIds={dirtyStepIds}
           saveStatus={saveStatus}

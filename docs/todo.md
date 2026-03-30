@@ -64,6 +64,7 @@ Work done in this phase establishes the module format and per-step type model.
 - ✅ **`downloadable_file` block type** — available in `BlockEditor` for all editable steps; title = filename, content = description; file upload is placeholder
 - ✅ **Edit-mode branch fix** — empty-blocks steps now correctly use `BlockEditor` in edit mode (condition `blocks?.length > 0` → `Array.isArray(blocks)`)
 - ✅ **`Add module lab` for hands-on steps** — dedicated narrow path (`POST /api/generate-module-lab`); condensed previous-step context; replaces "Add task with starter code" for `isHandsOn` steps; skip responses supported
+- ✅ **`+ AI Example` and `+ AI Check` edit-mode actions** — shared `POST /api/generate-block` endpoint with `blockType` param; `generateBlockPrompt.js`; appends to end of block list; shared loading state; no skip path; language auto-detected from existing code blocks
 - ✅ **`downloadable_file` real file upload** — `POST /api/upload-file` (disk storage, 50 MB); `express.static('/uploads')`; `fileUrl`/`fileName` stored on block; edit UI with uploading/success/error states; view mode shows download link or "No file uploaded yet"; `server/uploads/` git-ignored
 - ✅ **Screen 2 sidebar widened** — `224px → 320px`
 - ✅ **Screen 2 sidebar collapsible** — `‹`/`›` toggle; collapsed hides step list; main area expands; state not persisted

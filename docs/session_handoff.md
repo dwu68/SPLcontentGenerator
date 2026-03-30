@@ -2,6 +2,155 @@
 
 ---
 
+**ID** 27
+**Date:** 2026-03-30
+**Session scope:** "Add AI Example" and "Add AI Check" edit-mode actions in Screen 2; minor UI alignment fixes (sidebar header height, "LESSON STEPS" / "INSTRUCTIONS" alignment)
+
+---
+
+## What Was Completed This Session
+
+### Feature — "Add AI Example" and "Add AI Check" in Screen 2 edit mode
+
+Two new AI-assisted actions available in edit mode in the Screen 2 instruction panel header:
+
+- **+ AI Example** — generates a new filled `code` block grounded in the current step's existing blocks. The generated block is a short annotated runnable example (5–20 lines), not a TODO exercise.
+- **+ AI Check** — generates a new filled `check` block grounded in the current step's existing blocks. The check follows the existing reveal convention: `question text\n→ answer text`.
+
+Both actions append the generated block to the **end** of the current step's block list. No cap — each click appends another block.
+
+**Architecture — one shared endpoint with `blockType` parameter:**
+
+A deliberate divergence from the one-action-per-file pattern. Since both actions take identical input (step context + current blocks) and return a single block, one shared endpoint + one shared prompt file was chosen over two separate files.
+
+**5-layer stack:**
+
+| Layer | File | Notes |
+|---|---|---|
+| Prompt | `server/prompts/generateBlockPrompt.js` | `buildGenerateBlockPrompt({ ..., blockType, language })`; type-specific guidance sections; `code` branch enforces `language` field; `check` branch enforces `\n→ ` separator |
+| Route | `server/index.js` | `POST /api/generate-block`; `blockType` validated; mock returns plausible blocks for both types |
+| Service | `src/services/lessonContentService.js` | `generateBlockForStep(...)`; validates `raw.block.type`; no skip path |
+| Handler | `src/App.jsx` | `handleAddBlock(blockType, currentBlocks)`; detects `language` from first existing `code` block in step, falls back to `'python'`; appends with `id: block-${Date.now()}` |
+| UI | `src/components/LessonAuthoringView.jsx` | `isAddingBlock` + `addBlockError` shared local state; both buttons disabled while either is generating; error cleared on edit-mode exit |
+
+**Response shape:**
+```json
+{ "block": { "type": "code", "title": "Example", "language": "python", "content": "..." } }
+{ "block": { "type": "check", "title": "Knowledge Check", "content": "Question?\n→ Answer." } }
+```
+
+No skip path — these blocks can always be generated for any instructional content.
+
+### UI — Sidebar header height alignment
+
+- `step-sidebar-toggle` padding increased from `1px 3px` → `5px 4px` so the toggle button's total height (~26px) matches `btn-sm` (~27px). This makes the "LESSON STEPS" and "INSTRUCTIONS" headers visually the same height.
+
+---
+
+## Important Decisions Made
+
+- **One endpoint, one prompt file (`generateBlockPrompt.js`)** for both `code` and `check` block generation. The `blockType` parameter drives the type-specific guidance section. Rationale: both actions are structurally identical across all layers; separate files would be duplication without benefit.
+- **No skip path** for these actions. Unlike `generate-task`, there is no meaningful "unsuitable" condition for adding an example or a check to a teaching step.
+- **Shared `isAddingBlock` state** — both buttons share one loading flag. A second click on either button while one is in flight is blocked. No parallel requests.
+- **Language detection** — scans `currentBlocks` for the first `code` block and reuses its `language`; falls back to `'python'`. No author-facing language picker yet.
+- **No format-gating** — both buttons appear for all `lessonFormat` values (consistent with existing deferred format-gating policy).
+- **No cap** on how many AI blocks can be appended — consistent with the manual add-block behaviour.
+
+---
+
+## Files Changed This Session
+
+| File | Change |
+|---|---|
+| **New** `server/prompts/generateBlockPrompt.js` | Prompt builder for single-block generation; `blockType: 'code' \| 'check'`; type-specific guidance; shared block serializer |
+| `server/index.js` | Import `buildGenerateBlockPrompt`; `mockGenerateBlock(step, blockType, language)`; `POST /api/generate-block` route |
+| `src/services/lessonContentService.js` | New export `generateBlockForStep(...)` |
+| `src/App.jsx` | Import `generateBlockForStep`; `handleAddBlock(blockType, currentBlocks)` handler; `onAddBlock` prop wired to `LessonAuthoringView` |
+| `src/components/LessonAuthoringView.jsx` | `onAddBlock` prop threaded; `isAddingBlock` + `addBlockError` state; `handleAddBlockClick(blockType)`; `+ AI Example` and `+ AI Check` buttons in edit-mode panel header; `addBlockError` inline display |
+| `src/App.css` | `.step-sidebar-toggle` padding `1px 3px` → `5px 4px` (header height alignment) |
+
+---
+
+## What Is Currently Working
+
+- All previous functionality from Sessions 1–26 remains intact.
+- "+ AI Example" and "+ AI Check" appear in edit mode for all step types and all formats.
+- Both buttons are disabled while either is generating; loading label shows "Generating…".
+- Generated blocks are appended to the end of the block list and immediately visible in the editor.
+- Error state shown inline below the panel header; cleared when edit mode exits.
+- Sidebar header ("LESSON STEPS") and instruction panel header ("INSTRUCTIONS") are now visually aligned.
+
+---
+
+## What Is Not Implemented Yet
+
+- **Format-gating block add buttons** — `+ AI Example` / `+ AI Check` appear for all formats; `slide`/`slide-explain` manual add buttons still appear for `code_lab` steps. Deferred.
+- **Language picker for AI Example** — defaults to first existing `code` block's language or `python`. No author control.
+- **`guided_tool_workflow` AI generation not end-to-end validated** — three-block shape tested via mock only.
+- **`concept_application` prompt branch** — format value exists but no dedicated prompt.
+- **Per-slide structured extraction** — `slide` block shows `slideRef` label only; no actual slide text rendered.
+- **`[DIAG]` console logs** — still in `callProvider` and the generate-content route.
+
+---
+
+## Recommended Next Steps
+
+**1. End-to-end validate `+ AI Example` and `+ AI Check` with real model**
+Run both actions on a live `code_lab` step with real content and confirm the generated blocks are well-grounded, correctly formatted, and appended cleanly. Specifically verify the `\n→ ` separator appears correctly in the rendered `check` block reveal.
+
+**2. Format-gate block add buttons in `BlockEditor`**
+Filter `ADD_TYPES` based on a `lessonFormat` prop passed to `BlockEditor`. Removes `slide`/`slide-explain` from `code_lab` editors and `code`/`check`/`task`/`hint` from `guided_tool_workflow`. Small, well-scoped, no data model change.
+
+**3. Remove `[DIAG]` console logs**
+`callProvider` in `lessonContentService.js` and the generate-content route in `server/index.js` both emit `[DIAG]` logging. Safe to remove now.
+
+---
+
+## Known Issues / Rough Edges
+
+| Item | Severity | Detail |
+|---|---|---|
+| No language picker for `+ AI Example` | Low | Language is inferred from existing `code` blocks; no override. First `code` block wins if multiple exist with different languages. |
+| `+ AI Example` visible in `guided_tool_workflow` | Low | Format-gating deferred; a `code` block is atypical in GTW steps but not blocked. |
+| No cap on AI block generation | Info | Authors can click `+ AI Example` or `+ AI Check` repeatedly and get duplicates. Intentional for now. |
+| `[DIAG]` logs still in production code | Low | Carry-forward from Session 24. |
+| `guided_tool_workflow` real-model validation pending | Medium | Carry-forward from Session 25. |
+| `src/utils/mockGeneration.js` is dead code | Low | Nothing imports it. Safe to delete. |
+
+---
+
+## Git
+
+### Recommended commit message
+```
+feat: Add AI Example and Add AI Check edit-mode actions in Screen 2
+```
+
+### Alternative messages
+```
+feat: AI-generated code example and knowledge check blocks via POST /api/generate-block
+```
+```
+feat(session-27): generate-block endpoint + AI Example / AI Check UI actions
+```
+
+### Commands
+
+```bash
+git add server/prompts/generateBlockPrompt.js \
+  server/index.js \
+  src/App.css \
+  src/App.jsx \
+  src/components/LessonAuthoringView.jsx \
+  src/services/lessonContentService.js
+
+git commit -m "feat: Add AI Example and Add AI Check edit-mode actions in Screen 2"
+```
+
+> **Do not commit** `output/claude-code-prompt-engineering-for-coding-0327-1223.json` — untracked generated output file. Consider adding `output/*.json` to `.gitignore`.
+
+---
+
 **ID** 26
 **Date:** 2026-03-30
 **Session scope:** UI polish pass (sidebar widths, collapsible sidebar, slide placeholder proportions, label copy) + `downloadable_file` real file upload + "Add hands-on" button relocation and visual treatment

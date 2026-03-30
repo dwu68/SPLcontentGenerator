@@ -266,6 +266,45 @@ export async function generateModuleLabForStep({
 }
 
 /**
+ * generateBlockForStep
+ *
+ * Calls POST /api/generate-block to add a single AI-generated content block
+ * to a step that is currently being edited.
+ *
+ * Supports two block types:
+ *   'code'  — a short annotated code example grounded in the step's content
+ *   'check' — a knowledge-check question with a reveal answer (question\n→ answer)
+ *
+ * No skip path — always returns a block.
+ * Throws on network error or unexpected server response.
+ *
+ * @param {object}   params
+ * @param {object}   params.step           — LessonStructure step (title, goal, topics)
+ * @param {object[]} params.currentBlocks  — live blocks currently in the step
+ * @param {'code'|'check'} params.blockType
+ * @param {string}   [params.language]     — code language; used only for blockType 'code'
+ * @param {string}   [params.lessonFormat]
+ * @param {string}   [params.slideText]
+ * @returns {Promise<{ block: object }>}
+ */
+export async function generateBlockForStep({ step, currentBlocks, blockType, language, lessonFormat, slideText }) {
+  const res = await fetch('/api/generate-block', {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ step, currentBlocks, blockType, language, lessonFormat, slideText }),
+  })
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({}))
+    throw new Error(body.error || `Server error ${res.status} for step "${step.title}"`)
+  }
+  const raw = await res.json()
+  if (!raw.block || !raw.block.type) {
+    throw new Error('Unexpected response shape from /api/generate-block')
+  }
+  return { block: raw.block }
+}
+
+/**
  * generateAllLessonContent
  *
  * Generates content for every step in the lesson structure.
