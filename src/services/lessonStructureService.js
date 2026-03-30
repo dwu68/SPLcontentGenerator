@@ -69,7 +69,7 @@ function normalizeStructure(rawSteps) {
     throw new Error('Provider returned no steps.')
   }
   const now = Date.now()
-  return rawSteps.map((step, index) => ({
+  const steps = rawSteps.map((step, index) => ({
     id: `step-${now}-${index}`,
     stepNumber: index + 1,
     stepType: 'lesson',
@@ -78,6 +78,25 @@ function normalizeStructure(rawSteps) {
     coveredSubtopics: Array.isArray(step.coveredSubtopics) ? step.coveredSubtopics : [],
     slideNumbers: Array.isArray(step.slideNumbers) ? step.slideNumbers.map(String) : [],
   }))
+
+  // Guarantee a summary step is always the final step.
+  // The prompt instructs the AI to use exactly "Module Summary", but we use a
+  // tolerant case-insensitive check for "summary" in the last step's title to
+  // avoid appending a duplicate when the AI uses a near-match variant.
+  const lastTitle = steps[steps.length - 1].title.toLowerCase()
+  if (!lastTitle.includes('summary')) {
+    steps.push({
+      id: `step-${now}-summary`,
+      stepNumber: steps.length + 1,
+      stepType: 'lesson',
+      title: 'Module Summary',
+      goal: 'Students will be able to review and consolidate the key concepts covered in this module.',
+      coveredSubtopics: ['module summary'],
+      slideNumbers: [],
+    })
+  }
+
+  return steps
 }
 
 // ---------------------------------------------------------------------------

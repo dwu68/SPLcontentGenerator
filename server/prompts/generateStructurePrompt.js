@@ -54,6 +54,12 @@ Module: ${moduleName}`
 - "goal": string — learning goal starting with "Students will be able to..."
 - "coveredSubtopics": string[] — specific topics covered in this step
 
+REQUIRED FINAL STEP:
+The last step in the array must always be a module summary step.
+- "title" must be exactly: "Module Summary"
+- "goal" should describe consolidating and reviewing the key concepts covered across the module
+- "coveredSubtopics" should list the major topics from the module
+
 Return only valid JSON, no explanation.`
 
   // Used when slides are present (Cases 1 & 2) — each step must declare its slides.
@@ -69,6 +75,13 @@ SLIDE OWNERSHIP RULES for slideNumbers:
 - slideNumbers must be an array of strings (e.g. ["3"], never [3]).
 - For a single-slide step: ["3"]. For a two-slide step: ["4", "5"].
 - Do not use range notation — list each slide number individually.
+
+REQUIRED FINAL STEP:
+The last step in the array must always be a module summary step.
+- "title" must be exactly: "Module Summary"
+- "goal" should describe consolidating and reviewing the key concepts covered across the module
+- "coveredSubtopics" should list the major topics from the module
+- "slideNumbers" must be exactly: [] (the summary step covers no slides)
 
 Return only valid JSON, no explanation.`
 

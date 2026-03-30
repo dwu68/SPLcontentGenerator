@@ -468,6 +468,14 @@ function App() {
 
   // ── Navigation ───────────────────────────────────────────────────────────
   const handleBackToBuilder = () => {
+    if (lessonContent.length > 0) {
+      const confirmed = window.confirm(
+        'Return to the Structure Builder?\n\n' +
+        'Your authored lesson content will be lost if you regenerate the structure or lesson content from Screen 1. ' +
+        'Make sure you have saved your draft before continuing.'
+      )
+      if (!confirmed) return
+    }
     setScreen('builder')
   }
 
@@ -520,6 +528,7 @@ function App() {
               onDeleteStep={handleDeleteStep}
               onMoveStep={handleMoveStep}
               onGenerate={handleGenerate}
+              onResumeAuthoring={lessonContent.length > 0 ? () => setScreen('authoring') : null}
               isGenerating={isGenerating}
               generationError={generationError}
               titleValidationError={titleValidationError}

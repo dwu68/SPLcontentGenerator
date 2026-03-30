@@ -2,6 +2,236 @@
 
 ---
 
+## END-OF-SESSION SUMMARY (Sessions 28–30, 2026-03-30)
+
+### What was completed this session
+
+| # | Feature | Status |
+|---|---|---|
+| 1 | **Block reordering in Screen 2 edit mode** | ✅ Done |
+| 2 | **Format-gating block types** — intentionally removed from backlog | ✅ Decision |
+| 3 | **"Resume step content editing" button on Screen 1** | ✅ Done |
+| 4 | **Back-to-builder confirmation dialog** | ✅ Done |
+| 5 | **Module Summary step always last in generated structure** | ✅ Done |
+| 6 | **Slide placeholder centered and constrained (max-width: 700px)** | ✅ Done |
+
+### Important decisions made
+
+- **All block types remain available in all formats** — `BlockEditor` add-block row is not format-gated. Intentional; do not revisit. Recorded in `docs/todo.md` and memory.
+- **Module Summary enforced at two layers** — prompt instruction + normalization fallback. Tolerant detection (`includes('summary')`, case-insensitive) on last step to avoid duplicates from AI near-variants.
+- **`coveredSubtopics: ['module summary']`** used in the normalization fallback (not empty array).
+- **Back-to-builder confirm is accurate** — wording says content is lost "if you regenerate", not "just by clicking back", because that's what actually happens.
+
+### Files changed this session
+
+| File | What changed |
+|---|---|
+| `src/components/BlockEditor.jsx` | `handleMoveUp`/`handleMoveDown`; `isFirst`/`isLast`/`onMoveUp`/`onMoveDown` props on `BlockCard`; ↑ ↓ buttons in card header; updated JSDoc |
+| `src/components/LessonStructurePreview.jsx` | `onResumeAuthoring` prop + "Resume step content editing" button in footer |
+| `src/App.jsx` | `handleBackToBuilder` confirm guard; `onResumeAuthoring` prop wired to `LessonStructurePreview` |
+| `src/App.css` | `.block-editor-card-header-actions` + `.block-reorder-btn` styles; `structure-footer` → `flex-direction: row`; `.block-slide-placeholder` → `max-width: 700px` + `margin: 0 auto` |
+| `src/services/lessonStructureService.js` | Summary step guarantee appended in `normalizeStructure()` |
+| `server/prompts/generateStructurePrompt.js` | "REQUIRED FINAL STEP" block added to `footer` and `slideFooter` |
+| `docs/todo.md` | Block reordering ✅; format-gating marked intentional |
+| `docs/product_overview.md` | Current state updated to Session 30; new features added to "What is live" list |
+| `docs/session_handoff.md` | Sessions 28, 29, 30 entries added |
+
+No new files created. No files deleted.
+
+### What is currently working
+
+Everything from Sessions 1–27, plus:
+- ↑/↓ reorder buttons on every block card in edit mode (disabled at boundaries)
+- "Resume step content editing" on Screen 1 when content exists
+- Confirm dialog before navigating back to Screen 1
+- Module Summary step always present as the last generated step
+- Slide placeholder centered, constrained to 700px max-width, responsive
+
+### What is not implemented yet (top remaining items)
+
+| Item | Priority | Notes |
+|---|---|---|
+| **Per-slide structured extraction** | Medium | `extractSlideText.js` returns flat string; needs `slides: [{ slideNumber, text }]` |
+| **Render slide text in `slide` block** | Medium | Depends on structured extraction above |
+| **End-to-end AI validation for `guided_tool_workflow`** | Medium | Three-block shape tested with real AI (confirmed working), but worth a fresh generation pass after slide rendering is added |
+| **`concept_application` prompt branch** | Low | Format value forwarded to AI but no dedicated prompt; falls through to undefined behavior |
+| **Per-lesson-step optional guidance field** | Low | Free-text field on Screen 1 step cards |
+| **Delete `src/utils/mockGeneration.js`** | Low | Dead code — nothing imports it; safe to delete |
+
+### Next 3 recommended steps (in order)
+
+1. **Per-slide structured extraction** — change `extractSlideText.js` to return `{ slides: [{ slideNumber, text }], fullText: string }`. `fullText` preserves backward compat with existing prompt code. Server-side only, no UI impact.
+
+2. **Render slide text in `slide` block** — once extraction is structured, pass `slideText` (parsed) into Screen 2 and resolve `slideRef` → slide text in the `Block` renderer. Falls back gracefully to "Slide N" label when `slideText` is absent.
+
+3. **Delete dead code** — remove `src/utils/mockGeneration.js`. One-line change, zero risk. Clean up `lessonContentService.js` JSDoc to reference block-based schema instead of flat fields.
+
+### Known issues / rough edges
+
+| Item | Severity | Notes |
+|---|---|---|
+| `slideText` session-only | Medium | Lost on page reload; user must re-upload PPTX. By design for now. |
+| `concept_application` has no prompt branch | Low | Generates content but with no format-specific guidance |
+| Module Summary pushed non-last by "Add Step" | Low | Manually added steps via Screen 1 "Add Step" append after the summary. Authors can reorder with ↑/↓. |
+| `src/utils/mockGeneration.js` dead code | Low | Safe to delete |
+| `lessonContentService.js` JSDoc stale | Low | References flat schema fields; runtime is correct |
+| `code_lab` internal value vs "Programming" UI label | Info | Not reconciled; low urgency |
+| `starterCode` field not yet renamed to `practiceContent` | Info | Deferred |
+
+### Recommended git commit messages
+
+**Recommended:**
+```
+feat: block reorder, module summary step, resume-authoring button, and UX guards
+```
+
+**Alternative 1:**
+```
+feat: Screen 2 block reordering + guaranteed Module Summary step + Screen 1 resume navigation
+```
+
+**Alternative 2:**
+```
+feat: edit-mode block reorder, always-present summary step, back/resume nav guards
+```
+
+---
+
+**ID** 30
+**Date:** 2026-03-30
+**Session scope:** Slide placeholder sizing fix (Screen 2 view mode)
+
+---
+
+## What Was Completed This Session
+
+### Fix — Slide placeholder sizing (Screen 2)
+
+The `slide` block placeholder in view mode was stretching to the full width of the instruction panel. Fixed by constraining it to a real slide proportion and centering it.
+
+**CSS-only change** to `.block-slide-placeholder` in `App.css`:
+- Added `max-width: 700px` — caps the card at a sensible slide width (700×525 at 4:3)
+- Added `margin: 0 auto` — centers the card horizontally in the panel
+- `width: 100%` kept — allows responsive shrink on narrow viewports
+- `aspect-ratio: 4/3` and `max-height: 50vh` unchanged
+
+No component, state, or logic changes.
+
+---
+
+## Files Changed This Session
+
+| File | Change |
+|---|---|
+| `src/App.css` | `.block-slide-placeholder`: added `max-width: 700px` and `margin: 0 auto` |
+
+---
+
+**ID** 29
+**Date:** 2026-03-30
+**Session scope:** Always-present Module Summary step; "Resume step content editing" button on Screen 1; Back-to-builder confirmation dialog
+
+---
+
+## What Was Completed This Session
+
+### Feature — Module Summary step always last in generated structure
+
+Every generated lesson structure now ends with a "Module Summary" step, regardless of whether generation used subtopics, slides, or both.
+
+**Two-layer enforcement:**
+
+1. **Prompt** (`server/prompts/generateStructurePrompt.js`) — a "REQUIRED FINAL STEP" block was added to both `footer` (subtopics branch) and `slideFooter` (slides branches). Instructs the AI to use exactly the title "Module Summary", write a consolidation goal, list major topics in `coveredSubtopics`, and set `slideNumbers: []`.
+
+2. **Normalization fallback** (`src/services/lessonStructureService.js`) — after `.map()`, checks the last step's title (case-insensitive `.includes('summary')`). If absent, appends a fallback step: title "Module Summary", standard goal, `coveredSubtopics: ['module summary']`, `slideNumbers: []`. Tolerant check prevents duplicate when AI uses a near-match title.
+
+### Feature — "Resume step content editing" button on Screen 1
+
+When `lessonContent` already exists, a secondary "Resume step content editing" button appears in the Screen 1 footer alongside "Generate Lesson Content →". Clicking it navigates directly to Screen 2 without triggering any generation. Disabled while generation is in progress.
+
+- `LessonStructurePreview` receives `onResumeAuthoring` prop (null when no content exists → button absent)
+- `App.jsx` passes `() => setScreen('authoring')` when `lessonContent.length > 0`
+- `structure-footer` changed from `flex-direction: column` to `flex-direction: row` so both buttons sit side by side
+
+### Feature — Back-to-builder confirmation dialog
+
+`handleBackToBuilder` in `App.jsx` now shows `window.confirm()` when `lessonContent.length > 0`. The message accurately states that content will be lost *if the user regenerates from Screen 1*, not just by navigating back.
+
+---
+
+## Important Decisions Made
+
+- **Both prompt + normalization** for summary step — prompt gives AI a chance to author a meaningful summary; normalization guarantees presence regardless of AI behavior.
+- **Tolerant summary detection** — `title.toLowerCase().includes('summary')` rather than exact match, to avoid duplicate on AI near-variants.
+- **`coveredSubtopics: ['module summary']`** in the normalization fallback (not empty array) — consistent with how the field is used elsewhere.
+- **Back-to-builder confirm** only fires when `lessonContent.length > 0` — no dialog on first use before any content exists.
+
+---
+
+## Files Changed This Session
+
+| File | Change |
+|---|---|
+| `server/prompts/generateStructurePrompt.js` | Added REQUIRED FINAL STEP block to `footer` and `slideFooter` |
+| `src/services/lessonStructureService.js` | Summary step guarantee in `normalizeStructure()` |
+| `src/components/LessonStructurePreview.jsx` | `onResumeAuthoring` prop + "Resume step content editing" button |
+| `src/App.jsx` | `handleBackToBuilder` confirm guard; `onResumeAuthoring` prop wired |
+| `src/App.css` | `structure-footer` changed to `flex-direction: row` |
+| `docs/todo.md` | Block reordering and format-gating entries updated |
+| `docs/session_handoff.md` | This entry |
+
+---
+
+**ID** 28
+**Date:** 2026-03-30
+**Session scope:** Block reordering in Screen 2 edit mode
+
+---
+
+## What Was Completed This Session
+
+### Feature — Block reordering (↑/↓) in Screen 2 edit mode
+
+In edit mode, each block card in the instruction panel now has ↑ and ↓ reorder buttons in its card header, to the left of the existing × delete button.
+
+- ↑ is disabled on the first block; ↓ is disabled on the last block; both disabled when only one block exists.
+- Each click performs an immutable adjacent-swap on the `blocks` array and calls `onUpdate`, which flows through the existing `onUpdateContent` path — no new state or props needed outside `BlockEditor`.
+- The reorder buttons are styled as transparent icon buttons (matching the delete button's size and border radius) with a subtle hover state; they dim to 25% opacity when disabled.
+- The right side of the card header is now wrapped in `.block-editor-card-header-actions` (flex row, 4px gap) to keep the three controls aligned cleanly.
+
+**Architecture:** entirely self-contained within `BlockEditor.jsx`. No prop or handler changes in `LessonAuthoringView`, `App.jsx`, or the server.
+
+---
+
+## Important Decisions Made
+
+- **Disabled, not hidden** for out-of-range buttons — consistent with the ↑/↓ pattern on Screen 1 step reorder.
+- **`block-editor-card-header-actions` wrapper** introduced to group the right-side controls (↑ ↓ ×) without changing the flex layout of the card header.
+- **No interaction with AI actions** — reorder is a synchronous local op; no need to disable during `isAddingBlock` or other generation states.
+
+---
+
+## Files Changed This Session
+
+| File | Change |
+|---|---|
+| `src/components/BlockEditor.jsx` | `handleMoveUp` / `handleMoveDown` in `BlockEditor`; `isFirst`/`isLast`/`onMoveUp`/`onMoveDown` props on `BlockCard`; ↑ ↓ buttons in card header; updated JSDoc |
+| `src/App.css` | Added `.block-editor-card-header-actions` and `.block-reorder-btn` styles |
+| `docs/todo.md` | Marked block reordering ✅ |
+| `docs/session_handoff.md` | This entry |
+
+---
+
+## What Is Currently Working
+
+- All previous functionality from Sessions 1–27 remains intact.
+- ↑/↓ buttons appear in every block card header in edit mode.
+- First block: ↑ disabled. Last block: ↓ disabled. Single block: both disabled.
+- Reordering updates app state immediately; step is marked dirty; Save Draft persists the new order.
+- `key={block.id}` is stable across reorders — React reconciles in place; `uploadStatus` local state in `downloadable_file` cards survives reordering without reset.
+
+---
+
 **ID** 27
 **Date:** 2026-03-30
 **Session scope:** "Add AI Example" and "Add AI Check" edit-mode actions in Screen 2; minor UI alignment fixes (sidebar header height, "LESSON STEPS" / "INSTRUCTIONS" alignment)

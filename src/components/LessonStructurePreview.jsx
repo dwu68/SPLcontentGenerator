@@ -13,7 +13,8 @@ import React, { useState, useEffect, useRef } from 'react'
  *   onAddStep     fn(stepType: string)
  *   onDeleteStep  fn(id)
  *   onMoveStep    fn(id, 'up' | 'down')
- *   onGenerate    fn()
+ *   onGenerate           fn()
+ *   onResumeAuthoring    fn() | null — navigate back to Screen 2 without regenerating; present only when lessonContent exists
  *   isGenerating         boolean — true while generation is in flight
  *   generationError      string | null — error message from the last failed generation
  *   titleValidationError string | null — set when generation is blocked by empty step titles
@@ -25,6 +26,7 @@ function LessonStructurePreview({
   onDeleteStep,
   onMoveStep,
   onGenerate,
+  onResumeAuthoring,
   isGenerating,
   generationError,
   titleValidationError,
@@ -97,6 +99,15 @@ function LessonStructurePreview({
             >
               {isGenerating ? '⏳ Generating…' : '✨ Generate Lesson Content →'}
             </button>
+            {onResumeAuthoring && (
+              <button
+                className="btn btn-secondary btn-lg"
+                onClick={onResumeAuthoring}
+                disabled={isGenerating}
+              >
+                Resume step content editing
+              </button>
+            )}
             {titleValidationError && (
               <p className="generation-error">{titleValidationError}</p>
             )}

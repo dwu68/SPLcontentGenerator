@@ -572,9 +572,10 @@ body {
 
 .structure-footer {
   display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 8px;
+  flex-direction: row;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
   padding-top: 16px;
   border-top: 1px solid var(--color-border);
 }
@@ -1483,6 +1484,38 @@ body {
 .block-type-badge--task    { background: #dbeafe; color: #1e40af; }
 .block-type-badge--hint    { background: var(--color-surface-raised); color: var(--color-text-secondary); border: 1px solid var(--color-border); }
 
+/* Right-side header controls group (reorder + delete) */
+.block-editor-card-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+/* Reorder buttons */
+.block-reorder-btn {
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: var(--radius-xs);
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  transition: background 0.1s, border-color 0.1s, color 0.1s;
+}
+.block-reorder-btn:hover:not(:disabled) {
+  background: var(--color-secondary-hover);
+  border-color: var(--color-border);
+  color: var(--color-text);
+}
+.block-reorder-btn:disabled {
+  opacity: 0.25;
+  cursor: default;
+}
+
 /* Delete button */
 .block-delete-btn {
   width: 24px;
@@ -1772,7 +1805,9 @@ body {
 .block-slide-placeholder {
   aspect-ratio: 4 / 3;
   width: 100%;
+  max-width: 700px;
   max-height: 50vh;
+  margin: 0 auto;
   background: var(--color-surface-raised);
   border: 1.5px dashed var(--color-border);
   border-radius: var(--radius-md);

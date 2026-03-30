@@ -72,9 +72,10 @@ Work done in this phase establishes the module format and per-step type model.
 - ✅ **Screen 1 sidebar widened** — `360px → 420px`
 - ✅ **Screen 1 label copy** — "Course Name" → "Course Name / Skill Name"; subtitle updated
 - ✅ **"Add hands-on" button moved inline** — now flows inside step list `<nav>` after last step; styled with blue tint + dashed border
+- ✅ **Block reordering in Screen 2 edit mode** — ↑/↓ buttons in each `BlockCard` header; first block disables ↑, last block disables ↓; pure local array swap in `BlockEditor`; no prop changes outside `BlockEditor`
 - 🔲 **Render slide content in `slide` block`** — the `slide` block currently shows only the `slideRef` label; it should render the extracted slide text for that slide number from `slideText` (per-slide structured extraction required first)
 - 🔲 **Per-slide structured extraction** — `extractSlideText.js` returns a flat string; should return `slides: [{ slideNumber, text }]` so `slideRef` can be resolved to specific slide text in the UI
-- 🔲 **Format-gate block add buttons** — the `BlockEditor` add-block row shows all 7 types regardless of `lessonFormat`; `slide`/`slide-explain` should only appear for `guided_tool_workflow`; `code`/`check`/`task`/`hint` may be hidden for that format
+- ~~**Format-gate block add buttons**~~ — **intentionally not implemented**. All block types remain available in `BlockEditor` for all formats. Authors may freely mix block types regardless of `lessonFormat`. Do not revisit.
 - 🔲 **End-to-end AI validation for `guided_tool_workflow`** — three-block shape verified in mock only; needs a real generation test to confirm prompt produces correct JSON
 - 🔲 **Per-lesson-step optional guidance field** — a free-text guidance field on individual `lesson` step cards in Screen 1
 
@@ -132,7 +133,7 @@ These items will be picked up by the team handling backend integration.
 | `fileUrl` is a relative path | Info | Works same-origin. Would break if moved to a CDN or separate file server. |
 | `slide` block shows reference only, not content | Medium | The `slide` block renders `slideRef` as a label (e.g. "Slide 3") but does not show the extracted slide text. Per-slide structured extraction is needed to resolve `slideRef` → text. |
 | `slideText` is session-only | Medium | `slideText` is lost on page reload. Only `slideFileName` (the display label) is restored from localStorage. User must re-upload the PPTX after a reload for slides to influence generation. |
-| BlockEditor shows all block types regardless of format | Low | `slide` and `slide-explain` add buttons appear even in `code_lab` steps; `code`/`check`/`task`/`hint` appear in `guided_tool_workflow` steps. Format-gating is deferred. |
+| BlockEditor shows all block types regardless of format | — | Intentional. All block types are available in all formats by design. Not a bug. |
 | localStorage can restore stale Screen 2 state | Low | A saved draft with `"screen": "authoring"` will reopen Screen 2 on reload. Can surface old lesson content unexpectedly. Clear by triggering a new generation. |
 | `code_lab` internal value vs "Programming" UI label | Info | The stored/internal value is still `code_lab`. The UI shows "Programming". Reconcile when convenient. |
 | `starterCode` field not yet renamed | Info | The field is called `starterCode` in `LessonContent`. The intended future name is `practiceContent` (if generalized beyond code). Rename deferred to avoid disrupting current generation flow. |

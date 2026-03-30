@@ -3,8 +3,7 @@ import React, { useState } from 'react'
 /**
  * BlockEditor — edit mode for block-based steps.
  *
- * Renders each block as an editable card. Handles add and delete.
- * Reordering is intentionally out of scope for this phase.
+ * Renders each block as an editable card. Handles add, delete, and reorder (↑/↓).
  *
  * Props:
  *   blocks   Block[]                           — the current blocks array for this step
@@ -52,6 +51,22 @@ function BlockEditor({ blocks, onUpdate }) {
     onUpdate(blocks.filter((b) => b.id !== id))
   }
 
+  const handleMoveUp = (id) => {
+    const i = blocks.findIndex((b) => b.id === id)
+    if (i <= 0) return
+    const next = [...blocks]
+    ;[next[i - 1], next[i]] = [next[i], next[i - 1]]
+    onUpdate(next)
+  }
+
+  const handleMoveDown = (id) => {
+    const i = blocks.findIndex((b) => b.id === id)
+    if (i < 0 || i >= blocks.length - 1) return
+    const next = [...blocks]
+    ;[next[i], next[i + 1]] = [next[i + 1], next[i]]
+    onUpdate(next)
+  }
+
   const handleAdd = (type) => {
     const newBlock = {
       id: `block-${Date.now()}`,
@@ -67,12 +82,16 @@ function BlockEditor({ blocks, onUpdate }) {
   return (
     <div className="block-editor">
       <div className="block-editor-list">
-        {blocks.map((block) => (
+        {blocks.map((block, index) => (
           <BlockCard
             key={block.id}
             block={block}
+            isFirst={index === 0}
+            isLast={index === blocks.length - 1}
             onChange={(fields) => handleChange(block.id, fields)}
             onDelete={() => handleDelete(block.id)}
+            onMoveUp={() => handleMoveUp(block.id)}
+            onMoveDown={() => handleMoveDown(block.id)}
           />
         ))}
       </div>
@@ -97,7 +116,7 @@ function BlockEditor({ blocks, onUpdate }) {
 // BlockCard — one editable block
 // ---------------------------------------------------------------------------
 
-function BlockCard({ block, onChange, onDelete }) {
+function BlockCard({ block, isFirst, isLast, onChange, onDelete, onMoveUp, onMoveDown }) {
   const { type, title = '', content = '', language = '' } = block
   const slideRef = block.slideRef ?? ''
   const fileUrl  = block.fileUrl  ?? ''
@@ -139,18 +158,40 @@ function BlockCard({ block, onChange, onDelete }) {
 
   return (
     <div className={`block-editor-card block-editor-card--${type}`}>
-      {/* Card header: type badge + delete button */}
+      {/* Card header: type badge + reorder buttons + delete button */}
       <div className="block-editor-card-header">
         <span className={`block-type-badge block-type-badge--${type}`}>{label}</span>
-        <button
-          className="block-delete-btn"
-          type="button"
-          onClick={onDelete}
-          aria-label={`Delete ${label} block`}
-          title="Delete block"
-        >
-          ×
-        </button>
+        <div className="block-editor-card-header-actions">
+          <button
+            className="block-reorder-btn"
+            type="button"
+            onClick={onMoveUp}
+            disabled={isFirst}
+            aria-label={`Move ${label} block up`}
+            title="Move up"
+          >
+            ↑
+          </button>
+          <button
+            className="block-reorder-btn"
+            type="button"
+            onClick={onMoveDown}
+            disabled={isLast}
+            aria-label={`Move ${label} block down`}
+            title="Move down"
+          >
+            ↓
+          </button>
+          <button
+            className="block-delete-btn"
+            type="button"
+            onClick={onDelete}
+            aria-label={`Delete ${label} block`}
+            title="Delete block"
+          >
+            ×
+          </button>
+        </div>
       </div>
 
       {/* Editable fields */}
