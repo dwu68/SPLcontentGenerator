@@ -39,10 +39,12 @@ The tool has two screens and supports two active lesson formats: **Programming**
 Enter a course name, module name, lesson format, and a list of sub-topics — or upload a `.pptx` file. The app generates a step-by-step lesson outline via AI. Each step is editable inline: title, learning goal, covered topics. Steps can be added (four types: Lesson, Lab Files, Starter Code, External Lab), deleted, and reordered. A "Review Sub-topics with AI" button assesses the sub-topics list and suggests improvements. Once satisfied, click "Generate Lesson Content →" to proceed.
 
 **Screen 2 — Step Authoring View**
-For each lesson step, the app generates block-based content via AI. Blocks vary by format:
+For each lesson step, the app generates block-based content via AI. Blocks vary by format: 
 - `code_lab`: `explain`, `code`, `check`, `task`, `hint`
 - `guided_tool_workflow`: `slide`, `slide-explain`, `explain`
 - All formats: `external_link`, `downloadable_file`, `media` (manually addable)
+
+[Note: all blocks are availble for all types for now, subject to future modification]
 
 Content renders as markdown-rich text in view mode (`react-markdown` + `remark-gfm`). Edit mode opens per-block editors. AI-assist actions in edit mode: **+ AI Example**, **+ AI Check**, **Add task with starter code** (or **Add module lab** for hands-on steps). A Save Draft button persists everything to `localStorage`.
 
