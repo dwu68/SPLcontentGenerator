@@ -746,6 +746,28 @@ function Block({ block }) {
     )
   }
 
+  if (type === 'media') {
+    const fileUrl  = block.fileUrl  ?? ''
+    const fileName = block.fileName ?? ''
+    return (
+      <div className="block block-media">
+        {title && <div className="block-heading">{title}</div>}
+        <div className="block-body">
+          {fileUrl ? (
+            <img
+              className="block-media-img"
+              src={fileUrl}
+              alt={title || fileName || 'Image'}
+            />
+          ) : (
+            <div className="block-media-placeholder">No image uploaded yet</div>
+          )}
+          {safeContent && <p className="block-media-caption">{safeContent}</p>}
+        </div>
+      </div>
+    )
+  }
+
   // Unknown type — render content as plain text so nothing is silently dropped
   return (
     <div className="block">

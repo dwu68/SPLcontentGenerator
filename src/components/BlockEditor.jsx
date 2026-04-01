@@ -30,12 +30,13 @@ const TYPE_LABELS = {
   'slide-explain':   'SLIDE EXPLAIN',
   external_link:     'LINK',
   downloadable_file: 'FILE',
+  media:             'MEDIA',
 }
 
 const ADD_TYPES = [
   'explain', 'code', 'check', 'task', 'hint',
   'slide', 'slide-explain',
-  'external_link', 'downloadable_file',
+  'external_link', 'downloadable_file', 'media',
 ]
 
 // ---------------------------------------------------------------------------
@@ -127,8 +128,9 @@ function BlockCard({ block, isFirst, isLast, onChange, onDelete, onMoveUp, onMov
   const isSlide            = type === 'slide'
   const isExternalLink     = type === 'external_link'
   const isDownloadableFile = type === 'downloadable_file'
+  const isMedia            = type === 'media'
 
-  // Upload state — only used for downloadable_file blocks
+  // Upload state — used for downloadable_file and media blocks
   const [uploadStatus, setUploadStatus] = useState('idle') // 'idle' | 'uploading' | 'success' | 'error'
   const [uploadError, setUploadError]   = useState('')
 
@@ -211,6 +213,7 @@ function BlockCard({ block, isFirst, isLast, onChange, onDelete, onMoveUp, onMov
             placeholder={
               isHint             ? 'e.g. Need a hint?'
               : isDownloadableFile ? 'e.g. starter_data.csv'
+              : isMedia           ? 'e.g. Architecture diagram'
               : 'e.g. What it is'
             }
           />
@@ -250,6 +253,7 @@ function BlockCard({ block, isFirst, isLast, onChange, onDelete, onMoveUp, onMov
             {isSlide            ? 'Caption / notes (optional)'
              : isExternalLink    ? 'URL'
              : isDownloadableFile ? 'Description'
+             : isMedia           ? 'Caption / description (optional)'
              : 'Content'}
           </label>
           {isExternalLink ? (
@@ -301,6 +305,38 @@ function BlockCard({ block, isFirst, isLast, onChange, onDelete, onMoveUp, onMov
             </div>
           </div>
         )}
+
+        {/* Image upload — media blocks only */}
+        {isMedia && (
+          <div className="block-editor-field">
+            <label className="block-editor-field-label">Image</label>
+            <div className="block-file-upload">
+              <input
+                type="file"
+                id={`file-upload-${block.id}`}
+                className="block-file-upload-input"
+                accept="image/*"
+                onChange={handleFileChange}
+                disabled={uploadStatus === 'uploading'}
+              />
+              <label
+                htmlFor={`file-upload-${block.id}`}
+                className={`block-file-upload-btn${uploadStatus === 'uploading' ? ' block-file-upload-btn--disabled' : ''}`}
+              >
+                {fileUrl ? 'Replace image' : 'Choose image'}
+              </label>
+              <span className={`block-file-upload-status block-file-upload-status--${uploadStatus}`}>
+                {uploadStatus === 'uploading' && 'Uploading…'}
+                {uploadStatus === 'success'   && `✓ ${fileName}`}
+                {uploadStatus === 'error'     && uploadError}
+                {uploadStatus === 'idle'      && (fileName || fileUrl
+                  ? (fileName || 'Image uploaded')
+                  : 'No image uploaded yet'
+                )}
+              </span>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   )
@@ -320,6 +356,7 @@ function contentRows(type) {
     case 'hint':              return 3
     case 'slide':             return 2
     case 'downloadable_file': return 3
+    case 'media':             return 2
     default:                  return 4
   }
 }
@@ -334,6 +371,7 @@ function contentPlaceholder(type) {
     case 'slide':             return 'Optional caption or authoring note for this slide reference…'
     case 'slide-explain':     return 'Expand and explain the slide content for a solo learner…'
     case 'downloadable_file': return 'What this file contains and how the learner should use it…'
+    case 'media':             return 'Optional caption or description shown below the image…'
     default:                  return ''
   }
 }

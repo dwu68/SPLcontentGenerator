@@ -1964,6 +1964,37 @@ body {
   color: var(--color-primary-hover);
 }
 
+/* ── media ──────────────────────────────────────────────────────────────────── */
+.block-media {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: 14px 16px;
+}
+
+.block-media-img {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  border-radius: var(--radius-sm);
+  margin-top: 4px;
+}
+
+.block-media-caption {
+  margin-top: 8px;
+  font-size: 12.5px;
+  color: var(--color-text-secondary);
+  line-height: 1.5;
+  font-style: italic;
+}
+
+.block-media-placeholder {
+  margin-top: 4px;
+  font-size: 12px;
+  color: var(--color-text-muted);
+  font-style: italic;
+}
+
 /* ── Block file upload control (edit mode) ──────────────────────────────────── */
 .block-file-upload {
   display: flex;
