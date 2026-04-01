@@ -39,6 +39,19 @@ titleValidationError : string | null  // set when generate is blocked by empty s
 stepGenerationStatus : Record<stepId, 'queued' | 'generating' | 'done' | 'error'>
                        // populated at generation start; empty object before first run
                        // not persisted to localStorage
+
+// Slides upload (Screen 1)
+slideFileName        : string   // display label only — persisted in localStorage draft
+slideText            : string   // extracted raw text from .pptx — session-only (lost on reload)
+slideCount           : number   // number of slides extracted — session-only
+isUploadingSlides    : boolean  // true while POST /api/upload-slides is in flight
+slideUploadError     : string | null
+
+// Sub-topics review (Screen 1)
+subtopicsReview      : { suggestion: string | null, rationale: string | null,
+                          isSkip: boolean, skipReason: string | null }
+                       // transient — not persisted to localStorage; resets on page reload
+isReviewing          : boolean  // true while POST /api/review-subtopics is in flight
 ```
 
 ---
@@ -171,16 +184,26 @@ slideRef : string   // slide number or range, e.g. "3" or "3-5" — required for
 // title   = learner-facing link label (optional; falls back to displaying the URL)
 // content = the URL
 
-// downloadable_file blocks — no extra fields beyond base
-// title   = filename or display label, e.g. "starter_data.csv"
+// downloadable_file blocks
+fileUrl  : string   // relative URL path, e.g. "/uploads/filename.csv" — set after successful upload
+fileName : string   // original filename — set after successful upload
+// title   = filename or display label
 // content = description of what the file contains and how to use it
-//           actual file upload is a placeholder; not yet implemented
+// Upload: POST /api/upload-file (multer disk storage, 50 MB limit); stored in server/uploads/
+
+// media blocks
+fileUrl  : string   // relative URL path to the uploaded image — set after successful upload
+fileName : string   // original filename
+// title   = optional label shown above the image
+// content = optional caption shown below the image
+// Upload: POST /api/upload-file with accept="image/*" client-side restriction
+// View mode: renders <img> inline; red placeholder shown when no image uploaded yet
 ```
 
 ### Block types by format
 
 **All steps (all formats)** — manually addable in `BlockEditor`:
-`external_link`, `downloadable_file`
+`external_link`, `downloadable_file`, `media`
 
 **`code_lab` steps** — AI generates a variable sequence of:
 `explain`, `code`, `check`, `task`, `hint`

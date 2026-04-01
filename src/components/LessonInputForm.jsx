@@ -17,7 +17,7 @@ import React, { useRef } from 'react'
 const LESSON_FORMAT_OPTIONS = [
   { value: 'code_lab',              label: 'Programming' },
   { value: 'guided_tool_workflow',  label: 'Guided Tool Workflow' },
-  { value: 'concept_application',   label: 'Concept & Application' },
+  { value: 'concept_application',   label: 'Concept & Application (coming soon)', disabled: true },
 ]
 
 function LessonInputForm({
@@ -126,7 +126,7 @@ function LessonInputForm({
           onChange={(e) => onLessonFormatChange(e.target.value)}
         >
           {LESSON_FORMAT_OPTIONS.map((opt) => (
-            <option key={opt.value} value={opt.value}>
+            <option key={opt.value} value={opt.value} disabled={opt.disabled}>
               {opt.label}
             </option>
           ))}

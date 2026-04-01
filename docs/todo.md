@@ -44,7 +44,7 @@ Backlog in priority order. Items marked ✅ are complete. Items marked 🔲 are 
 
 Work done in this phase establishes the module format and per-step type model.
 
-- ✅ **Add `lessonFormat` to module state** — `'code_lab' | 'guided_tool_workflow' | 'concept_application'`; UI dropdown shows "Programming / Guided Tool Workflow / Concept & Application"; persisted in localStorage draft
+- ✅ **Add `lessonFormat` to module state** — `'code_lab' | 'guided_tool_workflow' | 'concept_application'`; UI dropdown shows "Programming / Guided Tool Workflow / Concept & Application (coming soon, disabled)"; persisted in localStorage draft
 - ✅ **Add `stepType` to all steps** — AI-generated steps default to `'lesson'`; manually added steps can be `'lesson'`, `'downloadable_lab_files'`, `'starter_code_file'`, or `'external_lab_link'`
 - ✅ **Add Step type picker** — clicking "Add Step" shows an inline type picker with four options; step type badge shown on each card header
 - ✅ **Non-lesson step fields in Screen 1** — minimal type-specific fields per step type; file upload inputs are disabled placeholders
@@ -79,6 +79,7 @@ Work done in this phase establishes the module format and per-step type model.
 - 🔲 **Render slide content in `slide` block`** — the `slide` block currently shows only the `slideRef` label; it should render the extracted slide text for that slide number from `slideText` (per-slide structured extraction required first)
 - 🔲 **Per-slide structured extraction** — `extractSlideText.js` returns a flat string; should return `slides: [{ slideNumber, text }]` so `slideRef` can be resolved to specific slide text in the UI
 - ~~**Format-gate block add buttons**~~ — **intentionally not implemented**. All block types remain available in `BlockEditor` for all formats. Authors may freely mix block types regardless of `lessonFormat`. Do not revisit.
+- 🔲 **`concept_application` prompt branch** — format value exists and is forwarded to AI but has no dedicated prompt; the option is currently disabled in the UI until this is built
 - 🔲 **End-to-end AI validation for `guided_tool_workflow`** — three-block shape verified in mock only; needs a real generation test to confirm prompt produces correct JSON
 - 🔲 **Per-lesson-step optional guidance field** — a free-text guidance field on individual `lesson` step cards in Screen 1
 

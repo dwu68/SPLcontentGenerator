@@ -7,7 +7,7 @@ An internal authoring tool for creating structured self-paced technical learning
 The tool is evolving beyond programming-only lessons. The intended final goal is a flexible internal authoring interface for multiple module types:
 - **Programming** (`code_lab`) — coding exercises with starter code and a working editor
 - **Guided Tool Workflow** (`guided_tool_workflow`) — step-by-step workflows using tools like Claude Code or GitHub Copilot; slide-first format
-- **Concept & Application** (`concept_application`) — AWS Cloud Practitioner-style conceptual and applied learning
+- **Concept & Application** (`concept_application`) — AWS Cloud Practitioner-style conceptual and applied learning *(not yet available — greyed out in the UI)*
 
 ## Who Uses It
 
@@ -19,7 +19,7 @@ Both screens are live with real AI generation (GPT-5.4). Screen 1 generates a st
 
 ### What is live and working
 
-- **Module setup** (Screen 1 left panel): Course Name, Module Name, Lesson Format dropdown (Programming / Guided Tool Workflow / Concept & Application), Sub-topics textarea
+- **Module setup** (Screen 1 left panel): Course Name, Module Name, Lesson Format dropdown (Programming / Guided Tool Workflow / Concept & Application *(disabled)*), Sub-topics textarea
 - **Slides upload** (Screen 1 left panel): a "Slides" field accepts a single `.pptx` file; the file is uploaded to `POST /api/upload-slides`, extracted via jszip (`<a:t>` text nodes), and `slideText` is held in session state. Filename and slide count are shown on success. `slideText` is session-only (lost on reload). `slideFileName` is persisted in the localStorage draft (display label only).
 - **Structure generation**: subtopics or uploaded slides → AI-generated `lesson` steps via `POST /api/generate-structure`. Three prompt branches: slides only / slides + subtopics / subtopics only. Subtopics are optional when `slideText` is present.
 - **Slide coverage rules** (in generate-structure): when slides are the source, instructional slides must each produce a step; non-instructional slides (title, agenda, section dividers, closing) may be skipped; default grouping is one slide = one step; grouping is only allowed for clearly atomic consecutive teaching units.
@@ -63,7 +63,7 @@ Both screens are live with real AI generation (GPT-5.4). Screen 1 generates a st
 | Database / upload pipeline | **Not in scope** for current work |
 | PPT / slides ingestion | **Implemented through Slice D** — `.pptx` upload UI (Slice A), backend extraction (Slice B), generate-structure wiring (Slice C), and generate-content wiring (Slice D) are all done |
 | Real file upload (lab files, starter code) | **Placeholder** — disabled inputs; not implemented |
-| `concept_application` format | **Scaffolded** — lessonFormat value exists and is forwarded to AI; no dedicated prompt branch yet |
+| `concept_application` format | **Not yet available** — option is visible but disabled in the Lesson Format dropdown; no dedicated prompt branch; selecting it is prevented in the UI |
 
 ---
 

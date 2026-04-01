@@ -20,20 +20,23 @@ On load, the app checks `localStorage` for a saved draft under the key `spl_less
 ### Layout
 
 Two columns:
-- **Left (fixed 360px):** `LessonInputForm` — module setup inputs
+- **Left (fixed 420px):** `LessonInputForm` — module setup inputs
 - **Right (flex):** `LessonStructurePreview` — the editable step list
 
 ### Step-by-step flow
 
 **1. Fill in the module setup form**
 
-The user fills in four fields:
-- Course Name (text input)
+The user fills in these fields:
+- Course Name / Skill Name (text input)
 - Module Name (text input)
-- Lesson Format (dropdown): **Programming** | Guided Tool Workflow | Concept & Application
+- Lesson Format (dropdown): **Programming** | Guided Tool Workflow | ~~Concept & Application~~ *(visible but disabled — not yet available)*
 - Sub-topics (textarea, one topic per line)
+- Slides (optional `.pptx` upload — uploading extracts slide text server-side via `POST /api/upload-slides`)
 
-The "Generate Structure Preview" button is disabled until Course Name, Module Name, and Sub-topics all have content. Lesson Format has a default (`Programming`) and does not block generation. Keyboard shortcut: ⌘+Enter (or Ctrl+Enter) submits the form.
+The "Generate Structure Preview" button is disabled until Course Name, Module Name, and at least one of Sub-topics or a slide file are provided. Lesson Format defaults to `Programming` and does not block generation. Keyboard shortcut: ⌘+Enter (or Ctrl+Enter) submits the form.
+
+A **Review Sub-topics with AI** button appears below the Sub-topics textarea whenever it is non-empty. Clicking it sends the list to `POST /api/review-subtopics`. On success a suggestion panel appears with a revised list, rationale, and **Apply / Dismiss** actions. Apply overwrites the textarea. This state is transient — not persisted to localStorage.
 
 **2. Generate the structure**
 
@@ -115,9 +118,9 @@ Content is generated one step at a time via `generateStepContent()` in `lessonCo
 ### Layout
 
 Three columns:
-- **Left sidebar (224px):** step list navigation
+- **Left sidebar (320px, collapsible):** step list navigation
 - **Center panel (flex):** instruction panel (view/edit)
-- **Right panel (flex):** code editor panel (dark theme)
+- **Right panel (flex):** code editor panel (dark theme) — hidden in view mode when `starterCode` is empty
 
 The header shows a breadcrumb (`Course Name › Module Name`), the SaveStatus indicator, a Save Draft button, and a "← Back to Builder" button.
 
@@ -135,7 +138,17 @@ Click any step in the left sidebar to load its content into the view panel. The 
 
 **2. View / edit lesson content**
 
-For `lesson` steps with AI-generated content, the instruction panel shows blocks in sequence. In edit mode, each block becomes an editable card (`BlockEditor`) with title, type label, content textarea, and a delete button. New blocks can be added via type buttons at the bottom of the editor (EXPLAIN, CODE, CHECK, TASK, HINT).
+For `lesson` steps with AI-generated content, the instruction panel shows blocks in sequence. View mode renders prose blocks (explain, slide-explain, hint, task, check) as markdown-rich text via `react-markdown` + `remark-gfm`, supporting bold, italic, inline code, bullet lists, ordered lists, links, fenced code blocks, and GFM pipe tables. The dedicated `code` block type renders in a dark `<pre>` theme and is unaffected.
+
+In edit mode, each block becomes an editable card (`BlockEditor`) with title, type label, content textarea, and a delete button. Blocks can be reordered with ↑/↓ buttons. New blocks can be added via type buttons at the bottom of the editor:
+- All formats: EXPLAIN, CODE, CHECK, TASK, HINT, LINK, FILE, MEDIA
+- Guided Tool Workflow: additionally SLIDE, SLIDE-EXPLAIN
+
+AI-assist actions visible in the instruction panel header while in edit mode:
+- **+ AI Example** — generates a filled `code` block (annotated runnable example); calls `POST /api/generate-block`
+- **+ AI Check** — generates a filled `check` block (question + answer); calls `POST /api/generate-block`
+- **Add task with starter code** — for non-hands-on steps without an existing task or starterCode; calls `POST /api/generate-task`; generates a task block + matching starterCode; skip responses are shown inline when the step is unsuitable
+- **Add module lab** — appears instead of "Add task with starter code" on hands-on steps (`isHandsOn: true`); calls `POST /api/generate-module-lab` with condensed prior-step context; generates a "Module Lab" task block + starterCode synthesized across the module
 
 **3. Edit starter code (right panel)**
 
@@ -156,7 +169,7 @@ In edit mode, the new step shows `BlockEditor` with an empty block list and the 
 
 **5. Non-lesson steps in Screen 2**
 
-Non-lesson steps (`downloadable_lab_files`, `starter_code_file`, `external_lab_link`) currently render using the same view as lesson steps. **This is a known gap** — per-type Screen 2 rendering is the next implementation slice.
+Non-lesson steps (`downloadable_lab_files`, `starter_code_file`, `external_lab_link`) render a dedicated read-only summary panel (`NonLessonStepPanel`) showing the step type, title, description, and any configured URL or file reference. No block editor is shown and no AI generation is triggered for these steps.
 
 **6. Switch steps**
 

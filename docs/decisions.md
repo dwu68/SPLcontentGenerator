@@ -144,11 +144,11 @@ Canonical record of decisions made and their rationale. Covers technology choice
 
 **Dev setup:** Vite proxies `/api/*` → `http://localhost:3001` during development, so the frontend always uses a relative `/api` path with no CORS concerns. In production, Express serves the Vite build and the API at the same origin.
 
-### OpenAI as the AI provider (gpt-4o-mini default)
+### OpenAI as the AI provider
 
-**Decision:** OpenAI via the official `openai` npm SDK. Default model: `gpt-4o-mini`. Model is overridable via `OPENAI_MODEL` env variable.
+**Decision:** OpenAI via the official `openai` npm SDK. Code default: `gpt-4o-mini`. Overridable via `OPENAI_MODEL` env variable (`.env.example` ships with `gpt-5.4`).
 
-**Rationale:** Well-documented SDK, reliable JSON mode (`response_format: { type: 'json_object' }`), and cost-effective at the gpt-4o-mini tier for structured short-form generation. Provider is isolated to `server/index.js` — swapping to a different model or provider only touches that file.
+**Rationale:** Well-documented SDK, reliable JSON mode (`response_format: { type: 'json_object' }`), and straightforward model overriding via env var. Provider is isolated to `server/index.js` — swapping to a different model or provider only touches that file.
 
 **JSON contract:** The server always returns `Array<{ title, goal, coveredSubtopics }>`. The frontend's `normalizeStructure()` assigns IDs and step numbers. This contract holds regardless of which provider the server uses.
 
@@ -167,7 +167,29 @@ Canonical record of decisions made and their rationale. Covers technology choice
 - **Normalization** (`normalizeStructure`) — validates the server response and assigns `id` and `stepNumber` locally. Prevents malformed responses from corrupting App state.
 - **App orchestration** (`handleSubmit` in App.jsx) — owns `isGenerating`, `generationError`, confirmation guards, and state updates. Does not change when the provider or endpoint changes.
 
-**Pattern for Screen 2:** When `generateLessonContent` is promoted to a real API call, add `POST /api/generate-content` to `server/index.js` and extract `lessonContentService.js` on the frontend following the same three-layer pattern.
+**Pattern applied to Screen 2:** `POST /api/generate-content` is implemented in `server/index.js`; `lessonContentService.js` handles Screen 2 calls following the same three-layer pattern (provider call / normalization / App orchestration).
+
+---
+
+### Markdown rendering in view mode (`react-markdown` + `remark-gfm`)
+
+**Decision:** Prose blocks in Screen 2 view mode (`explain`, `slide-explain`, `hint`, `task`, `check`) are rendered through `react-markdown` with the `remark-gfm` plugin. Raw HTML rendering (`rehype-raw`) is intentionally excluded. Links are overridden to open in a new tab (`target="_blank" rel="noreferrer noopener"`).
+
+**Rationale:** The old hand-rolled heuristic (split on `\n\n`, classify as bullets/code/prose) had false positives (multi-line prose incorrectly wrapped in `<pre>`) and no support for bold, italic, inline code, ordered lists, or GFM tables. `react-markdown` handles all of these correctly and safely. Raw HTML is disabled to prevent `dangerouslySetInnerHTML` — unneeded since AI-generated content is structured prose, not HTML. The dedicated `code` block type retains its own `<pre>` dark-theme renderer and is unaffected.
+
+**Scope:** Styles for markdown output are scoped under `.block-body` in `App.css` to prevent bleed into edit mode or other surfaces. `BlockEditor` (edit mode) is unchanged — authors still type raw markdown in textareas; rendering only applies in view mode.
+
+### `media` block type reuses `POST /api/upload-file`
+
+**Decision:** The `media` block type for inline image display shares the existing `POST /api/upload-file` disk-storage multer endpoint with `downloadable_file` blocks. No new server endpoint was added. The file input restricts to `accept="image/*"` client-side only.
+
+**Rationale:** The upload behavior is identical — multipart form data, disk storage, return `{ fileUrl, fileName }`. Adding a separate endpoint would duplicate the handler. A server-side image MIME filter (`multer fileFilter`) would harden this but is deferred; the internal use context makes a malformed upload unlikely. The red placeholder in view mode (when no image is uploaded) is intentional — it makes absent images immediately obvious to authors.
+
+### Sub-topics review state is transient
+
+**Decision:** The `subtopicsReview` state (suggestion, rationale, skip signal) is held in App state but is **not** persisted to `localStorage`. It resets on page reload.
+
+**Rationale:** Review results are contextual to the current editing session. Persisting them would require migration logic and could surface stale AI suggestions after the author has already applied or ignored them. The save payload stays clean. A separate `isReviewing` flag is used (isolated from `isGenerating`) so the review button and the "Generate Structure Preview" button do not block each other.
 
 ---
 
