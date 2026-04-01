@@ -192,7 +192,7 @@ function LessonInputForm({
           color: 'var(--color-text-muted)',
         }}
       >
-        ⌘ + Enter to submit
+        {/* ⌘ + Enter to submit */}
       </p>
     </div>
   )

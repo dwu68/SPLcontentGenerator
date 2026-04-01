@@ -2,7 +2,95 @@
 
 ---
 
-## END-OF-SESSION SUMMARY (Sessions 28–30, 2026-03-30)
+## END-OF-SESSION SUMMARY (Session 31, 2026-03-31)
+
+### What was completed this session
+
+| # | Feature | Status |
+|---|---|---|
+| 1 | **Remove Export JSON button** — button, handler, and all wiring removed entirely | ✅ Done |
+| 2 | **"Next Module →" button in Screen 2 header** — appears to the right of "← Back to Builder" | ✅ Done |
+| 3 | **Confirmation dialog before clearing module** — warns user to save draft first | ✅ Done |
+| 4 | **Full module state reset on confirm** — all 14 state variables reset to defaults, localStorage draft cleared | ✅ Done |
+
+### Important decisions made
+
+- **Export JSON removed entirely** — not left as dead code. The feature was already de-prioritized in the docs; removing it cleans up the header and the codebase.
+- **"Next Module →" is always shown on Screen 2** — not gated on whether content exists. An author might want to start fresh even before generating content.
+- **localStorage is cleared on "Next Module" confirm** — `localStorage.removeItem(STORAGE_KEY)` fires before any state reset, so a page refresh after confirming starts fully clean.
+- **Button order in header (left to right):** SaveStatus → Save Draft → ← Back to Builder → Next Module →. "Next Module" is rightmost as a deliberate forward/exit action distinct from the back-navigation cluster.
+
+### Files changed this session
+
+| File | What changed |
+|---|---|
+| `src/App.jsx` | Removed `handleExport` (entire async function + fetch); added `handleNextModule` (confirm + localStorage clear + full state reset); updated `<Header>` props (dropped `onExport`, added `onNextModule`) |
+| `src/components/Header.jsx` | Removed `onExport` prop + Export JSON button; added `onNextModule` prop + "Next Module →" button; updated JSDoc |
+
+No new files created. No files deleted.
+
+### What is currently working
+
+Everything from Sessions 1–30, plus:
+- "Next Module →" button in Screen 2 header (right of "← Back to Builder")
+- Confirmation dialog with clear message before clearing the module
+- Full state reset to blank Screen 1 on confirm, including localStorage draft removal
+- Export JSON button and its server wiring fully removed
+
+### What is not implemented yet (top remaining items)
+
+| Item | Priority | Notes |
+|---|---|---|
+| **Per-slide structured extraction** | Medium | `extractSlideText.js` returns flat string; needs `slides: [{ slideNumber, text }]` |
+| **Render slide text in `slide` block** | Medium | Depends on structured extraction above |
+| **End-to-end AI validation for `guided_tool_workflow`** | Medium | Three-block shape confirmed in mock; needs a real generation pass |
+| **`concept_application` prompt branch** | Low | Format value forwarded to AI but no dedicated prompt |
+| **Per-lesson-step optional guidance field** | Low | Free-text field on Screen 1 step cards |
+| **Delete `src/utils/mockGeneration.js`** | Low | Dead code — nothing imports it; safe to delete |
+
+### Next 3 recommended steps (in order)
+
+1. **Per-slide structured extraction** — change `extractSlideText.js` to return `{ slides: [{ slideNumber, text }], fullText: string }`. `fullText` preserves backward compat with all existing prompt code. Server-side only, no UI impact.
+
+2. **Render slide text in `slide` block** — once extraction is structured, resolve `slideRef` → slide text in the `Block` renderer. Falls back gracefully to "Slide N" label when `slideText` is absent. This closes the most visible gap in `guided_tool_workflow` content.
+
+3. **Delete dead code** — remove `src/utils/mockGeneration.js` (nothing imports it). Clean up `lessonContentService.js` JSDoc to reference the block-based schema instead of flat fields.
+
+### Known issues / rough edges
+
+| Item | Severity | Notes |
+|---|---|---|
+| `slideText` session-only | Medium | Lost on page reload; user must re-upload PPTX. By design for now. |
+| `slide` block shows reference only, not content | Medium | Renders `slideRef` label (e.g. "Slide 3"); per-slide extraction needed |
+| `concept_application` has no prompt branch | Low | Generates content but with no format-specific guidance |
+| Module Summary pushed non-last by "Add Step" | Low | Manually added steps append after the summary; authors can reorder with ↑/↓ |
+| `src/utils/mockGeneration.js` dead code | Low | Safe to delete |
+| `lessonContentService.js` JSDoc stale | Low | References flat schema fields; runtime is correct |
+| `code_lab` internal value vs "Programming" UI label | Info | Not reconciled; low urgency |
+| `starterCode` field not yet renamed to `practiceContent` | Info | Deferred |
+
+### Recommended git commit messages
+
+**Recommended:**
+```
+feat: add Next Module button and remove Export JSON
+```
+
+**Alternative 1:**
+```
+feat: Next Module flow — header button, confirm dialog, full state + localStorage reset
+```
+
+**Alternative 2:**
+```
+feat: replace Export JSON with Next Module action in Screen 2 header
+```
+
+---
+
+**ID** 30
+**Date:** 2026-03-30
+**Session scope:** Slide placeholder sizing fix (Screen 2 view mode)
 
 ### What was completed this session
 

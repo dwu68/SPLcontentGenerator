@@ -7,10 +7,11 @@ import SaveStatus from './SaveStatus'
  * Props:
  *   breadcrumb   string | null   — shown on Screen 2
  *   onBack       fn | null       — back-to-builder handler
+ *   onNextModule fn | null       — next-module handler
  *   saveStatus   string | null   — 'saved' | 'unsaved' | 'saving'
  *   onSaveDraft  fn | null       — save handler
  */
-function Header({ breadcrumb, onBack, saveStatus, onSaveDraft, onExport }) {
+function Header({ breadcrumb, onBack, onNextModule, saveStatus, onSaveDraft }) {
   return (
     <header className="header">
       <div className="header-brand">
@@ -30,16 +31,6 @@ function Header({ breadcrumb, onBack, saveStatus, onSaveDraft, onExport }) {
       <div className="header-actions">
         {saveStatus && <SaveStatus status={saveStatus} />}
 
-        {onExport && (
-          <button
-            className="btn btn-secondary btn-sm"
-            onClick={onExport}
-            title="Export current lesson content to output/ folder"
-          >
-            Export JSON
-          </button>
-        )}
-
         {onSaveDraft && (
           <button
             className="btn btn-primary btn-sm"
@@ -54,6 +45,16 @@ function Header({ breadcrumb, onBack, saveStatus, onSaveDraft, onExport }) {
         {onBack && (
           <button className="back-btn" onClick={onBack} title="Return to structure builder">
             ← Back to Builder
+          </button>
+        )}
+
+        {onNextModule && (
+          <button
+            className="btn btn-secondary btn-sm"
+            onClick={onNextModule}
+            title="Clear this module and start a new one"
+          >
+            Next Module →
           </button>
         )}
       </div>

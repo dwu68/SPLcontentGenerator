@@ -438,35 +438,32 @@ function App() {
     }
   }
 
-  // ── Export current lesson content to output/ via backend ────────────────
-  const handleExport = async () => {
-    const exportedAt = new Date().toISOString()
-    try {
-      const res = await fetch('/api/export', {
-        method: 'POST',
-        headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({
-          courseName,
-          moduleName,
-          lessonStructure,
-          lessonContent,
-          learnerLevel: 'beginner',
-          outputLanguage: 'Python',
-          exportedAt,
-        }),
-      })
-      const body = await res.json().catch(() => ({}))
-      if (!res.ok) {
-        alert(`Export failed: ${body.error || res.status}`)
-        return
-      }
-      alert(`Exported → output/${body.filename}`)
-    } catch (err) {
-      alert(`Export failed: ${err.message}`)
-    }
+  // ── Navigation ───────────────────────────────────────────────────────────
+  const handleNextModule = () => {
+    const confirmed = window.confirm(
+      'Start a new module?\n\n' +
+      'Your current module will be cleared. Make sure you have saved your draft first if you want to keep your work.'
+    )
+    if (!confirmed) return
+    localStorage.removeItem(STORAGE_KEY)
+    setScreen('builder')
+    setCourseName('')
+    setModuleName('')
+    setLessonFormat('code_lab')
+    setSubtopics('')
+    setSlideFileName('')
+    setSlideText('')
+    setSlideCount(0)
+    setLessonStructure([])
+    setLessonContent([])
+    setSelectedStepId(null)
+    setDirtyStepIds(new Set())
+    setSaveStatus('saved')
+    setGenerationError(null)
+    setTitleValidationError(null)
+    setStepGenerationStatus({})
   }
 
-  // ── Navigation ───────────────────────────────────────────────────────────
   const handleBackToBuilder = () => {
     if (lessonContent.length > 0) {
       const confirmed = window.confirm(
@@ -491,9 +488,9 @@ function App() {
       <Header
         breadcrumb={screen === 'authoring' ? breadcrumb : null}
         onBack={screen === 'authoring' ? handleBackToBuilder : null}
+        onNextModule={screen === 'authoring' ? handleNextModule : null}
         saveStatus={screen === 'authoring' ? saveStatus : null}
         onSaveDraft={screen === 'authoring' ? handleSaveDraft : null}
-        onExport={screen === 'authoring' && lessonContent.length > 0 ? handleExport : null}
       />
 
       {screen === 'builder' ? (

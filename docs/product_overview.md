@@ -13,7 +13,7 @@ The tool is evolving beyond programming-only lessons. The intended final goal is
 
 Internal teams producing SPL lesson content — primarily data science educators and instructional designers who know their subject matter but need tooling to translate it into structured, consistent lesson formats.
 
-## Current State (as of 2026-03-30, updated after Session 30)
+## Current State (as of 2026-03-31, updated after Session 31)
 
 Both screens are live with real AI generation (GPT-5.4). Screen 1 generates a step-by-step lesson structure from subtopics or uploaded PPTX slides; Screen 2 generates block-based lesson content for each lesson step. `lessonFormat` is now forwarded to all AI generation calls, enabling format-specific prompt behavior.
 
@@ -49,14 +49,14 @@ Both screens are live with real AI generation (GPT-5.4). Screen 1 generates a st
 - **Check block answer reveal**: question and answer separated by `\n→ `; "Show answer" toggle in view mode
 - **Explain block bullet lists**: `\n\n`-separated chunks where all lines start with `- ` render as `<ul>/<li>`
 - **Save Draft**: persists all state to `localStorage` (key: `spl_lesson_draft`); new generation clears stale draft
-- **Export JSON**: `POST /api/export` writes a timestamped file to `output/` *(de-prioritized — see scope note below)*
+- **Next Module**: "Next Module →" button in the Screen 2 header (right of "← Back to Builder"). Shows a confirmation dialog, then clears the current module from both app state and localStorage and returns to a blank Screen 1. Export JSON has been removed.
 
 ### Scope decisions (current)
 
 | Area | Status |
 |---|---|
 | Monaco / CodeMirror | **Not in scope** for current work |
-| Export JSON / output folder | **De-prioritized** — built but not actively maintained |
+| Export JSON / output folder | **Removed** — button and handler deleted in Session 31; `POST /api/export` endpoint on the server is unused but not yet removed |
 | Backend persistence | **Deferred to another team** — localStorage only for now |
 | Database / upload pipeline | **Not in scope** for current work |
 | PPT / slides ingestion | **Implemented through Slice D** — `.pptx` upload UI (Slice A), backend extraction (Slice B), generate-structure wiring (Slice C), and generate-content wiring (Slice D) are all done |
