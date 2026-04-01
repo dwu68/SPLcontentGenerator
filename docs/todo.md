@@ -73,6 +73,8 @@ Work done in this phase establishes the module format and per-step type model.
 - ✅ **Screen 1 label copy** — "Course Name" → "Course Name / Skill Name"; subtitle updated
 - ✅ **"Add hands-on" button moved inline** — now flows inside step list `<nav>` after last step; styled with blue tint + dashed border
 - ✅ **Block reordering in Screen 2 edit mode** — ↑/↓ buttons in each `BlockCard` header; first block disables ↑, last block disables ↓; pure local array swap in `BlockEditor`; no prop changes outside `BlockEditor`
+- ✅ **Review Sub-topics with AI** (Screen 1) — button below Sub-topics textarea (shown when non-empty); `POST /api/review-subtopics`; returns revised list + rationale or skip; suggestion panel with Apply / Dismiss; transient state, not persisted
+- ✅ **`media` block type** — image upload via existing `POST /api/upload-file`; `accept="image/*"` client-side; view mode renders `<img>` inline with optional caption; red placeholder when no image uploaded; Vite dev proxy extended to cover `/uploads`
 - 🔲 **Render slide content in `slide` block`** — the `slide` block currently shows only the `slideRef` label; it should render the extracted slide text for that slide number from `slideText` (per-slide structured extraction required first)
 - 🔲 **Per-slide structured extraction** — `extractSlideText.js` returns a flat string; should return `slides: [{ slideNumber, text }]` so `slideRef` can be resolved to specific slide text in the UI
 - ~~**Format-gate block add buttons**~~ — **intentionally not implemented**. All block types remain available in `BlockEditor` for all formats. Authors may freely mix block types regardless of `lessonFormat`. Do not revisit.
@@ -130,6 +132,7 @@ These items will be picked up by the team handling backend integration.
 | `Add module lab` real-model skip behavior not validated | Medium | Mock always skips for `concept_application`. Real model behavior on borderline steps (e.g. guided_tool_workflow steps with no coding, concept_application steps with a technical concept) is not yet tested end-to-end. |
 | `isHandsOn` steps included in Screen 1 re-generation | Low | If the author returns to Screen 1 and re-generates content, the hands-on step is treated as a regular lesson step and will receive AI-generated content. Authors should be aware that re-generation overwrites the manually authored hands-on step. |
 | Uploaded files not cleaned up | Low | `server/uploads/` grows indefinitely. No deletion on block removal. Fine for internal use now. |
+| `media` block: no server-side image MIME filter | Low | `accept="image/*"` on the input only; a non-image upload produces a broken `<img>` in view mode. Add a multer `fileFilter` on `POST /api/upload-file` to harden. |
 | `fileUrl` is a relative path | Info | Works same-origin. Would break if moved to a CDN or separate file server. |
 | `slide` block shows reference only, not content | Medium | The `slide` block renders `slideRef` as a label (e.g. "Slide 3") but does not show the extracted slide text. Per-slide structured extraction is needed to resolve `slideRef` → text. |
 | `slideText` is session-only | Medium | `slideText` is lost on page reload. Only `slideFileName` (the display label) is restored from localStorage. User must re-upload the PPTX after a reload for slides to influence generation. |

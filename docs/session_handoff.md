@@ -2,6 +2,103 @@
 
 ---
 
+## END-OF-SESSION SUMMARY (Session 32, 2026-03-31)
+
+### What was completed this session
+
+| # | Feature | Status |
+|---|---|---|
+| 1 | **Review Sub-topics with AI** — inline AI review button on Screen 1 below the Sub-topics textarea | ✅ Done |
+| 2 | **`media` block type** — upload and display an image inline in lesson content | ✅ Done |
+| 3 | **Fix: Vite dev proxy for `/uploads`** — images (and downloadable file links) were broken in dev; proxy extended to cover `/uploads/*` | ✅ Done |
+| 4 | **Fix: media placeholder color** — "No image uploaded yet" placeholder now renders in red (`--color-danger`) to make it obvious | ✅ Done |
+
+### Important decisions made
+
+- **Review Sub-topics uses knowledge-only AI (no live web search)** — the prompt instructs the AI to assess based on training knowledge. A disclaimer is not shown in the UI; the rationale field naturally conveys the AI's reasoning. Web search can be layered in later server-side without touching the frontend.
+- **Review state is transient** — `subtopicsReview` is not persisted to localStorage. It resets on page reload, same as `isGenerating`. This keeps the save payload clean.
+- **Review uses its own `isReviewing` flag** — isolated from `isGenerating` so the review button and the "Generate Structure Preview" button don't block each other.
+- **Apply overwrites the textarea in one action** — clicking "Apply Suggestion" calls `setSubtopics(suggestion)` and dismisses the panel simultaneously. No intermediate confirmation step.
+- **`media` block reuses `POST /api/upload-file`** — no new server endpoint. The existing disk-storage multer handler accepts any file; the input restricts to `accept="image/*"` client-side. A server-side image MIME filter is a future hardening option.
+- **`media` placeholder is red** — makes it immediately obvious when an author has added a media block but not yet uploaded an image. Intentional departure from the muted style used for `downloadable_file` placeholder.
+- **`/uploads` Vite proxy** — this was a latent bug affecting `downloadable_file` links too, now fixed. In production Express serves both `/api` and `/uploads` from the same origin, so no production impact.
+
+### Files created, changed, or deleted
+
+| File | Change |
+|---|---|
+| `server/prompts/reviewSubtopicsPrompt.js` | **Created** — prompt for `POST /api/review-subtopics` |
+| `src/services/subtopicsReviewService.js` | **Created** — fetch wrapper for the review endpoint |
+| `server/index.js` | Added `mockReviewSubtopics()`; added `POST /api/review-subtopics` route; added `import` for `reviewSubtopicsPrompt.js` |
+| `src/App.jsx` | Added `import reviewSubtopics`; added `subtopicsReview` state; added `handleReviewSubtopics`, `handleApplySubtopicsSuggestion`, `handleDismissSubtopicsReview`; passed 4 new props to `LessonInputForm` |
+| `src/components/LessonInputForm.jsx` | Added 4 new props; added "Review Sub-topics with AI" button (shown only when subtopics non-empty); added suggestion panel with Apply/Dismiss |
+| `src/components/BlockEditor.jsx` | Added `media` to `TYPE_LABELS`, `ADD_TYPES`; added `isMedia` flag; added image upload control (`accept="image/*"`); added `contentRows`/`contentPlaceholder` entries |
+| `src/components/LessonAuthoringView.jsx` | Added `media` branch in `Block` view-mode renderer: `<img>`, caption, red placeholder |
+| `src/App.css` | Added subtopics review panel styles (`.subtopics-review-*`); added media block styles (`.block-media*`) |
+| `vite.config.js` | Added `/uploads` to Vite dev proxy |
+
+No files deleted.
+
+### What is currently working
+
+Everything from Sessions 1–31, plus:
+
+- **Review Sub-topics with AI**: button appears below the Sub-topics textarea when non-empty; disabled during review or generation; on success shows a suggestion panel (revised list + rationale) or a skip panel (no changes needed + reason); Apply overwrites the textarea; Dismiss closes the panel; error message shown inline on failure; mock mode returns a skip response
+- **`media` block**: addable from the block add row in edit mode; title (optional), caption (optional), image upload with `accept="image/*"`, uploading/success/error states, Replace image support; view mode renders `<img>` inline with caption below; red placeholder when no image uploaded
+- **`/uploads` proxy**: images and downloadable file links resolve correctly in the Vite dev server
+
+### What is not implemented yet (top remaining items)
+
+| Item | Priority | Notes |
+|---|---|---|
+| **Per-slide structured extraction** | Medium | `extractSlideText.js` returns flat string; needs `slides: [{ slideNumber, text }]` |
+| **Render slide text in `slide` block** | Medium | Depends on structured extraction above |
+| **End-to-end AI validation for `guided_tool_workflow`** | Medium | Three-block shape confirmed in mock; needs a real generation pass |
+| **`concept_application` prompt branch** | Low | Format value forwarded but no dedicated prompt; falls through to undefined behavior |
+| **Per-lesson-step optional guidance field** | Low | Free-text field on Screen 1 step cards |
+| **Delete `src/utils/mockGeneration.js`** | Low | Dead code — nothing imports it |
+| **Server-side image MIME filter for `media` uploads** | Low | Currently client-side `accept="image/*"` only; a multer `fileFilter` on `/api/upload-file` would harden this |
+
+### Next 3 recommended steps (in order)
+
+1. **Per-slide structured extraction** — change `extractSlideText.js` to return `{ slides: [{ slideNumber, text }], fullText: string }`. `fullText` preserves backward compat with all existing prompt code. Server-side only, no UI impact.
+
+2. **Render slide text in `slide` block** — once extraction is structured, resolve `slideRef` → slide text in the `Block` renderer in `LessonAuthoringView.jsx`. Falls back gracefully to "Slide N" label when `slideText` is absent (session-only).
+
+3. **Delete dead code** — remove `src/utils/mockGeneration.js` (nothing imports it) and update the stale JSDoc in `lessonContentService.js` (still references old flat schema fields).
+
+### Known issues / rough edges
+
+| Item | Severity | Notes |
+|---|---|---|
+| `slideText` session-only | Medium | Lost on page reload; user must re-upload PPTX. By design for now. |
+| `slide` block shows reference only, not content | Medium | Renders `slideRef` label (e.g. "Slide 3"); per-slide extraction needed |
+| `concept_application` has no prompt branch | Low | Generates content but with no format-specific guidance |
+| `media` upload is not image-type-gated server-side | Low | `accept="image/*"` on the input only; a non-image upload produces a broken `<img>` |
+| Uploaded files not cleaned up | Low | `server/uploads/` grows indefinitely; no deletion on block removal |
+| Module Summary pushed non-last by "Add Step" | Low | Manually added steps append after summary; authors can reorder manually |
+| `src/utils/mockGeneration.js` dead code | Low | Safe to delete |
+| `lessonContentService.js` JSDoc stale | Low | References flat schema fields; runtime is correct |
+| `code_lab` internal value vs "Programming" UI label | Info | Not reconciled; low urgency |
+| `starterCode` field not yet renamed to `practiceContent` | Info | Deferred |
+
+### Commits this session
+
+| Hash | Message |
+|---|---|
+| `72e3ef1` | feat: Review Sub-topics with AI on Screen 1 |
+| `8ab8151` | feat: add media block type for inline image display |
+| `c40d6ab` | fix: proxy /uploads through Vite dev server to Express |
+| `98f6c9b` | fix: show media block placeholder in red when no image uploaded |
+
+### Recommended git commit message (for end-of-session summary commit)
+
+```
+docs: session 32 handoff — subtopics review, media block, upload proxy fix
+```
+
+---
+
 ## END-OF-SESSION SUMMARY (Session 31, 2026-03-31)
 
 ### What was completed this session

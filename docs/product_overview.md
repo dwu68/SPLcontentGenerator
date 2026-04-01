@@ -13,7 +13,7 @@ The tool is evolving beyond programming-only lessons. The intended final goal is
 
 Internal teams producing SPL lesson content — primarily data science educators and instructional designers who know their subject matter but need tooling to translate it into structured, consistent lesson formats.
 
-## Current State (as of 2026-03-31, updated after Session 31)
+## Current State (as of 2026-03-31, updated after Session 32)
 
 Both screens are live with real AI generation (GPT-5.4). Screen 1 generates a step-by-step lesson structure from subtopics or uploaded PPTX slides; Screen 2 generates block-based lesson content for each lesson step. `lessonFormat` is now forwarded to all AI generation calls, enabling format-specific prompt behavior.
 
@@ -34,7 +34,7 @@ Both screens are live with real AI generation (GPT-5.4). Screen 1 generates a st
   - **`guided_tool_workflow`**: `blocks[]` of exactly three blocks in order — `slide`, `slide-explain`, `explain` — with `starterCode`/`expectedAction`/`validationNote` as empty strings. The `slide-explain` block is always AI-generated but is user-deletable in the editor. The `explain` block is step-goal-grounded, not slide-anchored. When `slideText` is present, the AI infers `slideRef` from `[Slide N]` labels in the extracted text.
 - **View / edit mode** (Screen 2): view mode renders blocks as readable prose; edit mode opens `BlockEditor` per block
 - **Add task with starter code** (Screen 2 edit mode): when a step in edit mode has no `task` block and no `starterCode`, an **Add task with starter code** button appears in the instruction panel header. Clicking it calls a dedicated narrow AI path (`POST /api/generate-task`) that generates one `task` block and matching `starterCode` anchored to the step's existing instructional content. The task block is appended to the end of the existing block sequence; `starterCode` remains a step-level field. On success the author stays in edit mode. If the AI judges the step unsuitable for a task (e.g. purely conceptual, tool-workflow without a real coding action), it returns a skip response with a brief reason, shown inline — no content is modified.
-- **Block types supported in editor**: `explain`, `code`, `check`, `task`, `hint` (code_lab); `slide`, `slide-explain` (guided_tool_workflow). All are manually addable/deletable.
+- **Block types supported in editor**: `explain`, `code`, `check`, `task`, `hint` (code_lab); `slide`, `slide-explain` (guided_tool_workflow); `external_link`, `downloadable_file`, `media` (all formats). All are manually addable/deletable.
 - **Conditional lab panel** (Screen 2): the right-side lab/code panel is shown only when `starterCode` is non-empty. When absent, the instruction panel expands to full width. This is content-driven, not format-driven.
 - **Add AI Example / Add AI Check** (Screen 2 edit mode): two buttons in the instruction panel header, always visible in edit mode for all step types and formats. **+ AI Example** generates a filled `code` block (short annotated runnable example, language auto-detected from existing code blocks or defaults to `python`). **+ AI Check** generates a filled `check` block (question + `\n→ ` + answer, following the existing reveal convention). Both append to the end of the block list; no cap. Shared `POST /api/generate-block` endpoint with a `blockType` parameter.
 - **Block reordering in Screen 2 edit mode**: each block card in the instruction panel has ↑/↓ buttons in its header (left of the × delete button). ↑ disabled on first block, ↓ disabled on last block. Pure local array swap — no server call. All block types and all formats supported.
@@ -50,6 +50,8 @@ Both screens are live with real AI generation (GPT-5.4). Screen 1 generates a st
 - **Explain block bullet lists**: `\n\n`-separated chunks where all lines start with `- ` render as `<ul>/<li>`
 - **Save Draft**: persists all state to `localStorage` (key: `spl_lesson_draft`); new generation clears stale draft
 - **Next Module**: "Next Module →" button in the Screen 2 header (right of "← Back to Builder"). Shows a confirmation dialog, then clears the current module from both app state and localStorage and returns to a blank Screen 1. Export JSON has been removed.
+- **Review Sub-topics with AI** (Screen 1): a "Review Sub-topics with AI" button appears below the Sub-topics textarea when it is non-empty. Clicking it calls `POST /api/review-subtopics`; the AI assesses the list for completeness, ordering, granularity, and currency based on its training knowledge. Returns either a revised list + rationale (shown in a suggestion panel with Apply / Dismiss) or a skip signal when the list is already well-structured. Applying overwrites the textarea. State is transient — not persisted to localStorage.
+- **`media` block type**: available in `BlockEditor` for all editable lesson steps. Author can set an optional title, upload an image (`accept="image/*"` via the existing `POST /api/upload-file` endpoint), and write an optional caption. View mode renders the image inline with the caption below; a red placeholder is shown when no image has been uploaded yet.
 
 ### Scope decisions (current)
 
