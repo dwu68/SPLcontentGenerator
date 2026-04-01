@@ -202,8 +202,10 @@ fileName : string   // original filename
 
 ### Block types by format
 
+**All block types are manually addable in `BlockEditor` regardless of `lessonFormat`.** There is no format-gating on the add-block UI — authors may freely mix block types across all three formats. The distinctions below describe what AI *generates* by default for each format, not what is permitted.
+
 **All steps (all formats)** — manually addable in `BlockEditor`:
-`external_link`, `downloadable_file`, `media`
+`explain`, `code`, `check`, `task`, `hint`, `slide`, `slide-explain`, `external_link`, `downloadable_file`, `media`
 
 **`code_lab` steps** — AI generates a variable sequence of:
 `explain`, `code`, `check`, `task`, `hint`
