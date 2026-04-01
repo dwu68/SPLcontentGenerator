@@ -1991,7 +1991,7 @@ body {
 .block-media-placeholder {
   margin-top: 4px;
   font-size: 12px;
-  color: var(--color-text-muted);
+  color: var(--color-danger);
   font-style: italic;
 }
 
