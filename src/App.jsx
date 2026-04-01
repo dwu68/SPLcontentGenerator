@@ -5,6 +5,7 @@ import LessonStructurePreview from './components/LessonStructurePreview'
 import LessonAuthoringView from './components/LessonAuthoringView'
 import { generateStepContent, generateTaskForStep, generateModuleLabForStep, generateBlockForStep } from './services/lessonContentService'
 import { generateLessonStructure } from './services/lessonStructureService'
+import { reviewSubtopics } from './services/subtopicsReviewService'
 
 const STORAGE_KEY = 'spl_lesson_draft'
 
@@ -59,6 +60,19 @@ function App() {
   const [isGenerating, setIsGenerating] = useState(false)
   const [generationError, setGenerationError] = useState(null)
   const [titleValidationError, setTitleValidationError] = useState(null)
+
+  // ── Subtopics review state ───────────────────────────────────────────────
+  // Transient UI state — not persisted to localStorage.
+  // status: 'idle' | 'reviewing' | 'done'
+  // suggestion: newline-separated revised topics string, or null (on skip or idle)
+  // rationale: AI explanation string, or null
+  // error: error message string, or null
+  const [subtopicsReview, setSubtopicsReview] = useState({
+    status: 'idle',
+    suggestion: null,
+    rationale: null,
+    error: null,
+  })
 
   // ── Per-step generation status (Screen 2 progressive generation) ─────────
   // Shape: { [stepId]: 'queued' | 'generating' | 'done' | 'error' }
@@ -412,6 +426,30 @@ function App() {
     setSaveStatus('unsaved')
   }
 
+  // ── Subtopics review ─────────────────────────────────────────────────────
+  const handleReviewSubtopics = async () => {
+    setSubtopicsReview({ status: 'reviewing', suggestion: null, rationale: null, error: null })
+    try {
+      const result = await reviewSubtopics({ courseName, moduleName, lessonFormat, subtopicsText: subtopics })
+      if (result.skip) {
+        setSubtopicsReview({ status: 'done', suggestion: null, rationale: result.reason, error: null })
+      } else {
+        setSubtopicsReview({ status: 'done', suggestion: result.revisedSubtopics, rationale: result.rationale, error: null })
+      }
+    } catch (err) {
+      setSubtopicsReview({ status: 'idle', suggestion: null, rationale: null, error: err.message || 'Review failed. Please try again.' })
+    }
+  }
+
+  const handleApplySubtopicsSuggestion = () => {
+    if (subtopicsReview.suggestion) setSubtopics(subtopicsReview.suggestion)
+    setSubtopicsReview({ status: 'idle', suggestion: null, rationale: null, error: null })
+  }
+
+  const handleDismissSubtopicsReview = () => {
+    setSubtopicsReview({ status: 'idle', suggestion: null, rationale: null, error: null })
+  }
+
   // ── Save draft to localStorage ───────────────────────────────────────────
   const handleSaveDraft = () => {
     setSaveStatus('saving')
@@ -515,6 +553,10 @@ function App() {
               onSubmit={handleSubmit}
               isGenerating={isGenerating}
               generationError={generationError}
+              subtopicsReview={subtopicsReview}
+              onReviewSubtopics={handleReviewSubtopics}
+              onApplySubtopicsSuggestion={handleApplySubtopicsSuggestion}
+              onDismissSubtopicsReview={handleDismissSubtopicsReview}
             />
           </div>
           <div className="builder-right">

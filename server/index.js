@@ -28,6 +28,7 @@ import { buildGenerateContentPrompt } from './prompts/generateContentPrompt.js'
 import { buildGenerateTaskPrompt } from './prompts/generateTaskPrompt.js'
 import { buildGenerateModuleLabPrompt } from './prompts/generateModuleLabPrompt.js'
 import { buildGenerateBlockPrompt } from './prompts/generateBlockPrompt.js'
+import { buildReviewSubtopicsPrompt } from './prompts/reviewSubtopicsPrompt.js'
 import { buildPromptContext } from './lib/promptContext.js'
 import { extractSlideText } from './lib/extractSlideText.js'
 
@@ -226,6 +227,21 @@ function mockGenerateModuleLab(previousSteps, lessonFormat) {
       content: `Apply ${topicList} together in a single exercise. Your solution should correctly use each concept and produce the expected output shown in the starter code comments.`,
     },
     starterCode: `# Module Lab: ${topicList}\n\n# TODO: apply ${slug} together\n# Expected: correct output combining all module concepts\n`,
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Mock fallback — subtopics review
+//
+// Mock always signals that the list looks fine (skip=true).
+// Real AI provides substantive feedback.
+// ---------------------------------------------------------------------------
+
+function mockReviewSubtopics(subtopicsText) {
+  const count = subtopicsText.split('\n').filter((l) => l.trim()).length
+  return {
+    skip: true,
+    reason: `The ${count} topic${count === 1 ? '' : 's'} look well-structured for this module. (Mock review — set USE_MOCK=false for substantive AI feedback.)`,
   }
 }
 
@@ -583,6 +599,36 @@ app.post('/api/generate-block', async (req, res) => {
     return res.json(raw)
   } catch (err) {
     console.error('[generate-block]', err.message)
+    return res.status(500).json({ error: err.message })
+  }
+})
+
+// POST /api/review-subtopics
+app.post('/api/review-subtopics', async (req, res) => {
+  const { courseName, moduleName, lessonFormat, subtopicsText } = req.body
+
+  if (!courseName || !moduleName || !subtopicsText?.trim()) {
+    return res.status(400).json({
+      error: 'Missing required fields: courseName, moduleName, subtopicsText',
+    })
+  }
+
+  if (USE_MOCK) {
+    return res.json(mockReviewSubtopics(subtopicsText))
+  }
+
+  try {
+    const completion = await openai.chat.completions.create({
+      model: process.env.OPENAI_MODEL || 'gpt-4o-mini',
+      response_format: { type: 'json_object' },
+      messages: [
+        { role: 'user', content: buildReviewSubtopicsPrompt({ courseName, moduleName, lessonFormat, subtopicsText }) },
+      ],
+    })
+    const raw = JSON.parse(completion.choices[0].message.content)
+    return res.json(raw)
+  } catch (err) {
+    console.error('[review-subtopics]', err.message)
     return res.status(500).json({ error: err.message })
   }
 })

@@ -430,6 +430,96 @@ body {
   margin: 4px 0 0;
 }
 
+/* ── Subtopics review ───────────────────────────────────────────────────────── */
+.subtopics-review-btn {
+  margin-top: 7px;
+}
+
+.subtopics-review-error {
+  margin-top: 6px;
+  font-size: 12.5px;
+  color: var(--color-danger);
+}
+
+.subtopics-review-panel {
+  margin-top: 10px;
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  overflow: hidden;
+}
+
+.subtopics-review-panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 12px;
+  background: var(--color-surface-raised);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.subtopics-review-panel-title {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--color-text-secondary);
+}
+
+.subtopics-review-dismiss-x {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--color-text-muted);
+  font-size: 16px;
+  padding: 1px 5px;
+  line-height: 1;
+  border-radius: var(--radius-xs);
+  transition: color 0.1s, background 0.1s;
+}
+.subtopics-review-dismiss-x:hover {
+  color: var(--color-text);
+  background: var(--color-secondary-hover);
+}
+
+.subtopics-review-panel-body {
+  padding: 12px;
+}
+
+.subtopics-review-suggestion-textarea {
+  width: 100%;
+  font-family: var(--font-sans);
+  font-size: 13px;
+  line-height: 1.65;
+  color: var(--color-text);
+  background: var(--color-surface-raised);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  padding: 8px 10px;
+  resize: none;
+  outline: none;
+  cursor: default;
+}
+
+.subtopics-review-rationale {
+  margin-top: 8px;
+  font-size: 12.5px;
+  color: var(--color-text-secondary);
+  line-height: 1.55;
+}
+
+.subtopics-review-skip-reason {
+  font-size: 13px;
+  color: var(--color-text-secondary);
+  line-height: 1.55;
+}
+
+.subtopics-review-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 10px;
+}
+
 /* =============================================================================
    Lesson Structure Preview (Screen 1 right pane)
    ============================================================================= */

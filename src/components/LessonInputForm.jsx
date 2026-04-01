@@ -9,6 +9,10 @@ import React, { useRef } from 'react'
  *   onSubmit      fn — called when the user clicks "Generate Structure Preview"
  *   isGenerating    boolean — true while generation is in flight
  *   generationError string | null — error message from the last failed generation
+ *   subtopicsReview  { status, suggestion, rationale, error } — review state from App
+ *   onReviewSubtopics          fn — trigger AI review
+ *   onApplySubtopicsSuggestion fn — overwrite textarea with suggestion and dismiss
+ *   onDismissSubtopicsReview   fn — dismiss the suggestion panel
  */
 const LESSON_FORMAT_OPTIONS = [
   { value: 'code_lab',              label: 'Programming' },
@@ -35,6 +39,10 @@ function LessonInputForm({
   onSubmit,
   isGenerating,
   generationError,
+  subtopicsReview = { status: 'idle', suggestion: null, rationale: null, error: null },
+  onReviewSubtopics,
+  onApplySubtopicsSuggestion,
+  onDismissSubtopicsReview,
 }) {
   const fileInputRef = useRef(null)
 
@@ -42,6 +50,15 @@ function LessonInputForm({
     courseName.trim().length > 0 &&
     moduleName.trim().length > 0 &&
     (subtopics.trim().length > 0 || slideText.trim().length > 0)
+
+  const hasSubtopics = subtopics.trim().length > 0
+  const isReviewing  = subtopicsReview.status === 'reviewing'
+  const reviewDone   = subtopicsReview.status === 'done'
+
+  // Number of lines in the suggestion — used to size the read-only textarea
+  const suggestionRows = subtopicsReview.suggestion
+    ? Math.min(10, Math.max(4, subtopicsReview.suggestion.split('\n').filter(Boolean).length + 1))
+    : 4
 
   const handleFileChange = (e) => {
     const file = e.target.files?.[0]
@@ -158,7 +175,7 @@ function LessonInputForm({
         <label className="form-label" htmlFor="subtopics">
           Sub-topics
         </label>
-        <p className="form-hint">One topic per line — each becomes a lesson step.</p>
+        <p className="form-hint">One topic per line, without bullet points</p>
         <textarea
           id="subtopics"
           className="form-textarea"
@@ -169,6 +186,87 @@ function LessonInputForm({
           onChange={(e) => onSubtopicsChange(e.target.value)}
           rows={9}
         />
+
+        {/* Review button — shown only when subtopics are non-empty */}
+        {hasSubtopics && (
+          <button
+            type="button"
+            className="btn btn-secondary btn-sm subtopics-review-btn"
+            onClick={onReviewSubtopics}
+            disabled={isReviewing || isGenerating}
+          >
+            {isReviewing ? 'Reviewing…' : 'Review Sub-topics with AI'}
+          </button>
+        )}
+
+        {/* Review error */}
+        {subtopicsReview.error && (
+          <p className="subtopics-review-error">{subtopicsReview.error}</p>
+        )}
+
+        {/* Suggestion panel — shown after review completes */}
+        {reviewDone && (
+          <div className="subtopics-review-panel">
+            <div className="subtopics-review-panel-header">
+              <span className="subtopics-review-panel-title">
+                {subtopicsReview.suggestion ? 'AI Suggestion' : 'AI Review'}
+              </span>
+              <button
+                type="button"
+                className="subtopics-review-dismiss-x"
+                onClick={onDismissSubtopicsReview}
+                aria-label="Dismiss review"
+              >
+                ×
+              </button>
+            </div>
+
+            <div className="subtopics-review-panel-body">
+              {subtopicsReview.suggestion ? (
+                <>
+                  <textarea
+                    className="subtopics-review-suggestion-textarea"
+                    readOnly
+                    rows={suggestionRows}
+                    value={subtopicsReview.suggestion}
+                  />
+                  {subtopicsReview.rationale && (
+                    <p className="subtopics-review-rationale">{subtopicsReview.rationale}</p>
+                  )}
+                  <div className="subtopics-review-actions">
+                    <button
+                      type="button"
+                      className="btn btn-primary btn-sm"
+                      onClick={onApplySubtopicsSuggestion}
+                    >
+                      Apply Suggestion
+                    </button>
+                    <button
+                      type="button"
+                      className="btn btn-ghost btn-sm"
+                      onClick={onDismissSubtopicsReview}
+                    >
+                      Dismiss
+                    </button>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <p className="subtopics-review-skip-reason">{subtopicsReview.rationale}</p>
+                  <div className="subtopics-review-actions">
+                    <button
+                      type="button"
+                      className="btn btn-ghost btn-sm"
+                      onClick={onDismissSubtopicsReview}
+                    >
+                      Dismiss
+                    </button>
+                  </div>
+                </>
+              )}
+            </div>
+          </div>
+        )}
       </div>
 
       <button
