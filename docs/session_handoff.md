@@ -2,6 +2,76 @@
 
 ---
 
+## END-OF-SESSION SUMMARY (Session 33, 2026-03-31)
+
+### What was completed this session
+
+| # | Feature | Status |
+|---|---|---|
+| 1 | **Markdown-rich text rendering for prose blocks** — `explain`, `slide-explain`, `hint`, `task`, `check` now render via `react-markdown` + `remark-gfm` | ✅ Done |
+| 2 | **Table CSS fix** — GFM pipe tables were parsing correctly but had no styles; added `.block-body table/th/td` rules | ✅ Done |
+
+### Important decisions made
+
+- **`react-markdown` v10 + `remark-gfm`** chosen over hand-rolled inline parsing. Handles bold, italic, inline code, ordered/unordered lists, links, and fenced code blocks correctly and safely.
+- **Raw HTML rendering disabled** — `rehype-raw` is deliberately not included. React-markdown's default is to strip HTML; this is left as-is. No `dangerouslySetInnerHTML`.
+- **Links open in new tab** — the `a` component override injects `target="_blank" rel="noreferrer noopener"` on all links rendered from markdown content.
+- **`code` block type untouched** — the dedicated `code` block still uses `<pre className="block-body">` (dark theme). `RichText` is not applied there.
+- **`slide` block placeholder UI untouched** — the slide placeholder and `slideRef` label are unchanged. Only the rarely-used optional caption field below the placeholder now renders via `RichText` (it was previously broken since it referenced the now-removed `segments` variable).
+- **`BlockEditor` (edit mode) untouched** — authors still type raw text in textareas. Markdown is only applied in view mode.
+- **Removed hand-rolled `segments` and `lines` mini-renderers** — the old heuristic (split on `\n\n`, classify as bullet/code/prose) is fully replaced. Dead code removed from `Block()`.
+- **CSS scoped to `.block-body`** — markdown output styles (`ul`, `ol`, `li`, inline `code`, `a`, `strong`, `em`, headings) are all scoped under `.block-body` to prevent bleed into edit mode or other surfaces.
+
+### Files created, changed, or deleted
+
+| File | Change |
+|---|---|
+| `src/components/LessonAuthoringView.jsx` | Added `import Markdown from 'react-markdown'` and `import remarkGfm from 'remark-gfm'`; added `RICH_TEXT_COMPONENTS` and `RichText` component; replaced `segments`/`lines`/`questionSegments` with `<RichText>` in `explain`, `slide-explain`, `hint`, `task`, `check`; removed hand-rolled heuristic segment computation from `Block()` |
+| `src/App.css` | Added `RichText` markdown output styles under `.block-body`: paragraphs, `ul`/`ol`/`li`, `.rich-text-inline-code`, `strong`, `em`, `a`, `h1`–`h6`; added table styles (`table`, `th`, `td`, zebra stripe) |
+| `package.json` / `package-lock.json` | Added `react-markdown@10` and `remark-gfm` |
+
+No files deleted. No server files changed. No `BlockEditor.jsx` changes.
+
+### What rendering behavior improved
+
+| Block type | Before | After |
+|---|---|---|
+| `explain` | `\n\n` → `<p>`; `- ` → `<ul>`; indented → `<pre>` (heuristic, false-positives) | Full markdown: `**bold**`, `*italic*`, `` `inline code` ``, `- ` lists, `1.` ordered lists, links, fenced code |
+| `slide-explain` | Same heuristic as explain | Same as explain |
+| `hint` | Same heuristic | Same as explain |
+| `task` | Each `\n`-separated line → separate `<p>` (no list awareness) | `1.` numbered steps → `<ol>` (biggest improvement); bold/italic/inline code supported |
+| `check` (question + answer) | Question via heuristic; answer as bare `<p>` | Both via `RichText`; inline code, emphasis, lists all render |
+| `code` block | `<pre>` dark theme | **Unchanged** |
+| `slide` block placeholder | Unchanged | **Unchanged**; optional caption now via `RichText` (fixes broken `segments` reference) |
+
+### Compatibility notes
+
+- **All existing AI-generated content renders correctly** — `- ` bullets still produce `<ul>`, `\n\n` paragraph breaks still produce `<p>`. No content changes needed.
+- **Previously literal asterisks** (e.g. `**bold**`) now render as bold — an improvement, not a regression. Existing drafts will render better immediately.
+- **The heuristic code false-positive is fixed** — multi-line prose starting with lowercase letters that was previously wrapped in `<pre>` now renders as prose paragraphs.
+- **`block-bullet-list` and `block-inline-code` CSS classes** are now dead CSS (the old hand-rolled renderer no longer emits them). Left in `App.css` as harmless dead code; can be deleted in a cleanup pass.
+- **Saved localStorage drafts** require no migration — content strings are unchanged, only the renderer changed.
+
+### What is not implemented yet (top remaining items)
+
+| Item | Priority | Notes |
+|---|---|---|
+| **Per-slide structured extraction** | Medium | `extractSlideText.js` returns flat string; needs `slides: [{ slideNumber, text }]` |
+| **Render slide text in `slide` block** | Medium | Depends on structured extraction above |
+| **End-to-end AI validation for `guided_tool_workflow`** | Medium | Three-block shape confirmed in mock; needs a real generation pass |
+| **`concept_application` prompt branch** | Low | Format value forwarded but no dedicated prompt |
+| **Delete dead CSS** | Low | `.block-bullet-list`, `.block-inline-code` in `App.css` no longer emit from view mode |
+| **Delete `src/utils/mockGeneration.js`** | Low | Dead code — nothing imports it |
+
+### Commits this session
+
+| Hash | Message |
+|---|---|
+| *(pending)* | feat: render prose blocks as markdown (react-markdown + remark-gfm) |
+| *(pending)* | fix: add table CSS for GFM pipe tables in block content |
+
+---
+
 ## END-OF-SESSION SUMMARY (Session 32, 2026-03-31)
 
 ### What was completed this session

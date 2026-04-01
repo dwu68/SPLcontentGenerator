@@ -13,7 +13,7 @@ The tool is evolving beyond programming-only lessons. The intended final goal is
 
 Internal teams producing SPL lesson content — primarily data science educators and instructional designers who know their subject matter but need tooling to translate it into structured, consistent lesson formats.
 
-## Current State (as of 2026-03-31, updated after Session 32)
+## Current State (as of 2026-03-31, updated after Session 33)
 
 Both screens are live with real AI generation (GPT-5.4). Screen 1 generates a step-by-step lesson structure from subtopics or uploaded PPTX slides; Screen 2 generates block-based lesson content for each lesson step. `lessonFormat` is now forwarded to all AI generation calls, enabling format-specific prompt behavior.
 
@@ -32,7 +32,7 @@ Both screens are live with real AI generation (GPT-5.4). Screen 1 generates a st
 - **Content generation** (Screen 2): block-based model for lesson steps. `lessonFormat` is forwarded to `POST /api/generate-content`; the prompt branches on format:
   - **`code_lab`**: `blocks[]` of (`explain`, `code`, `check`, `task`, `hint`) plus `starterCode`, `expectedAction`, `validationNote`
   - **`guided_tool_workflow`**: `blocks[]` of exactly three blocks in order — `slide`, `slide-explain`, `explain` — with `starterCode`/`expectedAction`/`validationNote` as empty strings. The `slide-explain` block is always AI-generated but is user-deletable in the editor. The `explain` block is step-goal-grounded, not slide-anchored. When `slideText` is present, the AI infers `slideRef` from `[Slide N]` labels in the extracted text.
-- **View / edit mode** (Screen 2): view mode renders blocks as readable prose; edit mode opens `BlockEditor` per block
+- **View / edit mode** (Screen 2): view mode renders blocks as markdown-rich prose (`react-markdown` + `remark-gfm`); edit mode opens `BlockEditor` per block. Supported in view mode: bold, italic, inline code, bullet lists, ordered lists, GFM pipe tables, links (open in new tab), fenced code. Raw HTML is disabled. The dedicated `code` block type uses its own `<pre>` renderer and is unaffected.
 - **Add task with starter code** (Screen 2 edit mode): when a step in edit mode has no `task` block and no `starterCode`, an **Add task with starter code** button appears in the instruction panel header. Clicking it calls a dedicated narrow AI path (`POST /api/generate-task`) that generates one `task` block and matching `starterCode` anchored to the step's existing instructional content. The task block is appended to the end of the existing block sequence; `starterCode` remains a step-level field. On success the author stays in edit mode. If the AI judges the step unsuitable for a task (e.g. purely conceptual, tool-workflow without a real coding action), it returns a skip response with a brief reason, shown inline — no content is modified.
 - **Block types supported in editor**: `explain`, `code`, `check`, `task`, `hint` (code_lab); `slide`, `slide-explain` (guided_tool_workflow); `external_link`, `downloadable_file`, `media` (all formats). All are manually addable/deletable.
 - **Conditional lab panel** (Screen 2): the right-side lab/code panel is shown only when `starterCode` is non-empty. When absent, the instruction panel expands to full width. This is content-driven, not format-driven.

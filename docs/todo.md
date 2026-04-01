@@ -9,6 +9,7 @@ Backlog in priority order. Items marked ✅ are complete. Items marked 🔲 are 
 - ✅ Create `.gitignore` — exclude `node_modules/`, `dist/`, `.DS_Store`, `*.local`
 - ✅ Delete `src/components/LessonStructureEditor.jsx` — dead code
 - 🔲 Delete `src/utils/mockGeneration.js` — dead code; nothing imports it; mock behavior is server-side
+- 🔲 Delete dead CSS in `App.css` — `.block-bullet-list` and `.block-inline-code` are no longer emitted by view mode (replaced by `react-markdown` output); `.rich-text-inline-code` is the current inline code class
 
 ---
 

@@ -1,4 +1,6 @@
 import React, { useState, useEffect } from 'react'
+import Markdown from 'react-markdown'
+import remarkGfm from 'remark-gfm'
 import InstructionPanelEditor from './InstructionPanelEditor'
 import CodeEditorPanel from './CodeEditorPanel'
 import BlockEditor from './BlockEditor'
@@ -524,6 +526,47 @@ function LessonStepView({ step }) {
   )
 }
 
+// ── Markdown-rich text renderer ─────────────────────────────────────────────
+
+/**
+ * RichText — renders a prose string as markdown using react-markdown + remark-gfm.
+ *
+ * Used for text-heavy blocks: explain, slide-explain, hint, task, check.
+ * Raw HTML rendering is off by default (no rehype-raw plugin).
+ * Links always open in a new tab with rel="noreferrer noopener".
+ * Fenced code blocks render in the same pre style as block-inline-code.
+ * Inline backtick code renders as a styled <code> span.
+ */
+const RICH_TEXT_COMPONENTS = {
+  // Fenced code blocks: wrap in the same styled <pre> used elsewhere
+  pre({ children }) {
+    return <pre className="block-inline-code">{children}</pre>
+  },
+  // Inline code spans: distinct style from block code
+  code({ children, className }) {
+    // When inside a fenced block the code element carries a language-* class;
+    // pass it through so the parent <pre> can be identified visually if needed.
+    return <code className={className ?? 'rich-text-inline-code'}>{children}</code>
+  },
+  // Links: always open safely in a new tab
+  a({ href, children }) {
+    return (
+      <a href={href} target="_blank" rel="noreferrer noopener">
+        {children}
+      </a>
+    )
+  },
+}
+
+function RichText({ content }) {
+  if (!content) return null
+  return (
+    <Markdown remarkPlugins={[remarkGfm]} components={RICH_TEXT_COMPONENTS}>
+      {content}
+    </Markdown>
+  )
+}
+
 // ── Block-based view mode ────────────────────────────────────────────────────
 
 /**
@@ -550,7 +593,7 @@ function BlocksView({ step }) {
  * content is guarded to '' before any string operations — slide blocks intentionally
  * carry null content (their display is driven by slideRef, not content).
  */
-function CheckBlock({ title, content, segments }) {
+function CheckBlock({ title, content }) {
   const [revealed, setRevealed] = useState(false)
 
   // Detect answer separator — accept "→ ", "Answer:", or "Answer :" variants
@@ -565,25 +608,11 @@ function CheckBlock({ title, content, segments }) {
   const questionContent = hasAnswer ? content.slice(0, splitAt).trim() : content
   const answerText = hasAnswer ? content.slice(splitAt + sepLen).trim() : null
 
-  // Re-run the segment renderer on just the question portion
-  const questionSegments = questionContent
-    .split('\n\n')
-    .filter(Boolean)
-    .map((chunk, i) => {
-      const lines = chunk.split('\n')
-      const isCode =
-        lines.some((line) => /^\s/.test(line)) ||
-        (lines.length >= 2 && /^[a-z_]/.test(chunk))
-      return isCode
-        ? <pre key={i} className="block-inline-code">{chunk}</pre>
-        : <p key={i}>{chunk}</p>
-    })
-
   return (
     <div className="block block-check">
       {title && <div className="block-heading">{title}</div>}
       <div className="block-body">
-        {hasAnswer ? questionSegments : segments}
+        <RichText content={questionContent} />
         {hasAnswer && (
           <div className="check-solution">
             <button
@@ -592,7 +621,7 @@ function CheckBlock({ title, content, segments }) {
             >
               {revealed ? 'Hide answer' : 'Show answer'}
             </button>
-            {revealed && <p className="check-solution-text">{answerText}</p>}
+            {revealed && <RichText content={answerText} />}
           </div>
         )}
       </div>
@@ -605,38 +634,6 @@ function Block({ block }) {
   // Guard against null/undefined content — slide blocks intentionally have null content.
   const safeContent = content ?? ''
 
-  // Render double-newline-separated content.
-  // Each chunk is classified as:
-  //   bullet list — every non-empty line starts with "- " → <ul>/<li>
-  //   code        — any line starts with whitespace, OR multi-line starting
-  //                 with a lowercase letter (unindented AI code snippet) → <pre>
-  //   prose       — everything else → <p>
-  const segments = safeContent
-    .split('\n\n')
-    .filter(Boolean)
-    .map((chunk, i) => {
-      const lines = chunk.split('\n').filter(Boolean)
-      const isBulletList = lines.length > 0 && lines.every((line) => /^- /.test(line))
-      if (isBulletList) {
-        return (
-          <ul key={i} className="block-bullet-list">
-            {lines.map((line, j) => <li key={j}>{line.slice(2)}</li>)}
-          </ul>
-        )
-      }
-      const isCode =
-        lines.some((line) => /^\s/.test(line)) ||
-        (lines.length >= 2 && /^[a-z_]/.test(chunk))
-      return isCode
-        ? <pre key={i} className="block-inline-code">{chunk}</pre>
-        : <p key={i}>{chunk}</p>
-    })
-
-  const lines = safeContent
-    .split('\n')
-    .filter(Boolean)
-    .map((line, i) => <p key={i}>{line}</p>)
-
   if (type === 'slide') {
     return (
       <div className="block block-slide">
@@ -644,7 +641,7 @@ function Block({ block }) {
         <div className="block-slide-placeholder">
           <div className="block-slide-placeholder-label">Slide {slideRef || '?'}</div>
         </div>
-        {safeContent && <div className="block-body">{segments}</div>}
+        {safeContent && <div className="block-body"><RichText content={safeContent} /></div>}
       </div>
     )
   }
@@ -653,7 +650,7 @@ function Block({ block }) {
     return (
       <div className="block block-slide-explain">
         {title && <div className="block-heading">{title}</div>}
-        <div className="block-body">{segments}</div>
+        <div className="block-body"><RichText content={safeContent} /></div>
       </div>
     )
   }
@@ -662,7 +659,7 @@ function Block({ block }) {
     return (
       <div className="block block-explain">
         {title && <div className="block-heading">{title}</div>}
-        <div className="block-body">{segments}</div>
+        <div className="block-body"><RichText content={safeContent} /></div>
       </div>
     )
   }
@@ -680,13 +677,13 @@ function Block({ block }) {
     return (
       <div className="block block-task">
         <div className="block-heading">{title || 'Lab'}</div>
-        <div className="block-body">{lines}</div>
+        <div className="block-body"><RichText content={safeContent} /></div>
       </div>
     )
   }
 
   if (type === 'check') {
-    return <CheckBlock title={title} content={safeContent} segments={segments} />
+    return <CheckBlock title={title} content={safeContent} />
   }
 
   if (type === 'hint') {
@@ -694,7 +691,7 @@ function Block({ block }) {
       <div className="block block-hint">
         <details>
           <summary>{title || 'Need a hint?'}</summary>
-          <div className="block-body">{segments}</div>
+          <div className="block-body"><RichText content={safeContent} /></div>
         </details>
       </div>
     )

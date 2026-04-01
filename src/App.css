@@ -1891,6 +1891,97 @@ body {
 .block-hint .block-body p { margin-bottom: 6px; }
 .block-hint .block-body p:last-child { margin-bottom: 0; }
 
+/* ── RichText markdown output ───────────────────────────────────────────────
+   Styles for elements emitted by react-markdown inside .block-body regions.
+   Scoped to .block-body so they never bleed into edit mode or other surfaces.
+   ─────────────────────────────────────────────────────────────────────────── */
+
+/* Paragraphs — react-markdown wraps every prose block in <p> */
+.block-body p {
+  margin-bottom: 10px;
+}
+.block-body p:last-child {
+  margin-bottom: 0;
+}
+
+/* Unordered and ordered lists */
+.block-body ul,
+.block-body ol {
+  margin: 4px 0 10px 0;
+  padding-left: 22px;
+  line-height: 1.65;
+}
+.block-body ul:last-child,
+.block-body ol:last-child {
+  margin-bottom: 0;
+}
+.block-body li {
+  margin-bottom: 4px;
+}
+.block-body li:last-child {
+  margin-bottom: 0;
+}
+
+/* Inline code spans — `` `code` `` */
+.rich-text-inline-code {
+  font-family: var(--font-mono);
+  font-size: 0.88em;
+  background: #f1f5f9;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-xs);
+  padding: 1px 5px;
+  color: #1e293b;
+  white-space: nowrap;
+}
+
+/* Bold and italic */
+.block-body strong { font-weight: 700; }
+.block-body em     { font-style: italic; }
+
+/* Links rendered by RichText */
+.block-body a {
+  color: var(--color-primary);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.block-body a:hover {
+  color: var(--color-primary-hover);
+}
+
+/* Headings inside block content (rare in AI output, but handled gracefully) */
+.block-body h1, .block-body h2, .block-body h3,
+.block-body h4, .block-body h5, .block-body h6 {
+  font-size: 14px;
+  font-weight: 700;
+  margin: 12px 0 4px;
+}
+.block-body h1:first-child, .block-body h2:first-child, .block-body h3:first-child {
+  margin-top: 0;
+}
+
+/* Tables — rendered by remark-gfm from markdown pipe-table syntax */
+.block-body table {
+  border-collapse: collapse;
+  width: 100%;
+  font-size: 13.5px;
+  margin: 8px 0 12px;
+}
+.block-body th,
+.block-body td {
+  border: 1px solid var(--color-border);
+  padding: 7px 12px;
+  text-align: left;
+  vertical-align: top;
+}
+.block-body th {
+  background: var(--color-surface-raised);
+  font-weight: 600;
+  font-size: 13px;
+}
+.block-body tr:nth-child(even) td {
+  background: #f8fafc;
+}
+
 /* ── slide ──────────────────────────────────────────────────────────────────── */
 .block-slide-placeholder {
   aspect-ratio: 4 / 3;
